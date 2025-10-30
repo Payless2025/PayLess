@@ -2,6 +2,8 @@
 
 Welcome to Payless - the simplest way to monetize your APIs with crypto payments.
 
+**Contract Address (CA):** `3YMa9aj5gfxvbYaCEascAGRpu1GoA8xPZBFhCycapump`
+
 ## What is Payless?
 
 Payless is a serverless payment platform built on the x402 protocol for Solana. It lets developers monetize any API with crypto payments in minutes—no accounts, no subscriptions, no complexity.
