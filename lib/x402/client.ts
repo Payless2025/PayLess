@@ -115,7 +115,7 @@ export async function makePaymentRequest(
 
   // Create and sign payment
   const paymentPayload = createPaymentPayload(
-    walletAddress || 'DemoWalletAddress11111111111111111111111111',
+    walletAddress || '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM',
     recipientAddress || payment.recipient,
     amount || payment.amount,
     tokenMint || payment.tokenMint,
