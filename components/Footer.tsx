@@ -24,11 +24,20 @@ export default function Footer() {
               <h4 className="text-sm font-semibold text-gray-900 mb-2">Contract Address (CA)</h4>
               <div className="flex items-center gap-2 p-3 bg-purple-50 border border-purple-100 rounded-lg max-w-md">
                 <code className="text-xs text-purple-700 font-mono break-all flex-1">
-                  TBA - Coming Soon
+                  3YMa9aj5gfxvbYaCEascAGRpu1GoA8xPZBFhCycapump
                 </code>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText('TBA');
+                    navigator.clipboard.writeText('3YMa9aj5gfxvbYaCEascAGRpu1GoA8xPZBFhCycapump');
+                    // Optional: Show toast notification
+                    const button = event?.currentTarget;
+                    if (button) {
+                      const originalHTML = button.innerHTML;
+                      button.innerHTML = '<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                      setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                      }, 2000);
+                    }
                   }}
                   className="p-1.5 rounded bg-purple-100 hover:bg-purple-200 transition-colors flex-shrink-0"
                   title="Copy Contract Address"
