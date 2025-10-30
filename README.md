@@ -66,6 +66,9 @@ FACILITATOR_URL=https://facilitator.x402.org
 NETWORK=mainnet-beta
 RPC_URL=https://api.mainnet-beta.solana.com
 USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+
+# Enable demo payments (set to 'true' for playground/testing)
+ENABLE_DEMO_PAYMENTS=true
 ```
 
 4. **Run development server**
