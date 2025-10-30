@@ -23,7 +23,7 @@ Create `.env` file with Solana-specific values:
 
 ```env
 # Your Solana wallet address (base58 format)
-WALLET_ADDRESS=7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 
 # x402 Facilitator URL
 FACILITATOR_URL=https://facilitator.x402.org

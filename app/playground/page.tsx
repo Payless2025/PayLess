@@ -75,8 +75,8 @@ export default function Playground() {
   const [copied, setCopied] = useState(false);
   const [requestBody, setRequestBody] = useState(JSON.stringify(endpoints[0].bodyExample || {}, null, 2));
 
-  const mockWalletAddress = 'YOUR_WALLET_ADDRESS';
-  const mockRecipientAddress = 'YOUR_WALLET_ADDRESS';
+  const mockWalletAddress = 'ExampleWallet1111111111111111111111111111';
+  const mockRecipientAddress = 'ExampleRecipient111111111111111111111111';
 
   const handleEndpointChange = (endpoint: ApiEndpoint) => {
     setSelectedEndpoint(endpoint);
