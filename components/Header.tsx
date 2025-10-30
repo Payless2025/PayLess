@@ -35,7 +35,7 @@ export default function Header() {
               Playground
             </Link>
             <a 
-              href="https://x402.gitbook.io/x402" 
+              href="https://payless.gitbook.io/payless-documentation" 
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
@@ -56,11 +56,11 @@ export default function Header() {
               <Github className="w-5 h-5" />
             </a>
             <a
-              href="https://twitter.com/paylesstoken"
+              href="https://x.com/paylessnetwork"
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 rounded-lg text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-all"
-              aria-label="Twitter"
+              aria-label="X (Twitter)"
             >
               <Twitter className="w-5 h-5" />
             </a>
@@ -105,7 +105,7 @@ export default function Header() {
                 Playground
               </Link>
               <a 
-                href="https://x402.gitbook.io/x402" 
+                href="https://payless.gitbook.io/payless-documentation" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
@@ -124,7 +124,7 @@ export default function Header() {
                   <Github className="w-5 h-5" />
                 </a>
                 <a
-                  href="https://twitter.com/paylesstoken"
+                  href="https://x.com/paylessnetwork"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 rounded-lg text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-all"
