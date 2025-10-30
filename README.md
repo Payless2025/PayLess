@@ -40,7 +40,7 @@ cp .env.example .env
 Edit `.env` and add your Solana wallet address:
 ```env
 # Solana wallet address (base58 format)
-WALLET_ADDRESS=7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 FACILITATOR_URL=https://facilitator.x402.org
 NETWORK=mainnet-beta
 RPC_URL=https://api.mainnet-beta.solana.com

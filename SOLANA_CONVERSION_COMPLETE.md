@@ -90,7 +90,7 @@ npm install
 ### Step 2: Update Environment
 ```env
 # Solana wallet (base58 format, not 0x...)
-WALLET_ADDRESS=7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 
 # Solana network
 NETWORK=mainnet-beta
@@ -296,7 +296,7 @@ npm install
 WALLET_ADDRESS=0x742d35Cc6634C0532925a3b844Bc454e4438f44e
 
 # Correct (Solana format)
-WALLET_ADDRESS=7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 ```
 
 ### "Invalid signature"

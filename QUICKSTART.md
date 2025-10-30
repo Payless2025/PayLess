@@ -28,7 +28,7 @@ npm install
 cp .env.example .env
 
 # Edit .env and add your Solana wallet address (base58 format)
-# WALLET_ADDRESS=7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+# WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 ```
 
 ### Step 3: Start the Server

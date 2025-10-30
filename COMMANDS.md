@@ -130,11 +130,11 @@ docker-compose up -d
 printenv | grep WALLET
 
 # Set environment variable (macOS/Linux)
-export WALLET_ADDRESS=0xYourAddress
+export WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 export FACILITATOR_URL=https://facilitator.x402.org
 
 # Set environment variable (Windows)
-set WALLET_ADDRESS=0xYourAddress
+set WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 set FACILITATOR_URL=https://facilitator.x402.org
 ```
 
