@@ -88,7 +88,7 @@ export default function Strengths() {
         <div className="max-w-4xl mx-auto">
           <div className="p-8 rounded-2xl bg-purple-50 border border-purple-100">
             <h3 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-              Everything You Need. Nothing You Don't.
+              Everything You Need. Nothing You Don&apos;t.
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex items-start gap-3">
