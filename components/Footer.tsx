@@ -18,7 +18,7 @@ export default function Footer() {
             </p>
             <div className="flex gap-4">
               <a
-                href="https://github.com/yourusername/payless"
+                href="https://github.com/Payless2025/PayLess"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
@@ -26,7 +26,7 @@ export default function Footer() {
                 <Github className="w-5 h-5" />
               </a>
               <a
-                href="https://twitter.com/payless"
+                href="https://twitter.com/paylesstoken"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
@@ -86,12 +86,23 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/yourusername/payless"
+                  href="https://github.com/Payless2025/PayLess"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-white transition-colors inline-flex items-center gap-1"
                 >
                   GitHub
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://payai.network"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors inline-flex items-center gap-1"
+                >
+                  PayAI (Alternative)
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </li>
