@@ -1,7 +1,7 @@
 import { EndpointConfig } from './types';
 
 export const PAYMENT_CONFIG = {
-  walletAddress: process.env.WALLET_ADDRESS || '',
+  walletAddress: process.env.WALLET_ADDRESS || process.env.NEXT_PUBLIC_WALLET_ADDRESS || '8ahe4N7mFaLyQ7powRGWxZ3cnqbteF3yAeioMpM4ocMX',
   facilitatorUrl: process.env.FACILITATOR_URL || 'https://facilitator.x402.org',
   network: process.env.NETWORK || 'mainnet-beta', // Solana network
   rpcUrl: process.env.RPC_URL || 'https://api.mainnet-beta.solana.com',
