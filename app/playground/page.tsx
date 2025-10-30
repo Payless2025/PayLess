@@ -76,7 +76,7 @@ export default function Playground() {
   const [requestBody, setRequestBody] = useState(JSON.stringify(endpoints[0].bodyExample || {}, null, 2));
 
   const mockWalletAddress = 'ExampleWallet1111111111111111111111111111';
-  const mockRecipientAddress = 'ExampleRecipient111111111111111111111111';
+  const mockRecipientAddress = 'YOUR_WALLET_ADDRESS'; // Payless wallet
 
   const handleEndpointChange = (endpoint: ApiEndpoint) => {
     setSelectedEndpoint(endpoint);
