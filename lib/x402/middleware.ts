@@ -70,8 +70,9 @@ export async function verifyPayment(
     }
 
     // In production, verify signature
-    const isTestMode = process.env.NODE_ENV !== 'production';
-    console.log('[x402] Test mode:', isTestMode);
+    // Allow test mode to be enabled even in production for demo purposes
+    const isTestMode = process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_PAYMENTS === 'true';
+    console.log('[x402] Test mode:', isTestMode, '(NODE_ENV:', process.env.NODE_ENV, 'ENABLE_DEMO_PAYMENTS:', process.env.ENABLE_DEMO_PAYMENTS, ')');
     
     if (!isTestMode) {
       try {
