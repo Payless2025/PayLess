@@ -16,20 +16,25 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 text-center">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-8">
-          <Zap className="w-4 h-4 text-yellow-400" />
-          <span className="text-sm text-white font-medium">Powered by x402 Protocol</span>
+        {/* Logo/Brand */}
+        <div className="mb-8">
+          <h1 className="text-6xl md:text-8xl font-bold text-white mb-2 tracking-tight">
+            💰 Payless
+          </h1>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+            <Zap className="w-4 h-4 text-yellow-400" />
+            <span className="text-sm text-white font-medium">Powered by x402 Protocol on Solana</span>
+          </div>
         </div>
 
         {/* Main heading */}
-        <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+        <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
           Accept Payments
           <br />
           <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
             Without Accounts
           </span>
-        </h1>
+        </h2>
 
         {/* Subheading */}
         <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">

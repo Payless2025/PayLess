@@ -1,6 +1,25 @@
-# 💳 Payless - Serverless x402 Payment Platform
+# 💰 Payless
 
-> Accept crypto payments without accounts, subscriptions, or complexity. Built with x402 protocol.
+## Accept Crypto Payments Without Accounts
+
+The simplest way to monetize your APIs using the x402 protocol on Solana. Zero fees, instant settlements, one line of code.
+
+[![GitHub](https://img.shields.io/badge/GitHub-Payless2025%2FPayLess-blue?logo=github)](https://github.com/Payless2025/PayLess)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Solana](https://img.shields.io/badge/Blockchain-Solana-blueviolet)](https://solana.com)
+[![x402](https://img.shields.io/badge/Protocol-x402-orange)](https://x402.org)
+
+---
+
+## 🎯 What is Payless?
+
+**Payless** is a serverless payment platform built on the x402 protocol for Solana. It lets developers monetize any API with crypto payments in minutes—no accounts, no subscriptions, no complexity.
+
+Perfect for:
+- 🤖 **AI Agent APIs** - Let agents pay for your services autonomously
+- 💰 **Micropayments** - Accept payments as low as $0.01
+- ⚡ **Instant Settlement** - Money in your wallet in 2 seconds
+- 🚀 **Serverless APIs** - Deploy anywhere (Vercel, AWS, Netlify)
 
 ## 🌟 Features
 
@@ -23,7 +42,7 @@
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/payless.git
+git clone https://github.com/Payless2025/PayLess.git
 cd payless
 ```
 
@@ -284,7 +303,30 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+## 🆚 Payless vs PayAI
+
+Both are excellent x402 payment solutions, but with different focuses:
+
+| Feature | Payless 💰 | PayAI 🤖 |
+|---------|-----------|----------|
+| **Best For** | API monetization, any developer | AI agent marketplaces, CT content |
+| **Integration** | One line of code | Multiple SDKs & plugins |
+| **Deployment** | Deploy anywhere | Requires setup |
+| **Fees** | 0% - Keep 100% | Platform fees apply |
+| **Open Source** | Fully open source | Partially open source |
+| **Use Cases** | Any paid API/service | AI agent hiring, CT monetization |
+
+**Choose Payless if:** You want the simplest way to monetize any API with zero fees.
+
+**Choose PayAI if:** You're building AI agent marketplaces or crypto Twitter content monetization.
+
+Learn more: [PayAI.network](https://payai.network/)
+
+---
+
 **Built with ❤️ by the Payless Team**
+
+🌟 **[GitHub](https://github.com/Payless2025/PayLess)** | 🐦 **[Twitter](https://twitter.com/paylesstoken)** | 📚 **[x402 Docs](https://x402.gitbook.io/x402)**
 
 ⭐ Star this repo if you find it useful!
 
