@@ -88,7 +88,7 @@ export default function Comparison() {
         <div className="max-w-4xl mx-auto">
           <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 backdrop-blur-md">
             <h3 className="text-3xl font-bold text-white mb-8 text-center">
-              Everything You Need. Nothing You Don't.
+              Everything You Need. Nothing You Don&apos;t.
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex items-start gap-3">
