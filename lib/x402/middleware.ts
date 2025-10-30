@@ -12,7 +12,10 @@ export async function verifyPayment(
   paymentHeader: string | null,
   expectedAmount: string
 ): Promise<PaymentVerificationResult> {
+  console.log('[x402] Verifying payment...', { expectedAmount, nodeEnv: process.env.NODE_ENV });
+  
   if (!paymentHeader) {
+    console.log('[x402] No payment header provided');
     return {
       valid: false,
       error: 'No payment provided',
@@ -22,9 +25,19 @@ export async function verifyPayment(
   try {
     // Parse payment payload
     const payment: SolanaPaymentPayload = JSON.parse(paymentHeader);
+    console.log('[x402] Payment payload:', { 
+      from: payment.from, 
+      to: payment.to, 
+      amount: payment.amount,
+      expectedTo: PAYMENT_CONFIG.walletAddress 
+    });
 
     // Basic validation
     if (payment.to !== PAYMENT_CONFIG.walletAddress) {
+      console.log('[x402] Recipient mismatch:', { 
+        received: payment.to, 
+        expected: PAYMENT_CONFIG.walletAddress 
+      });
       return {
         valid: false,
         error: 'Invalid recipient address',
@@ -58,6 +71,7 @@ export async function verifyPayment(
 
     // In production, verify signature
     const isTestMode = process.env.NODE_ENV !== 'production';
+    console.log('[x402] Test mode:', isTestMode);
     
     if (!isTestMode) {
       try {
@@ -99,11 +113,13 @@ export async function verifyPayment(
     }
 
     // Test mode - simulate successful verification
+    console.log('[x402] Test mode - accepting payment');
     return {
       valid: true,
       signature: payment.signature || bs58.encode(Buffer.from(Array(64).fill(0))),
     };
   } catch (error) {
+    console.log('[x402] Payment verification error:', error);
     return {
       valid: false,
       error: error instanceof Error ? error.message : 'Payment verification failed',
@@ -165,13 +181,17 @@ export function withX402Payment(
 
     // Verify payment
     const verification = await verifyPayment(paymentHeader, endpointPrice);
+    console.log('[x402] Verification result:', verification);
 
     if (!verification.valid) {
+      console.log('[x402] Payment verification failed:', verification.error);
       return NextResponse.json(
         { error: verification.error || 'Payment verification failed' },
         { status: 402 }
       );
     }
+
+    console.log('[x402] Payment verified successfully!');
 
     // Payment valid - proceed with request
     const response = await handler(req);
