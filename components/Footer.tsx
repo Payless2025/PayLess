@@ -28,7 +28,7 @@ export default function Footer() {
                 <Github className="w-5 h-5 text-gray-700" />
               </a>
               <a
-                href="https://twitter.com/paylesstoken"
+                href="https://x.com/paylessnetwork"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -77,7 +77,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://x402.gitbook.io/x402"
+                  href="https://payless.gitbook.io/payless-documentation"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-purple-600 transition-colors inline-flex items-center gap-1"
