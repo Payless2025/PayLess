@@ -1,79 +1,49 @@
 'use client';
 
-import { Check, X, ExternalLink } from 'lucide-react';
+import { Zap, DollarSign, Rocket, Code, Lock, Globe } from 'lucide-react';
 
-const comparisonData = [
+const strengths = [
   {
-    feature: 'Best For',
-    payless: 'Developers monetizing any API',
-    payai: 'AI agent marketplaces',
-    highlight: true,
+    icon: Zap,
+    title: 'Lightning Setup',
+    description: 'One line of code. 5 minutes to production.',
+    color: 'text-yellow-400',
+    bgColor: 'bg-yellow-500/10',
   },
   {
-    feature: 'Setup Time',
-    payless: 'One line of code, < 5 minutes',
-    payai: 'Full SDK integration',
-    highlight: true,
+    icon: DollarSign,
+    title: 'Keep 100%',
+    description: 'Zero protocol fees. Every dollar is yours.',
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/10',
   },
   {
-    feature: 'Deployment',
-    payless: '100% serverless - deploy anywhere',
-    payai: 'Requires infrastructure setup',
-    highlight: true,
+    icon: Rocket,
+    title: 'True Serverless',
+    description: 'Deploy anywhere. Scales automatically.',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/10',
   },
   {
-    feature: 'Protocol Fees',
-    payless: '0% - Keep 100% of your revenue',
-    payai: 'Platform fees',
-    highlight: true,
+    icon: Code,
+    title: 'Fully Open Source',
+    description: 'MIT license. Fork, modify, own it.',
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10',
   },
   {
-    feature: 'Open Source',
-    payless: 'Fully open source - MIT license',
-    payai: 'Partially open source',
-    highlight: true,
+    icon: Lock,
+    title: 'Privacy First',
+    description: 'No accounts, emails, or OAuth required.',
+    color: 'text-red-400',
+    bgColor: 'bg-red-500/10',
   },
   {
-    feature: 'Flexibility',
-    payless: 'Set any price, any API endpoint',
-    payai: 'Marketplace-based',
-    highlight: true,
-  },
-  {
-    feature: 'Payment Speed',
-    payless: 'Instant (< 2 seconds)',
-    payai: 'Instant',
-    highlight: false,
-  },
-  {
-    feature: 'Blockchain',
-    payless: 'Solana (x402 protocol)',
-    payai: 'Solana-first, multi-network',
-    highlight: false,
-  },
-  {
-    feature: 'Minimum Payment',
-    payless: '$0.01 USDC',
-    payai: '$0.01',
-    highlight: false,
-  },
-  {
-    feature: 'Developer Experience',
-    payless: 'Zero config, works out of box',
-    payai: 'Rich ecosystem & plugins',
-    highlight: true,
-  },
-  {
-    feature: 'Testing',
-    payless: 'Built-in playground for all endpoints',
-    payai: 'Echo merchant testing',
-    highlight: false,
-  },
-  {
-    feature: 'Use Cases',
-    payless: 'Any paid API or service',
-    payai: 'AI agent hiring, CT monetization',
-    highlight: false,
+    icon: Globe,
+    title: 'Any Use Case',
+    description: 'Monetize any API or service. No restrictions.',
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10',
   },
 ];
 
@@ -84,159 +54,83 @@ export default function Comparison() {
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/20 backdrop-blur-md border border-purple-500/30 mb-6">
-            <span className="text-sm text-purple-300 font-medium">Comparison</span>
+            <span className="text-sm text-purple-300 font-medium">Our Strengths</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Why Choose Payless?
+            Why Developers Choose Payless
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-            We're not the only x402 solution—PayAI is excellent for AI agent marketplaces.
-            But if you want the simplest API monetization with zero fees, Payless is built for you.
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            The simplest way to monetize your APIs. Zero fees, zero complexity, zero compromises.
           </p>
-          <a 
-            href="https://payai.network/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors"
-          >
-            Visit PayAI
-            <ExternalLink className="w-4 h-4" />
-          </a>
         </div>
 
-        {/* Comparison Table */}
-        <div className="overflow-x-auto">
-          <div className="inline-block min-w-full align-middle">
-            <div className="overflow-hidden rounded-2xl border border-white/10">
-              <table className="min-w-full divide-y divide-white/10">
-                <thead className="bg-white/5">
-                  <tr>
-                    <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
-                      Feature
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-white">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">💰</span>
-                        Payless
-                      </div>
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">🤖</span>
-                        PayAI
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10">
-                  {comparisonData.map((row, index) => (
-                    <tr 
-                      key={index}
-                      className="hover:bg-white/5 transition-colors"
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-white whitespace-nowrap">
-                        {row.feature}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        <div className="flex items-start gap-2">
-                          {row.highlight && (
-                            <span className="text-lg flex-shrink-0">⭐</span>
-                          )}
-                          <span className={row.highlight ? 'text-white font-medium' : ''}>
-                            {row.payless}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        {row.payai}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* Strengths Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          {strengths.map((strength, index) => (
+            <div
+              key={index}
+              className="p-8 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all duration-300 transform hover:-translate-y-2"
+            >
+              <div className={`inline-flex p-4 rounded-xl ${strength.bgColor} mb-6`}>
+                <strength.icon className={`w-8 h-8 ${strength.color}`} />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">
+                {strength.title}
+              </h3>
+              <p className="text-gray-300 text-lg">
+                {strength.description}
+              </p>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Bottom Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16">
-          {/* Payless Card */}
+        {/* Key Features List */}
+        <div className="max-w-4xl mx-auto">
           <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 backdrop-blur-md">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl">💰</span>
-              <h3 className="text-2xl font-bold text-white">Payless Strengths</h3>
-            </div>
-            <p className="text-gray-300 mb-6">
-              Built for developers who value simplicity, speed, and freedom.
-            </p>
-            <div className="space-y-3">
+            <h3 className="text-3xl font-bold text-white mb-8 text-center">
+              Everything You Need. Nothing You Don't.
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">⚡</span>
+                <span className="text-2xl">⚡</span>
                 <div>
-                  <div className="text-white font-medium">Lightning Setup</div>
-                  <div className="text-sm text-gray-400">One line of code. 5 minutes to production.</div>
+                  <div className="text-white font-semibold text-lg">Instant Settlement</div>
+                  <div className="text-gray-300">Money in your wallet in 2 seconds</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">💯</span>
+                <span className="text-2xl">💵</span>
                 <div>
-                  <div className="text-white font-medium">Keep 100%</div>
-                  <div className="text-sm text-gray-400">Zero protocol fees. Every dollar is yours.</div>
+                  <div className="text-white font-semibold text-lg">True Micropayments</div>
+                  <div className="text-gray-300">Accept payments as low as $0.01</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">🚀</span>
+                <span className="text-2xl">🔐</span>
                 <div>
-                  <div className="text-white font-medium">True Serverless</div>
-                  <div className="text-sm text-gray-400">Deploy anywhere. Scales automatically.</div>
+                  <div className="text-white font-semibold text-lg">No Accounts Needed</div>
+                  <div className="text-gray-300">Users pay anonymously, no signup</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">🔓</span>
+                <span className="text-2xl">🤖</span>
                 <div>
-                  <div className="text-white font-medium">Fully Open Source</div>
-                  <div className="text-sm text-gray-400">MIT license. Fork, modify, own it.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* PayAI Card */}
-          <div className="p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl">🤖</span>
-              <h3 className="text-2xl font-bold text-white">When to Use PayAI</h3>
-            </div>
-            <p className="text-gray-300 mb-6">
-              PayAI excels at specialized AI agent use cases with rich marketplace features.
-            </p>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">🤖</span>
-                <div>
-                  <div className="text-white font-medium">AI Agent Marketplaces</div>
-                  <div className="text-sm text-gray-400">Built-in hiring & collaboration features</div>
+                  <div className="text-white font-semibold text-lg">AI Agent Ready</div>
+                  <div className="text-gray-300">Perfect for autonomous payments</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">🐦</span>
+                <span className="text-2xl">📊</span>
                 <div>
-                  <div className="text-white font-medium">CT Content Monetization</div>
-                  <div className="text-sm text-gray-400">Turn crypto Twitter agents into revenue</div>
+                  <div className="text-white font-semibold text-lg">Built-in Playground</div>
+                  <div className="text-gray-300">Test all endpoints without coding</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">🌐</span>
+                <span className="text-2xl">🌐</span>
                 <div>
-                  <div className="text-white font-medium">Multi-Network Support</div>
-                  <div className="text-sm text-gray-400">Solana-first with expanding networks</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">🛠️</span>
-                <div>
-                  <div className="text-white font-medium">Rich Ecosystem</div>
-                  <div className="text-sm text-gray-400">SDKs, plugins, and integrations</div>
+                  <div className="text-white font-semibold text-lg">Works Everywhere</div>
+                  <div className="text-gray-300">x402 protocol, blockchain agnostic</div>
                 </div>
               </div>
             </div>
@@ -245,29 +139,16 @@ export default function Comparison() {
 
         {/* Bottom CTA */}
         <div className="text-center mt-16">
-          <p className="text-xl text-gray-300 mb-2">
-            Both platforms use x402 protocol for instant, blockchain-based payments.
+          <p className="text-xl text-gray-300 mb-8">
+            Start monetizing your APIs in minutes, not days.
           </p>
-          <p className="text-gray-400 mb-8">
-            Choose Payless for simplest API monetization. Choose PayAI for AI agent marketplaces.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="/playground"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg"
-            >
-              Try Payless Demo
-            </a>
-            <a
-              href="https://payai.network/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-md text-white rounded-lg font-semibold hover:bg-white/20 transition-all border border-white/20"
-            >
-              Visit PayAI
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
+          <a
+            href="/playground"
+            className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-lg rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-2xl"
+          >
+            Try Payless Demo Now
+            <Zap className="w-6 h-6" />
+          </a>
         </div>
       </div>
     </section>
