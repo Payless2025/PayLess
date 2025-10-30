@@ -2,13 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "WALLET_ADDRESS": "@wallet_address",
-    "FACILITATOR_URL": "@facilitator_url",
-    "NETWORK": "@network",
-    "RPC_URL": "@rpc_url",
-    "USDC_MINT": "@usdc_mint"
-  }
+  "regions": ["iad1"]
 }
 
