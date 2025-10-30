@@ -18,12 +18,35 @@ export default function Footer() {
             <p className="text-gray-600 mb-4 max-w-md">
               Serverless payment platform powered by x402 protocol. Accept crypto payments without accounts, subscriptions, or complexity.
             </p>
+            
+            {/* Contract Address */}
+            <div className="mb-4">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Contract Address (CA)</h4>
+              <div className="flex items-center gap-2 p-3 bg-purple-50 border border-purple-100 rounded-lg max-w-md">
+                <code className="text-xs text-purple-700 font-mono break-all flex-1">
+                  TBA - Coming Soon
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText('TBA');
+                  }}
+                  className="p-1.5 rounded bg-purple-100 hover:bg-purple-200 transition-colors flex-shrink-0"
+                  title="Copy Contract Address"
+                >
+                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
             <div className="flex gap-4">
               <a
                 href="https://github.com/Payless2025/PayLess"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                aria-label="GitHub"
               >
                 <Github className="w-5 h-5 text-gray-700" />
               </a>
@@ -32,6 +55,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                aria-label="X (Twitter)"
               >
                 <Twitter className="w-5 h-5 text-gray-700" />
               </a>
