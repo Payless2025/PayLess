@@ -1,20 +1,30 @@
 # Payless Logo Usage Guide
 
-## Logo Files
+## Logo Files (Recommended - PNG with Transparency)
 
-### Primary Logo (White Background)
+### Horizontal Logo ⭐ PRIMARY
+- **File:** `logo-horizontal.png`
+- **Format:** PNG with transparent background
+- **Use for:** Website header, hero section, navbar, wide formats
+- **Layout:** Icon left + "PAYLESS" text right
+- **Best for:** Headers, banners, horizontal spaces
+
+### Vertical Logo
+- **File:** `logo-vertical.png`
+- **Format:** PNG with transparent background
+- **Use for:** Favicon, app icons, social media profile, square formats
+- **Layout:** Icon top + "PAYLESS" text bottom
+- **Best for:** Square spaces, icons, avatars
+
+## Legacy Logo Files (JPEG)
+
+### White Background Logo
 - **File:** `logo.jpeg`
-- **Use for:** Website, documentation, light backgrounds
-- **Background:** White/light colors
-- **Icon Color:** Purple gradient (#9333EA)
-- **Text Color:** Gray
+- **Use for:** Print materials requiring white background
 
 ### Dark Background Logo
 - **File:** `logo-dark-bg.jpeg`
-- **Use for:** Social media, app icons, dark themes
-- **Background:** Dark navy/purple
-- **Icon Color:** Purple gradient
-- **Text Color:** Gray
+- **Use for:** Print materials requiring dark background
 
 ## Design Specifications
 
@@ -61,11 +71,15 @@ Background:  #FFFFFF (white) or #1E1B4B (dark navy)
 
 ## Export Formats
 
-Current: JPEG ✅
-Needed:
-- [ ] PNG with transparency
-- [ ] SVG (vector)
-- [ ] Favicon (ICO)
+Current:
+- ✅ PNG with transparency (horizontal & vertical)
+- ✅ JPEG with backgrounds (white & dark)
+
+Recommended to create:
+- [ ] SVG (vector format for infinite scaling)
+- [ ] Favicon (32x32px ICO)
+- [ ] Apple Touch Icon (180x180px)
+- [ ] Social Media sizes (512x512, 1200x630)
 
 ## Integration
 

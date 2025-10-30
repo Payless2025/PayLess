@@ -19,9 +19,9 @@ export default function Hero() {
         <div className="mb-8">
           <div className="mb-4">
             <img 
-              src="/assets/logo.jpeg" 
+              src="/assets/logo-vertical.png" 
               alt="Payless Logo" 
-              className="h-32 md:h-40 mx-auto"
+              className="h-40 md:h-48 mx-auto"
             />
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 border border-purple-100">
