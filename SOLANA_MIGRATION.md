@@ -118,7 +118,7 @@ NETWORK=base
 RPC_URL=https://mainnet.base.org
 
 # NEW (Solana)
-WALLET_ADDRESS=7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 NETWORK=mainnet-beta
 RPC_URL=https://api.mainnet-beta.solana.com
 USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v

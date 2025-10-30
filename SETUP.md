@@ -37,7 +37,7 @@ Edit the `.env` file with your wallet details:
 
 ```env
 # Your wallet address to receive payments
-WALLET_ADDRESS=0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
 
 # x402 Facilitator URL (use Coinbase's or run your own)
 FACILITATOR_URL=https://facilitator.x402.org
