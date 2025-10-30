@@ -5,7 +5,7 @@ import { ArrowRight, Zap, Shield, Globe } from 'lucide-react';
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white pt-16">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute inset-0" style={{
