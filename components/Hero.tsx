@@ -17,9 +17,13 @@ export default function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 text-center">
         {/* Logo/Brand */}
         <div className="mb-8">
-          <h1 className="text-6xl md:text-8xl font-bold text-gray-900 mb-3 tracking-tight">
-            💰 Payless
-          </h1>
+          <div className="mb-4">
+            <img 
+              src="/assets/logo.jpeg" 
+              alt="Payless Logo" 
+              className="h-32 md:h-40 mx-auto"
+            />
+          </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 border border-purple-100">
             <Zap className="w-4 h-4 text-purple-600" />
             <span className="text-sm text-purple-700 font-medium">Powered by x402 on Solana</span>
