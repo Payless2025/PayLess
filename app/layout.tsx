@@ -5,9 +5,9 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Payless - Serverless x402 Payment Platform',
-  description: 'Accept crypto payments with x402 protocol. No accounts, no subscriptions, just pay and use.',
-  keywords: 'x402, crypto payments, USDC, micropayments, serverless, blockchain',
+  title: 'Payless - Accept Crypto Payments Without Accounts | x402 on Solana',
+  description: 'Payless: The simplest way to monetize APIs with crypto. Built on x402 protocol for Solana. Zero fees, instant settlements, one line of code. Perfect for developers and AI agents.',
+  keywords: 'payless, x402, crypto payments, solana, USDC, micropayments, serverless, blockchain, API monetization, AI agent payments, no accounts',
 }
 
 export default function RootLayout({
