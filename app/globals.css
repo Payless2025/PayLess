@@ -4,7 +4,7 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 255, 255, 255;
+  --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
 }
 
@@ -26,26 +26,18 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Wallet Adapter Dropdown Fix */
+.wallet-adapter-button-wrapper {
+  position: relative;
+  z-index: 100;
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Ensure wallet adapter modals and dropdowns are above everything */
+.wallet-adapter-modal-wrapper,
+.wallet-adapter-dropdown {
+  z-index: 9999 !important;
 }
 
-.gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.wallet-adapter-dropdown-list {
+  z-index: 10000 !important;
 }
-
-.glass-effect {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
