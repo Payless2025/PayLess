@@ -218,3 +218,163 @@ export function isValidSolanaAddress(address: string): boolean {
     return false;
   }
 }
+
+/**
+ * Payment Confirmation Utilities
+ */
+
+export interface PaymentConfirmationStatus {
+  confirmed: boolean;
+  message: string;
+  confirmation?: any;
+}
+
+/**
+ * Check if a payment was confirmed by signature
+ */
+export async function checkPaymentConfirmation(
+  signature: string,
+  walletAddress?: string
+): Promise<PaymentConfirmationStatus> {
+  try {
+    const response = await fetch('/api/payment/confirm', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        signature,
+        walletAddress,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to check payment confirmation');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[Payment Confirmation] Error checking payment:', error);
+    return {
+      confirmed: false,
+      message: 'Error checking payment confirmation',
+    };
+  }
+}
+
+/**
+ * Check if a payment was confirmed by nonce
+ */
+export async function checkPaymentConfirmationByNonce(
+  nonce: string,
+  walletAddress?: string
+): Promise<PaymentConfirmationStatus> {
+  try {
+    const response = await fetch('/api/payment/confirm', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        nonce,
+        walletAddress,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to check payment confirmation');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[Payment Confirmation] Error checking payment:', error);
+    return {
+      confirmed: false,
+      message: 'Error checking payment confirmation',
+    };
+  }
+}
+
+/**
+ * Get payment history for a wallet
+ */
+export async function getPaymentHistory(
+  walletAddress: string,
+  options?: {
+    startDate?: number;
+    endDate?: number;
+    limit?: number;
+  }
+): Promise<any> {
+  try {
+    const params = new URLSearchParams({
+      walletAddress,
+      ...(options?.startDate && { startDate: options.startDate.toString() }),
+      ...(options?.endDate && { endDate: options.endDate.toString() }),
+      ...(options?.limit && { limit: options.limit.toString() }),
+    });
+
+    const response = await fetch(`/api/payment/confirm?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error('Failed to get payment history');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[Payment History] Error:', error);
+    return {
+      confirmations: [],
+      total: 0,
+      hasMore: false,
+      error: 'Failed to fetch payment history',
+    };
+  }
+}
+
+/**
+ * Monitor payment confirmation with polling
+ */
+export async function monitorPaymentConfirmation(
+  nonce: string,
+  options?: {
+    timeout?: number; // Maximum time to wait in ms (default: 60000 - 1 minute)
+    interval?: number; // Polling interval in ms (default: 2000 - 2 seconds)
+    onUpdate?: (confirmed: boolean, attempts: number) => void;
+  }
+): Promise<PaymentConfirmationStatus> {
+  const timeout = options?.timeout || 60000; // 1 minute
+  const interval = options?.interval || 2000; // 2 seconds
+  const startTime = Date.now();
+  let attempts = 0;
+
+  return new Promise((resolve) => {
+    const checkStatus = async () => {
+      attempts++;
+      const status = await checkPaymentConfirmationByNonce(nonce);
+
+      if (options?.onUpdate) {
+        options.onUpdate(status.confirmed, attempts);
+      }
+
+      if (status.confirmed) {
+        resolve(status);
+        return;
+      }
+
+      // Check if timeout reached
+      if (Date.now() - startTime >= timeout) {
+        resolve({
+          confirmed: false,
+          message: 'Payment confirmation timeout',
+        });
+        return;
+      }
+
+      // Continue polling
+      setTimeout(checkStatus, interval);
+    };
+
+    checkStatus();
+  });
+}

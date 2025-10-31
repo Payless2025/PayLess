@@ -4,7 +4,7 @@ import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import { PaymentVerificationResult, X402Response, SolanaPaymentPayload } from './types';
 import { PAYMENT_CONFIG, ENDPOINT_PRICING, FREE_ENDPOINTS } from './config';
-import { trackApiRequest } from './analytics';
+import { trackApiRequest, analyticsStore } from './analytics';
 
 /**
  * Verify Solana payment signature
@@ -279,6 +279,30 @@ export function withX402Payment(
 
       console.log('[x402] Payment verified successfully!');
       paymentValid = true;
+
+      // Store payment confirmation
+      try {
+        const payment: SolanaPaymentPayload = JSON.parse(paymentHeader);
+        const confirmation = analyticsStore.addConfirmation({
+          paymentSignature: verification.signature || payment.signature,
+          nonce: payment.nonce,
+          walletAddress: payment.from,
+          recipient: payment.to,
+          amount: payment.amount,
+          token: payment.token,
+          tokenMint: payment.tokenMint,
+          endpoint: pathname,
+          status: 'confirmed',
+          metadata: {
+            userAgent,
+            method,
+            responseTime: Date.now() - startTime,
+          },
+        });
+        console.log('[x402] Payment confirmation stored:', confirmation.id);
+      } catch (error) {
+        console.error('[x402] Failed to store payment confirmation:', error);
+      }
 
       // Payment valid - proceed with request
       const response = await handler(req);
