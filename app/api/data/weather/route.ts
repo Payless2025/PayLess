@@ -1,27 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withX402Payment } from '@/lib/x402/middleware';
+import axios from 'axios';
+
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const OPENWEATHER_API = 'https://api.openweathermap.org/data/2.5';
 
 async function handler(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const city = searchParams.get('city') || 'San Francisco';
+  try {
+    const { searchParams } = new URL(req.url);
+    const city = searchParams.get('city') || 'San Francisco';
 
-  // Simulate weather data (in production, call real weather API)
-  const weatherData = {
-    city,
-    temperature: Math.floor(Math.random() * 30) + 10,
-    condition: ['Sunny', 'Cloudy', 'Rainy', 'Windy'][Math.floor(Math.random() * 4)],
-    humidity: Math.floor(Math.random() * 100),
-    windSpeed: Math.floor(Math.random() * 50),
-    timestamp: new Date().toISOString(),
-  };
+    // If no API key, return mock data
+    if (!OPENWEATHER_API_KEY) {
+      console.warn('OpenWeatherMap API key not set, using mock data');
+      return NextResponse.json({
+        success: true,
+        data: {
+          city,
+          temperature: 72,
+          condition: 'Partly Cloudy',
+          humidity: 65,
+          windSpeed: 10,
+          timestamp: new Date().toISOString(),
+          source: 'Mock Data (Set OPENWEATHER_API_KEY for real data)',
+        },
+      });
+    }
 
-  await new Promise(resolve => setTimeout(resolve, 500));
+    // Fetch real weather data from OpenWeatherMap
+    const response = await axios.get(`${OPENWEATHER_API}/weather`, {
+      params: {
+        q: city,
+        appid: OPENWEATHER_API_KEY,
+        units: 'metric',
+      },
+      timeout: 10000,
+    });
 
-  return NextResponse.json({
-    success: true,
-    data: weatherData,
-  });
+    const data = response.data;
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        city: data.name,
+        country: data.sys.country,
+        temperature: Math.round((data.main.temp * 9/5) + 32), // Convert to Fahrenheit
+        temperatureC: Math.round(data.main.temp),
+        condition: data.weather[0].main,
+        description: data.weather[0].description,
+        humidity: data.main.humidity,
+        windSpeed: Math.round(data.wind.speed * 2.237), // Convert m/s to mph
+        icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
+        timestamp: new Date().toISOString(),
+        source: 'OpenWeatherMap API',
+      },
+    });
+  } catch (error) {
+    console.error('Weather API error:', error);
+    
+    // Return fallback data
+    return NextResponse.json({
+      success: true,
+      data: {
+        city: 'San Francisco',
+        temperature: 68,
+        condition: 'Clear',
+        humidity: 60,
+        windSpeed: 8,
+        timestamp: new Date().toISOString(),
+        source: 'Fallback (API unavailable)',
+      },
+    });
+  }
 }
 
 export const GET = withX402Payment(handler);
-
