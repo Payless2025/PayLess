@@ -2,7 +2,7 @@
 
 Welcome to Payless - the simplest way to monetize your APIs with crypto payments.
 
-**Contract Address (CA):** `3YMa9aj5gfxvbYaCEascAGRpu1GoA8xPZBFhCycapump`
+**Contract Address (CA):** `FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump`
 
 ## What is Payless?
 
