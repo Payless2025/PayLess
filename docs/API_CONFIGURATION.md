@@ -10,7 +10,7 @@ Payless supports real API integrations for all endpoints. This guide shows you h
 
 ## 📝 Environment Variables
 
-Create `/Users/hakkioz/Desktop/Payless/.env.local`:
+Create `/Users/defaultUser/Desktop/Payless/.env.local`:
 
 ```bash
 # Wallet Addresses (Required for payments)
