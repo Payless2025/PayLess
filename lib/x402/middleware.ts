@@ -4,6 +4,7 @@ import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import { PaymentVerificationResult, X402Response, SolanaPaymentPayload } from './types';
 import { PAYMENT_CONFIG, ENDPOINT_PRICING, FREE_ENDPOINTS } from './config';
+import { trackApiRequest } from './analytics';
 
 /**
  * Verify Solana payment signature
@@ -156,53 +157,174 @@ export function withX402Payment(
   price?: string
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
+    const startTime = Date.now();
     const pathname = new URL(req.url).pathname;
+    const method = req.method;
+    const userAgent = req.headers.get('user-agent') || undefined;
 
-    // Check if endpoint is free
-    if (FREE_ENDPOINTS.includes(pathname)) {
-      return handler(req);
+    let walletAddress: string | undefined;
+    let paymentAmount: string | undefined;
+    let paymentProvided = false;
+    let paymentValid = false;
+    let responseStatus = 200;
+    let errorMessage: string | undefined;
+
+    try {
+      // Check if endpoint is free
+      if (FREE_ENDPOINTS.includes(pathname)) {
+        const response = await handler(req);
+        responseStatus = response.status;
+        
+        // Track free endpoint usage
+        trackApiRequest({
+          endpoint: pathname,
+          method,
+          status: responseStatus,
+          paymentRequired: false,
+          paymentProvided: false,
+          paymentValid: false,
+          responseTime: Date.now() - startTime,
+          userAgent,
+        });
+        
+        return response;
+      }
+
+      // Get price for endpoint
+      const endpointPrice = price || ENDPOINT_PRICING[pathname];
+      
+      if (!endpointPrice) {
+        responseStatus = 500;
+        errorMessage = 'Endpoint not configured';
+        
+        trackApiRequest({
+          endpoint: pathname,
+          method,
+          status: responseStatus,
+          paymentRequired: true,
+          paymentProvided: false,
+          paymentValid: false,
+          responseTime: Date.now() - startTime,
+          userAgent,
+          error: errorMessage,
+        });
+        
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 500 }
+        );
+      }
+
+      paymentAmount = endpointPrice;
+
+      // Check for payment header
+      const paymentHeader = req.headers.get('x-payment');
+
+      if (!paymentHeader) {
+        responseStatus = 402;
+        
+        trackApiRequest({
+          endpoint: pathname,
+          method,
+          status: responseStatus,
+          paymentRequired: true,
+          paymentProvided: false,
+          paymentValid: false,
+          amount: paymentAmount,
+          responseTime: Date.now() - startTime,
+          userAgent,
+        });
+        
+        return create402Response(endpointPrice);
+      }
+
+      paymentProvided = true;
+
+      // Extract wallet address from payment
+      try {
+        const payment: SolanaPaymentPayload = JSON.parse(paymentHeader);
+        walletAddress = payment.from;
+      } catch (e) {
+        // Ignore parsing errors for analytics
+      }
+
+      // Verify payment
+      const verification = await verifyPayment(paymentHeader, endpointPrice);
+      console.log('[x402] Verification result:', verification);
+
+      if (!verification.valid) {
+        console.log('[x402] Payment verification failed:', verification.error);
+        responseStatus = 402;
+        errorMessage = verification.error;
+        
+        trackApiRequest({
+          endpoint: pathname,
+          method,
+          status: responseStatus,
+          paymentRequired: true,
+          paymentProvided: true,
+          paymentValid: false,
+          amount: paymentAmount,
+          walletAddress,
+          responseTime: Date.now() - startTime,
+          userAgent,
+          error: errorMessage,
+        });
+        
+        return NextResponse.json(
+          { error: verification.error || 'Payment verification failed' },
+          { status: 402 }
+        );
+      }
+
+      console.log('[x402] Payment verified successfully!');
+      paymentValid = true;
+
+      // Payment valid - proceed with request
+      const response = await handler(req);
+      responseStatus = response.status;
+      
+      // Add payment confirmation header
+      if (verification.signature) {
+        response.headers.set('x-payment-confirmed', verification.signature);
+      }
+
+      // Track successful payment
+      trackApiRequest({
+        endpoint: pathname,
+        method,
+        status: responseStatus,
+        paymentRequired: true,
+        paymentProvided: true,
+        paymentValid: true,
+        amount: paymentAmount,
+        walletAddress,
+        responseTime: Date.now() - startTime,
+        userAgent,
+      });
+
+      return response;
+    } catch (error) {
+      // Track unexpected errors
+      responseStatus = 500;
+      errorMessage = error instanceof Error ? error.message : 'Internal server error';
+      
+      trackApiRequest({
+        endpoint: pathname,
+        method,
+        status: responseStatus,
+        paymentRequired: true,
+        paymentProvided,
+        paymentValid,
+        amount: paymentAmount,
+        walletAddress,
+        responseTime: Date.now() - startTime,
+        userAgent,
+        error: errorMessage,
+      });
+      
+      throw error;
     }
-
-    // Get price for endpoint
-    const endpointPrice = price || ENDPOINT_PRICING[pathname];
-    
-    if (!endpointPrice) {
-      return NextResponse.json(
-        { error: 'Endpoint not configured' },
-        { status: 500 }
-      );
-    }
-
-    // Check for payment header
-    const paymentHeader = req.headers.get('x-payment');
-
-    if (!paymentHeader) {
-      return create402Response(endpointPrice);
-    }
-
-    // Verify payment
-    const verification = await verifyPayment(paymentHeader, endpointPrice);
-    console.log('[x402] Verification result:', verification);
-
-    if (!verification.valid) {
-      console.log('[x402] Payment verification failed:', verification.error);
-      return NextResponse.json(
-        { error: verification.error || 'Payment verification failed' },
-        { status: 402 }
-      );
-    }
-
-    console.log('[x402] Payment verified successfully!');
-
-    // Payment valid - proceed with request
-    const response = await handler(req);
-    
-    // Add payment confirmation header
-    if (verification.signature) {
-      response.headers.set('x-payment-confirmed', verification.signature);
-    }
-
-    return response;
   };
 }
 
