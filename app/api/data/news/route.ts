@@ -1,69 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withX402Payment } from '@/lib/x402/middleware';
+import axios from 'axios';
+
+const NEWSAPI_KEY = process.env.NEWSAPI_KEY;
+const NEWSAPI_URL = 'https://newsapi.org/v2';
+
+const MOCK_NEWS = [
+  {
+    title: 'Bitcoin Surges Past $50,000 as Institutional Investment Grows',
+    description: 'Major financial institutions are increasing their cryptocurrency holdings, driving Bitcoin to new heights.',
+    url: 'https://example.com/news/bitcoin-surge',
+    source: 'Crypto News Daily',
+    publishedAt: new Date().toISOString(),
+  },
+  {
+    title: 'AI Startup Raises $100M in Series B Funding',
+    description: 'Revolutionary AI company secures major funding round to expand operations and accelerate product development.',
+    url: 'https://example.com/news/ai-funding',
+    source: 'Tech Crunch',
+    publishedAt: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    title: 'New Study Shows Remote Work Increases Productivity by 20%',
+    description: 'Comprehensive research reveals significant productivity gains for remote workers across various industries.',
+    url: 'https://example.com/news/remote-work',
+    source: 'Business Insider',
+    publishedAt: new Date(Date.now() - 7200000).toISOString(),
+  },
+];
 
 async function handler(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const category = searchParams.get('category') || 'technology';
-  const limit = parseInt(searchParams.get('limit') || '5');
+  try {
+    const { searchParams } = new URL(req.url);
+    const category = searchParams.get('category') || 'technology';
+    const limit = parseInt(searchParams.get('limit') || '5');
 
-  // Simulate news data (in production, call NewsAPI/RSS feeds/etc)
-  const newsTemplates = [
-    {
-      title: 'Breakthrough in AI Technology Announced',
-      description: 'Major tech companies reveal significant advances in artificial intelligence capabilities.',
-      source: 'Tech Daily',
-      category: 'technology',
-    },
-    {
-      title: 'Cryptocurrency Market Shows Strong Growth',
-      description: 'Digital assets continue to gain mainstream adoption with institutional investors.',
-      source: 'Crypto News',
-      category: 'crypto',
-    },
-    {
-      title: 'Global Markets React to Economic Data',
-      description: 'Stock markets worldwide respond to latest economic indicators and policy changes.',
-      source: 'Financial Times',
-      category: 'business',
-    },
-    {
-      title: 'New Scientific Discovery Promises Medical Advances',
-      description: 'Researchers make breakthrough that could lead to new treatments for diseases.',
-      source: 'Science Today',
-      category: 'science',
-    },
-    {
-      title: 'Blockchain Technology Adoption Accelerates',
-      description: 'More industries explore decentralized solutions for transparency and efficiency.',
-      source: 'Blockchain Weekly',
-      category: 'technology',
-    },
-  ];
+    // If no API key, return mock data
+    if (!NEWSAPI_KEY) {
+      console.warn('NewsAPI key not set, using mock data');
+      return NextResponse.json({
+        success: true,
+        data: {
+          category,
+          articles: MOCK_NEWS.slice(0, limit),
+          total: MOCK_NEWS.length,
+          timestamp: new Date().toISOString(),
+          source: 'Mock Data (Set NEWSAPI_KEY for real news)',
+        },
+      });
+    }
 
-  const filteredNews = newsTemplates
-    .filter(news => category === 'all' || news.category === category)
-    .slice(0, limit)
-    .map((news, index) => ({
-      ...news,
-      id: `news-${Date.now()}-${index}`,
-      url: `https://news.example.com/article/${index}`,
-      publishedAt: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-      author: `Reporter ${index + 1}`,
+    // Fetch real news from NewsAPI
+    const response = await axios.get(`${NEWSAPI_URL}/top-headlines`, {
+      params: {
+        category,
+        language: 'en',
+        pageSize: limit,
+        apiKey: NEWSAPI_KEY,
+      },
+      timeout: 10000,
+    });
+
+    const articles = response.data.articles.map((article: any) => ({
+      title: article.title,
+      description: article.description,
+      url: article.url,
+      source: article.source.name,
+      author: article.author,
+      publishedAt: article.publishedAt,
+      image: article.urlToImage,
     }));
 
-  // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 700));
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      articles: filteredNews,
-      category,
-      totalResults: filteredNews.length,
-      timestamp: new Date().toISOString(),
-    },
-  });
+    return NextResponse.json({
+      success: true,
+      data: {
+        category,
+        articles,
+        total: response.data.totalResults,
+        timestamp: new Date().toISOString(),
+        source: 'NewsAPI',
+      },
+    });
+  } catch (error) {
+    console.error('News API error:', error);
+    
+    // Return mock data as fallback
+    return NextResponse.json({
+      success: true,
+      data: {
+        category: 'technology',
+        articles: MOCK_NEWS.slice(0, 3),
+        total: MOCK_NEWS.length,
+        timestamp: new Date().toISOString(),
+        source: 'Fallback (API unavailable)',
+      },
+    });
+  }
 }
 
 export const GET = withX402Payment(handler);
-
