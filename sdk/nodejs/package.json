@@ -1,0 +1,48 @@
+{
+  "name": "@payless/sdk",
+  "version": "1.0.0",
+  "description": "Official Payless SDK for Node.js - Accept crypto payments with x402 protocol",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "jest"
+  },
+  "keywords": [
+    "payless",
+    "x402",
+    "crypto",
+    "payments",
+    "solana",
+    "usdc",
+    "blockchain",
+    "micropayments",
+    "api"
+  ],
+  "author": "Payless",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Payless2025/PayLess.git",
+    "directory": "sdk/nodejs"
+  },
+  "bugs": {
+    "url": "https://github.com/Payless2025/PayLess/issues"
+  },
+  "homepage": "https://payless.com",
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "bs58": "^5.0.0",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}
+
