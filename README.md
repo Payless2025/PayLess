@@ -9,7 +9,7 @@ The simplest way to monetize your APIs using the x402 protocol on Solana. Zero f
 [![Solana](https://img.shields.io/badge/Blockchain-Solana-blueviolet)](https://solana.com)
 [![x402](https://img.shields.io/badge/Protocol-x402-orange)](https://x402.org)
 
-**Contract Address (CA):** `3YMa9aj5gfxvbYaCEascAGRpu1GoA8xPZBFhCycapump`
+**Contract Address (CA):** `FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump`
 
 ---
 

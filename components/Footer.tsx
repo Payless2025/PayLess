@@ -24,11 +24,11 @@ export default function Footer() {
               <h4 className="text-sm font-semibold text-gray-900 mb-2">Contract Address (CA)</h4>
               <div className="flex items-center gap-2 p-3 bg-purple-50 border border-purple-100 rounded-lg max-w-md">
                 <code className="text-xs text-purple-700 font-mono break-all flex-1">
-                  3YMa9aj5gfxvbYaCEascAGRpu1GoA8xPZBFhCycapump
+                  FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump
                 </code>
                 <button
                   onClick={(e) => {
-                    navigator.clipboard.writeText('3YMa9aj5gfxvbYaCEascAGRpu1GoA8xPZBFhCycapump');
+                    navigator.clipboard.writeText('FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump');
                     // Optional: Show toast notification
                     const button = e.currentTarget as HTMLButtonElement;
                     const originalHTML = button.innerHTML;
