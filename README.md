@@ -15,29 +15,35 @@ The simplest way to monetize your APIs using the x402 protocol on Solana. Zero f
 
 ## 🎯 What is Payless?
 
-**Payless** is a serverless payment platform built on the x402 protocol for Solana. It lets developers monetize any API with crypto payments in minutes—no accounts, no subscriptions, no complexity.
+**Payless** is a serverless payment platform built on the x402 protocol. It lets developers monetize any API with crypto payments in minutes—no accounts, no subscriptions, no complexity.
+
+**🌐 Multi-Chain Support:** Solana, BSC (Binance Smart Chain), with Ethereum & Polygon coming soon!
 
 Perfect for:
 - 🤖 **AI Agent APIs** - Let agents pay for your services autonomously
 - 💰 **Micropayments** - Accept payments as low as $0.01
 - ⚡ **Instant Settlement** - Money in your wallet in 2 seconds
 - 🚀 **Serverless APIs** - Deploy anywhere (Vercel, AWS, Netlify)
+- 🌐 **Multi-Chain** - Users choose their preferred blockchain
 
 ## 🌟 Features
 
 - **💰 Zero Protocol Fees** - Keep 100% of your revenue
 - **⚡ Instant Settlement** - Money in your wallet in 2 seconds
 - **🔐 Privacy First** - No accounts, emails, or OAuth required
-- **🌍 Solana Powered** - Fast, cheap transactions on Solana blockchain
+- **🌐 Multi-Chain Support** - Solana + BSC (more chains coming!)
 - **🚀 Serverless Ready** - Deploy to Vercel, Netlify, or AWS Lambda
 - **🤖 Perfect for AI Agents** - Autonomous payments without human intervention
+- **📊 Built-in Analytics** - Track payments, revenue, and API usage
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Node.js 18+ installed
-- A Solana wallet address to receive payments (Phantom, Solflare, etc.)
+- Wallet addresses for supported chains:
+  - **Solana:** Phantom, Solflare, etc.
+  - **BSC:** MetaMask, Trust Wallet, Binance Wallet
 - (Optional) x402 facilitator endpoint
 
 ### Installation
