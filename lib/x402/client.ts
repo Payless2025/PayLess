@@ -165,6 +165,49 @@ export function createMockPayment(
 }
 
 /**
+ * Create real payment with connected Solana wallet
+ */
+export async function createRealPayment(
+  from: string,
+  to: string,
+  amount: string,
+  tokenMint: string = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  signMessage: (message: Uint8Array) => Promise<Uint8Array>
+): Promise<string> {
+  const nonce = Math.random().toString(36).substring(7);
+  const timestamp = Date.now();
+  const message = createPaymentMessage(from, to, amount, 'USDC', tokenMint, nonce, timestamp);
+  
+  try {
+    // Create message to sign
+    const messageBytes = new TextEncoder().encode(message);
+    
+    // Request signature from wallet (this will trigger Phantom popup)
+    console.log('[Payment] Requesting signature from wallet...');
+    const signatureBytes = await signMessage(messageBytes);
+    const signature = bs58.encode(signatureBytes);
+    console.log('[Payment] Signature received:', signature.substring(0, 20) + '...');
+    
+    const payload: SolanaPaymentPayload = {
+      from,
+      to,
+      amount,
+      token: 'USDC',
+      tokenMint,
+      nonce,
+      signature,
+      timestamp,
+      message,
+    };
+
+    return JSON.stringify(payload);
+  } catch (error) {
+    console.error('[Payment] Signature error:', error);
+    throw new Error(`Failed to sign payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
  * Validate Solana wallet address
  */
 export function isValidSolanaAddress(address: string): boolean {

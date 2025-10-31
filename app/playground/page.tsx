@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Play, Copy, Check, Loader2 } from 'lucide-react';
-import { createMockPayment } from '@/lib/x402/client';
+import { ArrowLeft, Play, Copy, Check, Loader2, Wallet } from 'lucide-react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { createMockPayment, createRealPayment } from '@/lib/x402/client';
 
 interface ApiEndpoint {
   path: string;
@@ -67,6 +69,7 @@ const endpoints: ApiEndpoint[] = [
 ];
 
 export default function Playground() {
+  const { publicKey, signMessage, connected } = useWallet();
   const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint>(endpoints[0]);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
@@ -74,6 +77,7 @@ export default function Playground() {
   const [paymentRequired, setPaymentRequired] = useState(false);
   const [copied, setCopied] = useState(false);
   const [requestBody, setRequestBody] = useState(JSON.stringify(endpoints[0].bodyExample || {}, null, 2));
+  const [useRealWallet, setUseRealWallet] = useState(false);
 
   const mockWalletAddress = '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM'; // Demo wallet (valid Solana address)
   const mockRecipientAddress = '8ahe4N7mFaLyQ7powRGWxZ3cnqbteF3yAeioMpM4ocMX'; // Payless wallet
@@ -104,7 +108,29 @@ export default function Playground() {
       if (withPayment) {
         const priceAmount = selectedEndpoint.price.replace('$', '');
         const usdcMint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // Solana USDC
-        const payment = createMockPayment(mockWalletAddress, mockRecipientAddress, priceAmount, usdcMint);
+        
+        let payment: string;
+        
+        // Use real wallet if connected and enabled
+        if (useRealWallet && connected && publicKey && signMessage) {
+          try {
+            payment = await createRealPayment(
+              publicKey.toString(),
+              mockRecipientAddress,
+              priceAmount,
+              usdcMint,
+              signMessage
+            );
+          } catch (walletError) {
+            setError(`Wallet error: ${walletError instanceof Error ? walletError.message : 'Failed to sign message'}`);
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Fallback to mock payment
+          payment = createMockPayment(mockWalletAddress, mockRecipientAddress, priceAmount, usdcMint);
+        }
+        
         options.headers = {
           ...options.headers,
           'X-Payment': payment,
@@ -148,7 +174,7 @@ export default function Playground() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Header */}
-      <header className="bg-slate-900/50 backdrop-blur-md border-b border-white/10">
+      <header className="bg-slate-900/50 backdrop-blur-md border-b border-white/10 relative z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <Link
@@ -158,7 +184,12 @@ export default function Playground() {
               <ArrowLeft className="w-5 h-5" />
               <span>Back to Home</span>
             </Link>
-            <h1 className="text-2xl font-bold text-white">API Playground</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-white">API Playground</h1>
+              <div className="wallet-adapter-button-wrapper">
+                <WalletMultiButton />
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -189,11 +220,39 @@ export default function Playground() {
                 ))}
               </div>
 
-              {/* Demo Mode Notice */}
-              <div className="mt-6 p-4 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
-                <p className="text-sm text-yellow-200">
-                  <strong>Demo Mode:</strong> Payments are simulated for testing. No real crypto is required.
-                </p>
+              {/* Wallet Connection Status */}
+              <div className="mt-6 space-y-4">
+                {connected && (
+                  <div className="p-4 rounded-lg bg-green-500/20 border border-green-500/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Wallet className="w-4 h-4 text-green-400" />
+                      <p className="text-sm font-semibold text-green-200">Wallet Connected</p>
+                    </div>
+                    <p className="text-xs text-green-300 font-mono break-all">
+                      {publicKey?.toString()}
+                    </p>
+                    <div className="mt-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={useRealWallet}
+                          onChange={(e) => setUseRealWallet(e.target.checked)}
+                          className="w-4 h-4 rounded border-green-500/50 bg-white/10 text-green-600 focus:ring-green-500"
+                        />
+                        <span className="text-sm text-green-200">Use real wallet for payments</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Demo Mode Notice */}
+                <div className="p-4 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
+                  <p className="text-sm text-yellow-200">
+                    <strong>Demo Mode:</strong> {useRealWallet && connected 
+                      ? 'Real wallet payments enabled. Transactions will be signed with your wallet.' 
+                      : 'Payments are simulated for testing. No real crypto is required.'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
