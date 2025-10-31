@@ -40,6 +40,30 @@ const endpoints: ApiEndpoint[] = [
     bodyExample: { prompt: 'A futuristic payment terminal', size: '1024x1024' },
   },
   {
+    path: '/api/ai/translate',
+    method: 'POST',
+    price: '$0.03',
+    description: 'Language Translation - Translate text between languages',
+    params: [
+      { name: 'text', type: 'string', description: 'Text to translate' },
+      { name: 'targetLanguage', type: 'string', description: 'Target language code (es, fr, de, ja, zh)' },
+      { name: 'sourceLanguage', type: 'string', description: 'Source language (optional, auto-detect)' },
+    ],
+    bodyExample: { text: 'Hello, how are you?', targetLanguage: 'es', sourceLanguage: 'auto' },
+  },
+  {
+    path: '/api/ai/tts',
+    method: 'POST',
+    price: '$0.08',
+    description: 'Text-to-Speech - Convert text to audio',
+    params: [
+      { name: 'text', type: 'string', description: 'Text to convert to speech' },
+      { name: 'voice', type: 'string', description: 'Voice type (male/female)' },
+      { name: 'language', type: 'string', description: 'Language code (optional)' },
+    ],
+    bodyExample: { text: 'Welcome to Payless payment system', voice: 'female', language: 'en' },
+  },
+  {
     path: '/api/data/weather',
     method: 'GET',
     price: '$0.01',
@@ -56,6 +80,37 @@ const endpoints: ApiEndpoint[] = [
     params: [
       { name: 'symbol', type: 'string', description: 'Stock symbol (query param)' },
     ],
+  },
+  {
+    path: '/api/data/crypto',
+    method: 'GET',
+    price: '$0.015',
+    description: 'Cryptocurrency Prices - Get real-time crypto market data',
+    params: [
+      { name: 'symbol', type: 'string', description: 'Crypto symbol (BTC, ETH, SOL, etc.)' },
+    ],
+  },
+  {
+    path: '/api/data/news',
+    method: 'GET',
+    price: '$0.025',
+    description: 'News Aggregation - Get latest news articles',
+    params: [
+      { name: 'category', type: 'string', description: 'News category (technology, crypto, business, science)' },
+      { name: 'limit', type: 'string', description: 'Number of articles (optional)' },
+    ],
+  },
+  {
+    path: '/api/tools/qrcode',
+    method: 'POST',
+    price: '$0.005',
+    description: 'QR Code Generator - Create QR codes from text/URLs',
+    params: [
+      { name: 'data', type: 'string', description: 'Data to encode in QR code' },
+      { name: 'size', type: 'string', description: 'Size in pixels (optional, default: 256)' },
+      { name: 'format', type: 'string', description: 'Format (png/svg, optional)' },
+    ],
+    bodyExample: { data: 'https://payless.example.com', size: '256', format: 'png' },
   },
   {
     path: '/api/premium/content',
