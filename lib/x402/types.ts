@@ -13,16 +13,24 @@ export interface PaymentVerificationResult {
   error?: string;
 }
 
+export interface ChainPaymentInfo {
+  chain: string;
+  recipient: string;
+  network: string;
+  tokens: string[];
+}
+
 export interface X402Response {
   status: 402;
   message: string;
   payment: {
     amount: string;
     currency: string;
-    recipient: string; // Solana wallet address (base58)
+    recipient?: string; // For single-chain (backward compatibility)
     facilitator: string;
-    network: string;
-    tokenMint: string; // USDC SPL token mint
+    network?: string; // For single-chain (backward compatibility)
+    tokenMint?: string; // For single-chain (backward compatibility)
+    chains?: ChainPaymentInfo[]; // For multi-chain support
   };
 }
 
