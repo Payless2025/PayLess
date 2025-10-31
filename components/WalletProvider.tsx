@@ -16,6 +16,20 @@ export const WalletProvider: FC<{ children: React.ReactNode }> = ({ children }) 
   // Only render on client-side
   useEffect(() => {
     setMounted(true);
+    
+    // Clean up any stale wallet adapter state on mount
+    if (typeof window !== 'undefined') {
+      // Clear any phantom adapter state that might be stuck
+      try {
+        const walletName = localStorage.getItem('walletName');
+        if (walletName) {
+          // Just log it, don't remove - let user choose to reconnect
+          console.log('Previous wallet connection found:', walletName);
+        }
+      } catch (error) {
+        console.error('Error checking wallet state:', error);
+      }
+    }
   }, []);
 
   // Use mainnet-beta for production
@@ -26,13 +40,14 @@ export const WalletProvider: FC<{ children: React.ReactNode }> = ({ children }) 
     return process.env.NEXT_PUBLIC_RPC_URL || clusterApiUrl(network);
   }, [network]);
 
-  // Initialize wallet adapters
+  // Initialize wallet adapters - only once to prevent reconnection issues
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter({ network }),
     ],
-    [network]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 
   // Don't render wallet provider during SSR

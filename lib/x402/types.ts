@@ -49,3 +49,38 @@ export interface SolanaPaymentPayload {
   timestamp: number; // Unix timestamp
   message: string; // Message that was signed
 }
+
+export interface PaymentConfirmation {
+  id: string; // Unique confirmation ID
+  paymentSignature: string; // Payment signature (transaction hash)
+  nonce: string; // Nonce from the original payment
+  walletAddress: string; // Payer's wallet address
+  recipient: string; // Recipient's wallet address
+  amount: string; // Payment amount
+  token: string; // Token symbol
+  tokenMint: string; // Token mint address
+  endpoint: string; // API endpoint that was accessed
+  confirmedAt: number; // Timestamp of confirmation
+  status: 'confirmed' | 'pending' | 'failed'; // Confirmation status
+  metadata?: {
+    userAgent?: string;
+    method?: string;
+    responseTime?: number;
+  };
+}
+
+export interface PaymentConfirmationQuery {
+  signature?: string; // Query by payment signature
+  nonce?: string; // Query by nonce
+  walletAddress?: string; // Query by wallet address
+  startDate?: number; // Filter by date range
+  endDate?: number;
+  status?: 'confirmed' | 'pending' | 'failed';
+  limit?: number;
+}
+
+export interface PaymentConfirmationResponse {
+  confirmations: PaymentConfirmation[];
+  total: number;
+  hasMore: boolean;
+}

@@ -2,6 +2,8 @@
  * Analytics system for tracking API usage and payments
  */
 
+import { PaymentConfirmation, PaymentConfirmationQuery } from './types';
+
 export interface AnalyticsEvent {
   id: string;
   timestamp: number;
@@ -54,6 +56,8 @@ export interface AnalyticsFilter {
 class AnalyticsStore {
   private events: AnalyticsEvent[] = [];
   private maxEvents = 10000; // Keep last 10k events
+  private confirmations: PaymentConfirmation[] = [];
+  private maxConfirmations = 10000; // Keep last 10k confirmations
 
   addEvent(event: Omit<AnalyticsEvent, 'id' | 'timestamp'>): AnalyticsEvent {
     const fullEvent: AnalyticsEvent = {
@@ -173,6 +177,75 @@ class AnalyticsStore {
 
   clearEvents(): void {
     this.events = [];
+  }
+
+  // Payment Confirmation Methods
+  addConfirmation(confirmation: Omit<PaymentConfirmation, 'id' | 'confirmedAt'>): PaymentConfirmation {
+    const fullConfirmation: PaymentConfirmation = {
+      id: this.generateId(),
+      confirmedAt: Date.now(),
+      ...confirmation,
+    };
+
+    this.confirmations.push(fullConfirmation);
+
+    // Remove old confirmations if exceeding max
+    if (this.confirmations.length > this.maxConfirmations) {
+      this.confirmations.shift();
+    }
+
+    return fullConfirmation;
+  }
+
+  getConfirmations(query?: PaymentConfirmationQuery): PaymentConfirmation[] {
+    let filtered = [...this.confirmations];
+
+    if (query) {
+      if (query.signature) {
+        filtered = filtered.filter(c => c.paymentSignature === query.signature);
+      }
+      if (query.nonce) {
+        filtered = filtered.filter(c => c.nonce === query.nonce);
+      }
+      if (query.walletAddress) {
+        filtered = filtered.filter(c => c.walletAddress === query.walletAddress);
+      }
+      if (query.startDate) {
+        filtered = filtered.filter(c => c.confirmedAt >= query.startDate!);
+      }
+      if (query.endDate) {
+        filtered = filtered.filter(c => c.confirmedAt <= query.endDate!);
+      }
+      if (query.status) {
+        filtered = filtered.filter(c => c.status === query.status);
+      }
+    }
+
+    // Sort by most recent first
+    filtered.sort((a, b) => b.confirmedAt - a.confirmedAt);
+
+    // Apply limit if specified
+    if (query?.limit) {
+      filtered = filtered.slice(0, query.limit);
+    }
+
+    return filtered;
+  }
+
+  getConfirmationByNonce(nonce: string): PaymentConfirmation | null {
+    return this.confirmations.find(c => c.nonce === nonce) || null;
+  }
+
+  getConfirmationBySignature(signature: string): PaymentConfirmation | null {
+    return this.confirmations.find(c => c.paymentSignature === signature) || null;
+  }
+
+  getConfirmationsByWallet(walletAddress: string, limit?: number): PaymentConfirmation[] {
+    return this.getConfirmations({ walletAddress, limit });
+  }
+
+  clearConfirmations(): void {
+    this.confirmations = [];
   }
 
   private generateId(): string {
