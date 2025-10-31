@@ -13,12 +13,18 @@ export const PAYMENT_CONFIG = {
 export const ENDPOINT_PRICING: EndpointConfig = {
   '/api/ai/chat': '0.05',
   '/api/ai/image': '0.10',
+  '/api/ai/translate': '0.03',
+  '/api/ai/tts': '0.08',
   '/api/data/weather': '0.01',
   '/api/data/stock': '0.02',
+  '/api/data/crypto': '0.015',
+  '/api/data/news': '0.025',
+  '/api/tools/qrcode': '0.005',
   '/api/premium/content': '1.00',
 };
 
 export const FREE_ENDPOINTS = [
   '/api/health',
   '/api/info',
+  '/api/analytics',
 ];
