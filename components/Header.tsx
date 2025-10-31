@@ -34,6 +34,12 @@ export default function Header() {
             >
               Playground
             </Link>
+            <Link 
+              href="/analytics" 
+              className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+            >
+              Analytics
+            </Link>
             <a 
               href="https://payless.gitbook.io/payless-documentation" 
               target="_blank"
@@ -103,6 +109,13 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Playground
+              </Link>
+              <Link 
+                href="/analytics" 
+                className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Analytics
               </Link>
               <a 
                 href="https://payless.gitbook.io/payless-documentation" 
