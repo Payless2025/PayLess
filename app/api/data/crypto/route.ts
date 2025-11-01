@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withX402Payment } from '@/lib/x402/middleware';
+import { withMultiChainPayment } from '@/lib/x402/multi-chain-middleware';
 import axios from 'axios';
 
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
@@ -82,4 +82,4 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = withX402Payment(handler);
+export const GET = withMultiChainPayment(handler);

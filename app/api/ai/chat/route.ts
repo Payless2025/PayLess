@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withX402Payment } from '@/lib/x402/middleware';
+import { withMultiChainPayment } from '@/lib/x402/multi-chain-middleware';
 import axios from 'axios';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -82,4 +82,4 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const POST = withX402Payment(handler);
+export const POST = withMultiChainPayment(handler);
