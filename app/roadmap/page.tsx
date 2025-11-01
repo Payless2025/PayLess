@@ -1,18 +1,23 @@
 import { CheckCircle2, Circle, Clock, Zap } from 'lucide-react';
 
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+
 export default function RoadmapPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <div className="container mx-auto px-4 py-16 max-w-6xl">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-white mb-4">
-            Payless Roadmap
-          </h1>
-          <p className="text-xl text-gray-400">
-            Building the future of internet-native payments for AI
-          </p>
-        </div>
+    <>
+      <Header />
+      <div className="min-h-screen bg-white pt-20">
+        <div className="container mx-auto px-4 py-16 max-w-6xl">
+          {/* Header */}
+          <div className="text-center mb-16">
+            <h1 className="text-5xl font-bold text-gray-900 mb-4">
+              Payless Roadmap
+            </h1>
+            <p className="text-xl text-gray-600">
+              Building the future of internet-native payments for AI
+            </p>
+          </div>
 
         {/* Roadmap Timeline */}
         <div className="space-y-12">
@@ -20,16 +25,16 @@ export default function RoadmapPage() {
           {/* ✅ COMPLETED */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
-              <h2 className="text-3xl font-bold text-white">Completed ✅</h2>
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
+              <h2 className="text-3xl font-bold text-gray-900">Completed ✅</h2>
             </div>
             
             <div className="space-y-6 ml-12">
               {/* Core Platform */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 hover:border-green-500 transition-all">
-                  <h3 className="text-xl font-bold text-white mb-4">Core Platform Launch</h3>
-                  <ul className="space-y-2 text-gray-300">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Core Platform Launch</h3>
+                  <ul className="space-y-2 text-gray-700">
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                       <span>x402 protocol implementation</span>
@@ -60,9 +65,9 @@ export default function RoadmapPage() {
 
               {/* Major Technical Upgrade */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 hover:border-green-500 transition-all">
-                  <h3 className="text-xl font-bold text-white mb-4">Major Technical Upgrade</h3>
-                  <ul className="space-y-2 text-gray-300">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Major Technical Upgrade</h3>
+                  <ul className="space-y-2 text-gray-700">
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                       <span><strong>Ethereum support</strong> - Full mainnet integration with USDC/USDT</span>
@@ -92,15 +97,15 @@ export default function RoadmapPage() {
           {/* 🔥 IN PROGRESS */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <Zap className="w-8 h-8 text-orange-500" />
-              <h2 className="text-3xl font-bold text-white">In Progress 🔥</h2>
+              <Zap className="w-8 h-8 text-orange-600" />
+              <h2 className="text-3xl font-bold text-gray-900">In Progress 🔥</h2>
             </div>
             
             <div className="space-y-6 ml-12">
               <div className="border-l-4 border-orange-500 pl-6">
-                <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 hover:border-orange-500 transition-all">
-                  <h3 className="text-xl font-bold text-white mb-4">Payment Links & UX</h3>
-                  <ul className="space-y-2 text-gray-300">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-orange-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Payment Links & UX</h3>
+                  <ul className="space-y-2 text-gray-700">
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
                       <span><strong>Payment Links</strong> - Shareable crypto payment URLs (no code needed)</span>
@@ -126,17 +131,17 @@ export default function RoadmapPage() {
           {/* 🚀 PLANNED */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <Circle className="w-8 h-8 text-blue-500" />
-              <h2 className="text-3xl font-bold text-white">Planned 🚀</h2>
+              <Circle className="w-8 h-8 text-blue-600" />
+              <h2 className="text-3xl font-bold text-gray-900">Planned 🚀</h2>
             </div>
             
             <div className="space-y-6 ml-12">
               
               {/* Advanced Features */}
               <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 hover:border-blue-500 transition-all">
-                  <h3 className="text-xl font-bold text-white mb-4">Advanced Features</h3>
-                  <ul className="space-y-2 text-gray-300">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Advanced Features</h3>
+                  <ul className="space-y-2 text-gray-700">
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span><strong>Token-Gated Content</strong> - Holder-only API access</span>
@@ -281,6 +286,8 @@ export default function RoadmapPage() {
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 }
 

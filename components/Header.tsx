@@ -35,6 +35,12 @@ export default function Header() {
               Roadmap
             </Link>
             <Link 
+              href="/payment-links" 
+              className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+            >
+              Payment Links
+            </Link>
+            <Link 
               href="/playground" 
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
@@ -115,6 +121,13 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Roadmap
+              </Link>
+              <Link 
+                href="/payment-links" 
+                className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Payment Links
               </Link>
               <Link 
                 href="/playground" 
