@@ -17,7 +17,7 @@ The simplest way to monetize your APIs using the x402 protocol on Solana. Zero f
 
 **Payless** is a serverless payment platform built on the x402 protocol. It lets developers monetize any API with crypto payments in minutes—no accounts, no subscriptions, no complexity.
 
-**🌐 Multi-Chain Support:** Solana, BSC (Binance Smart Chain), with Ethereum & Polygon coming soon!
+**🌐 Multi-Chain Support:** Solana, BSC (Binance Smart Chain), Ethereum, with Polygon coming soon!
 
 Perfect for:
 - 🤖 **AI Agent APIs** - Let agents pay for your services autonomously
@@ -31,10 +31,11 @@ Perfect for:
 - **💰 Zero Protocol Fees** - Keep 100% of your revenue
 - **⚡ Instant Settlement** - Money in your wallet in 2 seconds
 - **🔐 Privacy First** - No accounts, emails, or OAuth required
-- **🌐 Multi-Chain Support** - Solana + BSC (more chains coming!)
+- **🌐 Multi-Chain Support** - Solana + BSC + Ethereum (Polygon coming soon!)
 - **🚀 Serverless Ready** - Deploy to Vercel, Netlify, or AWS Lambda
 - **🤖 Perfect for AI Agents** - Autonomous payments without human intervention
 - **📊 Built-in Analytics** - Track payments, revenue, and API usage
+- **🔔 Webhook Support** - Real-time payment notifications
 
 ## 🚀 Quick Start
 
@@ -44,6 +45,7 @@ Perfect for:
 - Wallet addresses for supported chains:
   - **Solana:** Phantom, Solflare, etc.
   - **BSC:** MetaMask, Trust Wallet, Binance Wallet
+  - **Ethereum:** MetaMask, Coinbase Wallet, etc.
 - (Optional) x402 facilitator endpoint
 
 ### Installation
@@ -272,6 +274,13 @@ Never commit these to version control:
 - Private keys should NEVER be in your code
 
 ## 📚 Learn More
+
+### Documentation
+
+- [Ethereum Support](./docs/ETHEREUM_SUPPORT.md) - How to accept Ethereum payments
+- [Webhooks](./docs/WEBHOOKS.md) - Real-time payment notifications
+- [Multi-Chain Guide](./docs/MULTI_CHAIN.md) - Complete multi-chain integration
+- [API Configuration](./docs/API_CONFIGURATION.md) - Configure your API
 
 ### x402 Protocol
 

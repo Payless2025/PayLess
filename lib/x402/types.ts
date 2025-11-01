@@ -84,3 +84,58 @@ export interface PaymentConfirmationResponse {
   total: number;
   hasMore: boolean;
 }
+
+// Webhook Types
+export interface WebhookEvent {
+  id: string; // Unique event ID
+  type: WebhookEventType;
+  timestamp: number;
+  data: PaymentWebhookData;
+}
+
+export enum WebhookEventType {
+  PAYMENT_CONFIRMED = 'payment.confirmed',
+  PAYMENT_PENDING = 'payment.pending',
+  PAYMENT_FAILED = 'payment.failed',
+}
+
+export interface PaymentWebhookData {
+  paymentId: string;
+  signature: string; // Transaction signature
+  chain: string; // solana, bsc, ethereum
+  from: string; // Payer wallet address
+  to: string; // Recipient wallet address
+  amount: string;
+  token: string;
+  endpoint: string; // API endpoint that was accessed
+  timestamp: number;
+  status: 'confirmed' | 'pending' | 'failed';
+  metadata?: {
+    userAgent?: string;
+    method?: string;
+    responseTime?: number;
+  };
+}
+
+export interface WebhookConfig {
+  url: string; // Webhook endpoint URL
+  secret: string; // Secret for signature verification
+  events: WebhookEventType[]; // Events to subscribe to
+  enabled: boolean;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhookId: string;
+  eventId: string;
+  url: string;
+  status: 'pending' | 'success' | 'failed';
+  attempts: number;
+  maxAttempts: number;
+  lastAttemptAt?: number;
+  nextRetryAt?: number;
+  response?: {
+    statusCode?: number;
+    error?: string;
+  };
+}

@@ -36,60 +36,93 @@ export class PaylessClient {
     endpoint: string,
     options: ApiRequestOptions = {}
   ): Promise<ApiResponse<T>> {
-    const {
-      method = 'GET',
-      headers = {},
-      body,
-      paymentAmount,
-    } = options;
+    try {
+      const {
+        method = 'GET',
+        headers = {},
+        body,
+        paymentAmount,
+      } = options;
 
-    // First, try without payment to see if it's required
-    let response = await this.makeHttpRequest(endpoint, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    // If payment is required (402 status), create payment and retry
-    if (response.status === 402) {
-      const paymentInfo = await response.json();
-      const amount = paymentAmount || paymentInfo.payment?.amount;
-
-      if (!amount) {
+      // Validate endpoint
+      if (!endpoint) {
         return {
           success: false,
-          error: 'Payment amount not specified',
-          status: 402,
+          error: 'Endpoint is required',
+          status: 400,
         };
       }
 
-      // Create payment proof
-      const paymentProof = await this.createPayment(amount);
-      const paymentHeader = paymentProofToHeader(paymentProof);
-
-      // Retry with payment
-      response = await this.makeHttpRequest(endpoint, {
+      // First, try without payment to see if it's required
+      let response = await this.makeHttpRequest(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-Payment': paymentHeader,
           ...headers,
         },
         body: body ? JSON.stringify(body) : undefined,
       });
+
+      // If payment is required (402 status), create payment and retry
+      if (response.status === 402) {
+        const paymentInfo = await response.json().catch(() => ({}));
+        const amount = paymentAmount || paymentInfo.payment?.amount;
+
+        if (!amount) {
+          return {
+            success: false,
+            error: 'Payment amount not specified. Please provide paymentAmount option.',
+            status: 402,
+          };
+        }
+
+        // Create payment proof
+        try {
+          const paymentProof = await this.createPayment(amount);
+          const paymentHeader = paymentProofToHeader(paymentProof);
+
+          // Retry with payment
+          response = await this.makeHttpRequest(endpoint, {
+            method,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Payment': paymentHeader,
+              ...headers,
+            },
+            body: body ? JSON.stringify(body) : undefined,
+          });
+        } catch (paymentError) {
+          return {
+            success: false,
+            error: `Payment creation failed: ${paymentError instanceof Error ? paymentError.message : 'Unknown error'}`,
+            status: 402,
+          };
+        }
+      }
+
+      // Handle non-JSON responses
+      const contentType = response.headers.get('content-type');
+      let data: any;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      return {
+        success: response.ok,
+        data: response.ok ? data : undefined,
+        error: !response.ok ? (typeof data === 'object' ? data.error : data) || `Request failed with status ${response.status}` : undefined,
+        status: response.status,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Request error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        status: 0,
+      };
     }
-
-    const data = await response.json();
-
-    return {
-      success: response.ok,
-      data: response.ok ? data : undefined,
-      error: !response.ok ? data.error || 'Request failed' : undefined,
-      status: response.status,
-    };
   }
 
   /**
