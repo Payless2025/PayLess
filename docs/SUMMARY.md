@@ -22,6 +22,7 @@
 
 * [API Reference](api-reference.md)
 * [API Configuration](API_CONFIGURATION.md)
+* [Payment Links](PAYMENT_LINKS.md)
 * [Webhooks](WEBHOOKS.md)
 * [Configuration](configuration.md)
 * [Deployment](deployment.md)
