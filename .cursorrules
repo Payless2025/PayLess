@@ -1,0 +1,45 @@
+# Cursor Rules for Payless Project
+
+## Git Commit Rules
+- **IMPORTANT**: All commit messages should be exactly "." (a single period)
+- Never use descriptive commit messages
+- Keep git history minimal and clean
+- Example: `git commit -m "."`
+
+## Code Style
+- Use TypeScript for type safety
+- Follow Next.js best practices
+- Keep components modular and reusable
+- Use Tailwind CSS for styling
+
+## Project Structure
+- API routes in `app/api/`
+- Components in `components/`
+- Chain logic in `lib/chains/`
+- x402 protocol in `lib/x402/`
+- Documentation in `docs/`
+- SDKs in `sdk/`
+
+## Privacy Rules
+- Never include personal usernames in code
+- Use environment variables for sensitive data
+- Keep API keys in .env.local (never commit)
+
+## Commit Best Practices
+1. Always use: `git commit -m "."`
+2. Keep commits atomic
+3. Commit frequently
+4. Force push when needed: `git push origin master --force`
+
+## Multi-Chain Support
+- Support Solana and BSC
+- Use chain-agnostic middleware
+- Add new chains in `lib/chains/`
+
+## API Integration Rules
+- All APIs should have graceful fallbacks
+- Mock data when API keys are missing
+- Real data when keys are provided
+- Document all APIs in `docs/API_CONFIGURATION.md`
+
+

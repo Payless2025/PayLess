@@ -4,11 +4,12 @@ import { ENDPOINT_PRICING, FREE_ENDPOINTS } from './config';
 import { trackApiRequest } from './analytics';
 import { verifySolanaPayment, type SolanaPaymentPayload } from '../chains/solana';
 import { verifyBSCPayment, type BSCPaymentPayload } from '../chains/bsc';
+import { verifyEthereumPayment, type EthereumPaymentPayload } from '../chains/ethereum';
 import { SupportedChain, getChainConfig } from '../chains/config';
 
 interface MultiChainPaymentPayload {
   chain: SupportedChain;
-  payment: SolanaPaymentPayload | BSCPaymentPayload;
+  payment: SolanaPaymentPayload | BSCPaymentPayload | EthereumPaymentPayload;
 }
 
 /**
@@ -72,6 +73,19 @@ export async function verifyMultiChainPayment(
           signature: bscPayment.signature,
         };
 
+      case SupportedChain.ETHEREUM:
+        const ethPayment = paymentData.payment as EthereumPaymentPayload;
+        const ethResult = await verifyEthereumPayment(
+          ethPayment,
+          expectedAmount,
+          chainConfig.walletAddress
+        );
+        return {
+          valid: ethResult.valid,
+          error: ethResult.error,
+          signature: ethPayment.signature,
+        };
+
       default:
         return {
           valid: false,
@@ -109,6 +123,12 @@ export function createMultiChain402Response(amount: string): NextResponse<X402Re
           recipient: process.env.BSC_WALLET_ADDRESS || process.env.WALLET_ADDRESS || '',
           network: '56',
           tokens: ['USDT', 'BUSD', 'USDC'],
+        },
+        {
+          chain: 'ethereum',
+          recipient: process.env.ETHEREUM_WALLET_ADDRESS || process.env.WALLET_ADDRESS || '',
+          network: '1',
+          tokens: ['USDC', 'USDT'],
         },
       ],
       facilitator: process.env.FACILITATOR_URL || 'https://facilitator.x402.org',
@@ -220,6 +240,9 @@ export function withMultiChainPayment(
         } else if (paymentData.chain === SupportedChain.BSC) {
           const bscPayment = paymentData.payment as BSCPaymentPayload;
           walletAddress = bscPayment.from;
+        } else if (paymentData.chain === SupportedChain.ETHEREUM) {
+          const ethPayment = paymentData.payment as EthereumPaymentPayload;
+          walletAddress = ethPayment.from;
         }
       } catch (e) {
         // Ignore parsing errors for analytics
