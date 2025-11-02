@@ -1,275 +1,242 @@
 /**
- * Analytics system for tracking API usage and payments
+ * Analytics and transaction tracking for Payless
  */
 
-import { PaymentConfirmation, PaymentConfirmationQuery } from './types';
-
-export interface AnalyticsEvent {
+export interface Transaction {
   id: string;
+  amount: string;
+  currency: string;
+  chain: 'solana' | 'bsc' | 'ethereum';
+  status: 'pending' | 'completed' | 'failed';
+  fromAddress: string;
+  toAddress: string;
+  transactionHash?: string;
   timestamp: number;
-  endpoint: string;
-  method: string;
-  status: number;
-  paymentRequired: boolean;
-  paymentProvided: boolean;
-  paymentValid: boolean;
-  amount?: string;
-  walletAddress?: string;
-  responseTime: number;
-  userAgent?: string;
-  error?: string;
+  description?: string;
+  paymentLinkId?: string;
 }
 
 export interface AnalyticsMetrics {
-  totalRequests: number;
-  successfulRequests: number;
-  failedRequests: number;
-  paymentRequests: number;
-  successfulPayments: number;
-  failedPayments: number;
-  totalRevenue: number;
-  averageResponseTime: number;
-  uniqueWallets: number;
-  endpointStats: Record<string, EndpointStats>;
-  recentEvents: AnalyticsEvent[];
+  totalTransactions: number;
+  totalRevenue: string;
+  successRate: number;
+  averageTransactionValue: string;
+  transactionsByChain: {
+    solana: number;
+    bsc: number;
+    ethereum: number;
+  };
+  transactionsByStatus: {
+    pending: number;
+    completed: number;
+    failed: number;
+  };
+  recentTransactions: Transaction[];
+  revenueByDay: Array<{
+    date: string;
+    amount: number;
+  }>;
 }
 
-export interface EndpointStats {
-  endpoint: string;
-  totalCalls: number;
-  successfulCalls: number;
-  failedCalls: number;
-  revenue: number;
-  averageResponseTime: number;
+// In-memory storage for transactions
+const transactionStore = new Map<string, Transaction>();
+let transactionIdCounter = 1;
+
+/**
+ * Generate unique transaction ID
+ */
+export function generateTransactionId(): string {
+  return `tx_${Date.now()}_${transactionIdCounter++}`;
 }
 
-export interface AnalyticsFilter {
-  startDate?: number;
-  endDate?: number;
-  endpoint?: string;
-  status?: number;
-  minAmount?: number;
-  maxAmount?: number;
+/**
+ * Record a new transaction
+ */
+export function recordTransaction(transaction: Omit<Transaction, 'id'>): Transaction {
+  const id = generateTransactionId();
+  const newTransaction: Transaction = {
+    id,
+    ...transaction,
+  };
+  
+  transactionStore.set(id, newTransaction);
+  return newTransaction;
 }
 
-// In-memory analytics storage (would be replaced with database in production)
-class AnalyticsStore {
-  private events: AnalyticsEvent[] = [];
-  private maxEvents = 10000; // Keep last 10k events
-  private confirmations: PaymentConfirmation[] = [];
-  private maxConfirmations = 10000; // Keep last 10k confirmations
+/**
+ * Get transaction by ID
+ */
+export function getTransaction(id: string): Transaction | undefined {
+  return transactionStore.get(id);
+}
 
-  addEvent(event: Omit<AnalyticsEvent, 'id' | 'timestamp'>): AnalyticsEvent {
-    const fullEvent: AnalyticsEvent = {
-      id: this.generateId(),
-      timestamp: Date.now(),
-      ...event,
-    };
+/**
+ * Get all transactions
+ */
+export function getAllTransactions(): Transaction[] {
+  return Array.from(transactionStore.values()).sort(
+    (a, b) => b.timestamp - a.timestamp
+  );
+}
 
-    this.events.push(fullEvent);
+/**
+ * Get transactions with filters
+ */
+export function getTransactions(filters?: {
+  status?: Transaction['status'];
+  chain?: Transaction['chain'];
+  fromAddress?: string;
+  toAddress?: string;
+  limit?: number;
+  offset?: number;
+}): Transaction[] {
+  let transactions = getAllTransactions();
 
-    // Remove old events if exceeding max
-    if (this.events.length > this.maxEvents) {
-      this.events.shift();
-    }
-
-    return fullEvent;
+  if (filters?.status) {
+    transactions = transactions.filter(tx => tx.status === filters.status);
   }
 
-  getEvents(filter?: AnalyticsFilter): AnalyticsEvent[] {
-    let filtered = [...this.events];
-
-    if (filter) {
-      if (filter.startDate) {
-        filtered = filtered.filter(e => e.timestamp >= filter.startDate!);
-      }
-      if (filter.endDate) {
-        filtered = filtered.filter(e => e.timestamp <= filter.endDate!);
-      }
-      if (filter.endpoint) {
-        filtered = filtered.filter(e => e.endpoint === filter.endpoint);
-      }
-      if (filter.status) {
-        filtered = filtered.filter(e => e.status === filter.status);
-      }
-      if (filter.minAmount !== undefined) {
-        filtered = filtered.filter(e => e.amount && parseFloat(e.amount) >= filter.minAmount!);
-      }
-      if (filter.maxAmount !== undefined) {
-        filtered = filtered.filter(e => e.amount && parseFloat(e.amount) <= filter.maxAmount!);
-      }
-    }
-
-    return filtered;
+  if (filters?.chain) {
+    transactions = transactions.filter(tx => tx.chain === filters.chain);
   }
 
-  getMetrics(filter?: AnalyticsFilter): AnalyticsMetrics {
-    const events = this.getEvents(filter);
+  if (filters?.fromAddress) {
+    transactions = transactions.filter(tx => 
+      tx.fromAddress.toLowerCase() === filters.fromAddress?.toLowerCase()
+    );
+  }
 
-    const totalRequests = events.length;
-    const successfulRequests = events.filter(e => e.status >= 200 && e.status < 300).length;
-    const failedRequests = events.filter(e => e.status >= 400).length;
-    const paymentRequests = events.filter(e => e.paymentRequired).length;
-    const successfulPayments = events.filter(e => e.paymentValid).length;
-    const failedPayments = events.filter(e => e.paymentProvided && !e.paymentValid).length;
+  if (filters?.toAddress) {
+    transactions = transactions.filter(tx => 
+      tx.toAddress.toLowerCase() === filters.toAddress?.toLowerCase()
+    );
+  }
 
-    const totalRevenue = events
-      .filter(e => e.paymentValid && e.amount)
-      .reduce((sum, e) => sum + parseFloat(e.amount!), 0);
+  const offset = filters?.offset || 0;
+  const limit = filters?.limit || 50;
 
-    const averageResponseTime = events.length > 0
-      ? events.reduce((sum, e) => sum + e.responseTime, 0) / events.length
-      : 0;
+  return transactions.slice(offset, offset + limit);
+}
 
-    const uniqueWallets = new Set(
-      events.filter(e => e.walletAddress).map(e => e.walletAddress)
-    ).size;
+/**
+ * Update transaction status
+ */
+export function updateTransactionStatus(
+  id: string,
+  status: Transaction['status'],
+  transactionHash?: string
+): Transaction | null {
+  const transaction = transactionStore.get(id);
+  if (!transaction) return null;
 
-    // Calculate per-endpoint statistics
-    const endpointStats: Record<string, EndpointStats> = {};
-    events.forEach(event => {
-      if (!endpointStats[event.endpoint]) {
-        endpointStats[event.endpoint] = {
-          endpoint: event.endpoint,
-          totalCalls: 0,
-          successfulCalls: 0,
-          failedCalls: 0,
-          revenue: 0,
-          averageResponseTime: 0,
-        };
-      }
+  transaction.status = status;
+  if (transactionHash) {
+    transaction.transactionHash = transactionHash;
+  }
 
-      const stats = endpointStats[event.endpoint];
-      stats.totalCalls++;
-      if (event.status >= 200 && event.status < 300) {
-        stats.successfulCalls++;
-      }
-      if (event.status >= 400) {
-        stats.failedCalls++;
-      }
-      if (event.paymentValid && event.amount) {
-        stats.revenue += parseFloat(event.amount);
-      }
+  transactionStore.set(id, transaction);
+  return transaction;
+}
+
+/**
+ * Get analytics metrics
+ */
+export function getAnalyticsMetrics(): AnalyticsMetrics {
+  const transactions = getAllTransactions();
+  
+  const totalTransactions = transactions.length;
+  const completedTransactions = transactions.filter(tx => tx.status === 'completed');
+  const successRate = totalTransactions > 0 
+    ? (completedTransactions.length / totalTransactions) * 100 
+    : 0;
+
+  const totalRevenue = completedTransactions.reduce(
+    (sum, tx) => sum + parseFloat(tx.amount),
+    0
+  );
+
+  const averageTransactionValue = completedTransactions.length > 0
+    ? totalRevenue / completedTransactions.length
+    : 0;
+
+  const transactionsByChain = {
+    solana: transactions.filter(tx => tx.chain === 'solana').length,
+    bsc: transactions.filter(tx => tx.chain === 'bsc').length,
+    ethereum: transactions.filter(tx => tx.chain === 'ethereum').length,
+  };
+
+  const transactionsByStatus = {
+    pending: transactions.filter(tx => tx.status === 'pending').length,
+    completed: transactions.filter(tx => tx.status === 'completed').length,
+    failed: transactions.filter(tx => tx.status === 'failed').length,
+  };
+
+  // Get revenue by day (last 7 days)
+  const today = new Date();
+  const revenueByDay = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() - (6 - i));
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const dayTransactions = completedTransactions.filter(tx => {
+      const txDate = new Date(tx.timestamp).toISOString().split('T')[0];
+      return txDate === dateStr;
     });
 
-    // Calculate average response times for each endpoint
-    Object.keys(endpointStats).forEach(endpoint => {
-      const endpointEvents = events.filter(e => e.endpoint === endpoint);
-      const totalTime = endpointEvents.reduce((sum, e) => sum + e.responseTime, 0);
-      endpointStats[endpoint].averageResponseTime = 
-        endpointEvents.length > 0 ? totalTime / endpointEvents.length : 0;
+    const amount = dayTransactions.reduce(
+      (sum, tx) => sum + parseFloat(tx.amount),
+      0
+    );
+
+    return { date: dateStr, amount };
+  });
+
+  const recentTransactions = transactions.slice(0, 10);
+
+  return {
+    totalTransactions,
+    totalRevenue: totalRevenue.toFixed(2),
+    successRate: parseFloat(successRate.toFixed(2)),
+    averageTransactionValue: averageTransactionValue.toFixed(2),
+    transactionsByChain,
+    transactionsByStatus,
+    recentTransactions,
+    revenueByDay,
+  };
+}
+
+/**
+ * Generate mock transactions for demo purposes
+ */
+export function generateMockTransactions(count: number = 20): void {
+  const chains: Array<'solana' | 'bsc' | 'ethereum'> = ['solana', 'bsc', 'ethereum'];
+  const statuses: Array<'pending' | 'completed' | 'failed'> = ['completed', 'completed', 'completed', 'completed', 'pending', 'failed'];
+  const descriptions = [
+    'AI API Chat Request',
+    'Image Generation',
+    'Premium Content Access',
+    'Payment Link Payment',
+    'Translation Service',
+    'Text-to-Speech API',
+  ];
+
+  for (let i = 0; i < count; i++) {
+    const daysAgo = Math.floor(Math.random() * 7);
+    const timestamp = Date.now() - (daysAgo * 24 * 60 * 60 * 1000) - (Math.random() * 24 * 60 * 60 * 1000);
+    const amount = (Math.random() * 50 + 0.5).toFixed(2);
+    const chain = chains[Math.floor(Math.random() * chains.length)];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+    recordTransaction({
+      amount,
+      currency: 'USDC',
+      chain,
+      status,
+      fromAddress: `0x${Math.random().toString(16).substr(2, 40)}`,
+      toAddress: `0x${Math.random().toString(16).substr(2, 40)}`,
+      transactionHash: status === 'completed' ? `0x${Math.random().toString(16).substr(2, 64)}` : undefined,
+      timestamp,
+      description: descriptions[Math.floor(Math.random() * descriptions.length)],
     });
-
-    return {
-      totalRequests,
-      successfulRequests,
-      failedRequests,
-      paymentRequests,
-      successfulPayments,
-      failedPayments,
-      totalRevenue,
-      averageResponseTime,
-      uniqueWallets,
-      endpointStats,
-      recentEvents: events.slice(-100).reverse(), // Last 100 events, most recent first
-    };
-  }
-
-  clearEvents(): void {
-    this.events = [];
-  }
-
-  // Payment Confirmation Methods
-  addConfirmation(confirmation: Omit<PaymentConfirmation, 'id' | 'confirmedAt'>): PaymentConfirmation {
-    const fullConfirmation: PaymentConfirmation = {
-      id: this.generateId(),
-      confirmedAt: Date.now(),
-      ...confirmation,
-    };
-
-    this.confirmations.push(fullConfirmation);
-
-    // Remove old confirmations if exceeding max
-    if (this.confirmations.length > this.maxConfirmations) {
-      this.confirmations.shift();
-    }
-
-    return fullConfirmation;
-  }
-
-  getConfirmations(query?: PaymentConfirmationQuery): PaymentConfirmation[] {
-    let filtered = [...this.confirmations];
-
-    if (query) {
-      if (query.signature) {
-        filtered = filtered.filter(c => c.paymentSignature === query.signature);
-      }
-      if (query.nonce) {
-        filtered = filtered.filter(c => c.nonce === query.nonce);
-      }
-      if (query.walletAddress) {
-        filtered = filtered.filter(c => c.walletAddress === query.walletAddress);
-      }
-      if (query.startDate) {
-        filtered = filtered.filter(c => c.confirmedAt >= query.startDate!);
-      }
-      if (query.endDate) {
-        filtered = filtered.filter(c => c.confirmedAt <= query.endDate!);
-      }
-      if (query.status) {
-        filtered = filtered.filter(c => c.status === query.status);
-      }
-    }
-
-    // Sort by most recent first
-    filtered.sort((a, b) => b.confirmedAt - a.confirmedAt);
-
-    // Apply limit if specified
-    if (query?.limit) {
-      filtered = filtered.slice(0, query.limit);
-    }
-
-    return filtered;
-  }
-
-  getConfirmationByNonce(nonce: string): PaymentConfirmation | null {
-    return this.confirmations.find(c => c.nonce === nonce) || null;
-  }
-
-  getConfirmationBySignature(signature: string): PaymentConfirmation | null {
-    return this.confirmations.find(c => c.paymentSignature === signature) || null;
-  }
-
-  getConfirmationsByWallet(walletAddress: string, limit?: number): PaymentConfirmation[] {
-    return this.getConfirmations({ walletAddress, limit });
-  }
-
-  clearConfirmations(): void {
-    this.confirmations = [];
-  }
-
-  private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
-
-// Singleton instance
-export const analyticsStore = new AnalyticsStore();
-
-// Helper function to track an API request
-export function trackApiRequest(data: {
-  endpoint: string;
-  method: string;
-  status: number;
-  paymentRequired: boolean;
-  paymentProvided: boolean;
-  paymentValid: boolean;
-  amount?: string;
-  walletAddress?: string;
-  responseTime: number;
-  userAgent?: string;
-  error?: string;
-}): void {
-  analyticsStore.addEvent(data);
-}
-
