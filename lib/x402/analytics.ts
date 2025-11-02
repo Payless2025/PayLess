@@ -217,6 +217,9 @@ export function trackApiRequest(data: {
   paymentValid?: boolean;
   responseTime?: number;
   userAgent?: string;
+  error?: string;
+  amount?: string;
+  walletAddress?: string;
 }): void {
   // This is a compatibility function for the old middleware
   // In the future, this could be enhanced to track API usage metrics
