@@ -23,12 +23,6 @@ export default function Header() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link 
-              href="#features" 
-              className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
-            >
-              Features
-            </Link>
-            <Link 
               href="/roadmap" 
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
@@ -47,10 +41,10 @@ export default function Header() {
               Playground
             </Link>
             <Link 
-              href="/analytics" 
+              href="/dashboard" 
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
-              Analytics
+              Dashboard
             </Link>
             <a 
               href="https://payless.gitbook.io/payless-documentation" 
@@ -109,13 +103,6 @@ export default function Header() {
           <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col space-y-4">
               <Link 
-                href="#features" 
-                className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Features
-              </Link>
-              <Link 
                 href="/roadmap" 
                 className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
                 onClick={() => setMobileMenuOpen(false)}
@@ -137,11 +124,11 @@ export default function Header() {
                 Playground
               </Link>
               <Link 
-                href="/analytics" 
+                href="/dashboard" 
                 className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Analytics
+                Dashboard
               </Link>
               <a 
                 href="https://payless.gitbook.io/payless-documentation" 
