@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsStore } from '@/lib/x402/analytics';
+import { getTransactions } from '@/lib/x402/analytics';
 import { PaymentConfirmationResponse } from '@/lib/x402/types';
 
 /**
@@ -34,22 +34,18 @@ export async function GET(req: NextRequest) {
       ? parseInt(searchParams.get('limit')!) 
       : 100;
 
-    // Get confirmations from store
-    const confirmations = analyticsStore.getConfirmations({
-      signature,
-      nonce,
-      walletAddress,
-      startDate,
-      endDate,
-      status,
-      limit: limit + 1, // Get one extra to determine if there are more
+    // Get transactions from store (converted to confirmations format)
+    const transactions = getTransactions({
+      status: status === 'confirmed' ? 'completed' : status as any,
+      fromAddress: walletAddress,
+      limit: limit + 1,
     });
 
     // Prepare response
-    const hasMore = confirmations.length > limit;
-    const response: PaymentConfirmationResponse = {
-      confirmations: confirmations.slice(0, limit),
-      total: confirmations.length,
+    const hasMore = transactions.length > limit;
+    const response = {
+      confirmations: transactions.slice(0, limit),
+      total: transactions.length,
       hasMore,
     };
 
@@ -84,16 +80,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get transactions and find matching one
+    const transactions = getTransactions({
+      fromAddress: walletAddress,
+      limit: 1000,
+    });
+
     let confirmation = null;
 
-    // Try to find confirmation by signature first
+    // Try to find by signature (transaction hash)
     if (signature) {
-      confirmation = analyticsStore.getConfirmationBySignature(signature);
-    }
-
-    // If not found and nonce provided, try by nonce
-    if (!confirmation && nonce) {
-      confirmation = analyticsStore.getConfirmationByNonce(nonce);
+      confirmation = transactions.find(tx => tx.transactionHash === signature);
     }
 
     if (!confirmation) {
@@ -104,7 +101,7 @@ export async function POST(req: NextRequest) {
     }
 
     // If wallet address provided, verify it matches
-    if (walletAddress && confirmation.walletAddress !== walletAddress) {
+    if (walletAddress && confirmation.fromAddress !== walletAddress) {
       return NextResponse.json({
         confirmed: false,
         message: 'Wallet address does not match the payment confirmation',
