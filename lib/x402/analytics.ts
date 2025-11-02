@@ -206,6 +206,46 @@ export function getAnalyticsMetrics(): AnalyticsMetrics {
 }
 
 /**
+ * Track API request (for middleware compatibility)
+ */
+export function trackApiRequest(data: {
+  endpoint: string;
+  method: string;
+  status: number;
+  paymentRequired?: boolean;
+  paymentProvided?: boolean;
+  paymentValid?: boolean;
+  responseTime?: number;
+  userAgent?: string;
+}): void {
+  // This is a compatibility function for the old middleware
+  // In the future, this could be enhanced to track API usage metrics
+  console.log('[Analytics] API request:', data.endpoint, data.status);
+}
+
+/**
+ * Analytics store (for middleware compatibility)
+ */
+export const analyticsStore = {
+  addConfirmation(data: any): any {
+    // This is a compatibility function for the old middleware
+    // Convert to transaction format
+    recordTransaction({
+      amount: data.amount || '0',
+      currency: data.token || 'USDC',
+      chain: 'solana',
+      status: 'completed',
+      fromAddress: data.walletAddress || '',
+      toAddress: data.recipient || '',
+      transactionHash: data.paymentSignature,
+      timestamp: Date.now(),
+      description: `Payment for ${data.endpoint}`,
+    });
+    return data;
+  },
+};
+
+/**
  * Generate mock transactions for demo purposes
  */
 export function generateMockTransactions(count: number = 20): void {
