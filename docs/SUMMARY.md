@@ -24,6 +24,7 @@
 * [API Configuration](API_CONFIGURATION.md)
 * [Payment Links](PAYMENT_LINKS.md)
 * [Webhooks](WEBHOOKS.md)
+* [Token-Gated Content](TOKEN_GATING.md)
 * [Configuration](configuration.md)
 * [Deployment](deployment.md)
 * [Testing](testing.md)
