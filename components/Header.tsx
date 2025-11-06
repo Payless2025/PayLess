@@ -35,6 +35,12 @@ export default function Header() {
               Payment Links
             </Link>
             <Link 
+              href="/streams" 
+              className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+            >
+              Streams
+            </Link>
+            <Link 
               href="/playground" 
               className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
             >
@@ -115,6 +121,13 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Payment Links
+              </Link>
+              <Link 
+                href="/streams" 
+                className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Streams
               </Link>
               <Link 
                 href="/playground" 
