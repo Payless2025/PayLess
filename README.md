@@ -36,6 +36,7 @@ Perfect for:
 - **🤖 Perfect for AI Agents** - Autonomous payments without human intervention
 - **📊 Built-in Analytics** - Track payments, revenue, and API usage
 - **🔔 Webhook Support** - Real-time payment notifications
+- **🔐 Token-Gated Content** - Holder-only API access for $PAYLESS holders
 
 ## 🚀 Quick Start
 
