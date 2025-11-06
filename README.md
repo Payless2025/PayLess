@@ -34,6 +34,7 @@ Perfect for:
 - **🌐 Multi-Chain Support** - Solana + BSC + Ethereum (Polygon coming soon!)
 - **🚀 Serverless Ready** - Deploy to Vercel, Netlify, or AWS Lambda
 - **🤖 Perfect for AI Agents** - Autonomous payments without human intervention
+- **⚡ Payment Streaming** - Pay-per-second for real-time services (AI APIs, compute, streaming)
 - **📊 Built-in Analytics** - Track payments, revenue, and API usage
 - **🔔 Webhook Support** - Real-time payment notifications
 - **🔐 Token-Gated Content** - Holder-only API access for $PAYLESS holders
