@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Github, Twitter, Menu, X } from 'lucide-react';
 
 export default function Header() {
@@ -13,10 +14,12 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <img 
+            <Image 
               src="/logo.png" 
               alt="Payless" 
-              className="h-10 w-10 transition-transform group-hover:scale-110"
+              width={40}
+              height={40}
+              className="transition-transform group-hover:scale-110"
             />
             <span className="text-xl font-bold bg-gradient-to-r from-payless-cyan via-payless-blue to-payless-purple bg-clip-text text-transparent">
               Payless

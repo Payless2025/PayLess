@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Zap, Shield, Globe } from 'lucide-react';
 
 export default function Hero() {
@@ -16,11 +17,14 @@ export default function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 text-center">
         {/* Logo/Brand */}
         <div className="mb-8">
-          <div className="mb-6">
-            <img 
+          <div className="mb-6 flex justify-center">
+            <Image 
               src="/logo.png" 
               alt="Payless Logo" 
-              className="h-32 md:h-40 mx-auto drop-shadow-2xl"
+              width={160}
+              height={160}
+              className="drop-shadow-2xl"
+              priority
             />
           </div>
           <h1 className="text-6xl md:text-8xl font-black mb-6 bg-gradient-to-r from-payless-cyan via-payless-blue to-payless-purple bg-clip-text text-transparent tracking-tight">
