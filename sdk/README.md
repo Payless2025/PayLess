@@ -10,6 +10,12 @@ npm install @payless/sdk
 ```
 [Documentation](./nodejs/README.md)
 
+### React Native (Mobile)
+```bash
+npm install @payless/react-native
+```
+[Documentation](./react-native/README.md)
+
 ### Python
 ```bash
 pip install payless-sdk
@@ -53,6 +59,27 @@ async def main():
 asyncio.run(main())
 ```
 
+### React Native
+
+```typescript
+import { usePayless, PaymentButton } from '@payless/react-native';
+
+function App() {
+  const { client } = usePayless({
+    walletAddress: 'YOUR_WALLET_ADDRESS',
+  });
+
+  return (
+    <PaymentButton
+      client={client}
+      endpoint="/api/ai/chat"
+      amount="0.05"
+      onSuccess={(data) => console.log(data)}
+    />
+  );
+}
+```
+
 ## Features
 
 All SDKs provide:
@@ -67,14 +94,15 @@ All SDKs provide:
 
 ## Installation
 
-Choose your preferred language and follow the installation guide in the respective SDK folder:
+Choose your preferred platform and follow the installation guide in the respective SDK folder:
 
-- [Node.js/TypeScript SDK](./nodejs/)
-- [Python SDK](./python/)
+- [Node.js/TypeScript SDK](./nodejs/) - Backend & Node.js apps
+- [React Native SDK](./react-native/) - iOS & Android mobile apps
+- [Python SDK](./python/) - Python applications
 
 ## Publishing
 
-### Node.js (npm)
+### Node.js SDK (npm)
 
 ```bash
 cd sdk/nodejs
@@ -83,7 +111,16 @@ npm run build
 npm publish
 ```
 
-### Python (PyPI)
+### React Native SDK (npm)
+
+```bash
+cd sdk/react-native
+npm install
+npm run build
+npm publish
+```
+
+### Python SDK (PyPI)
 
 ```bash
 cd sdk/python

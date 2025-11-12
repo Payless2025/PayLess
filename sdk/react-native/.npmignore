@@ -1,0 +1,21 @@
+# Source files (we publish compiled code)
+src/
+tsconfig.json
+.gitignore
+
+# Tests
+*.test.ts
+*.spec.ts
+__tests__/
+coverage/
+
+# Development
+.vscode/
+.idea/
+examples/
+*.log
+
+# Misc
+.DS_Store
+.env*
+
