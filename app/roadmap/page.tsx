@@ -120,8 +120,6 @@ export default function RoadmapPage() {
                   </ul>
                 </div>
               </div>
-            </div>
-          </section>
 
               {/* Payment Links & Analytics */}
               <div className="border-l-4 border-green-500 pl-6">
@@ -151,8 +149,6 @@ export default function RoadmapPage() {
                   </ul>
                 </div>
               </div>
-            </div>
-          </section>
 
               {/* Visual Analytics */}
               <div className="border-l-4 border-green-500 pl-6">
@@ -182,6 +178,35 @@ export default function RoadmapPage() {
                   </ul>
                 </div>
               </div>
+
+              {/* Enhanced Playground */}
+              <div className="border-l-4 border-green-500 pl-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Enhanced API Playground</h3>
+                  <ul className="space-y-2 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Multi-SDK Code Generator</strong> - Generate code for cURL, Node.js, Python, React Native</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Categorized Endpoints</strong> - AI, Data, Tools, and Premium categories</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Tabbed Interface</strong> - Request, Response, and Code tabs</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Copy-to-Clipboard</strong> - One-click code copying</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span>Share playground state via URL</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -195,19 +220,19 @@ export default function RoadmapPage() {
             <div className="space-y-6 ml-12">
               <div className="border-l-4 border-orange-500 pl-6">
                 <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-orange-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Enhanced User Experience</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">User Features</h3>
                   <ul className="space-y-2 text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span><strong>Enhanced Playground</strong> - Interactive API tester with code generation</span>
-                    </li>
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
                       <span><strong>Payment History</strong> - Detailed transaction history with receipts</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span>Email notifications for payments</span>
+                      <span><strong>Email Notifications</strong> - Payment alerts and receipts</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
+                      <span>User dashboard with statistics</span>
                     </li>
                   </ul>
                 </div>
