@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Github, Twitter, ExternalLink } from 'lucide-react';
 
 export default function Footer() {
@@ -11,10 +12,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <img 
+              <Image 
                 src="/logo.png" 
                 alt="Payless" 
-                className="h-10 w-10"
+                width={40}
+                height={40}
               />
               <span className="text-2xl font-bold bg-gradient-to-r from-payless-cyan via-payless-blue to-payless-purple bg-clip-text text-transparent">
                 Payless
