@@ -13,73 +13,82 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  BarChart3,
+  PieChart as PieChartIcon
 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Area,
+  AreaChart
+} from 'recharts';
 
 interface AnalyticsMetrics {
-  totalRequests: number;
-  successfulRequests: number;
-  failedRequests: number;
-  paymentRequests: number;
-  successfulPayments: number;
-  failedPayments: number;
-  totalRevenue: number;
-  averageResponseTime: number;
-  uniqueWallets: number;
-  endpointStats: Record<string, EndpointStats>;
-  recentEvents: AnalyticsEvent[];
+  totalTransactions: number;
+  totalRevenue: string;
+  successRate: number;
+  averageTransactionValue: string;
+  transactionsByChain: {
+    solana: number;
+    bsc: number;
+    ethereum: number;
+  };
+  transactionsByStatus: {
+    pending: number;
+    completed: number;
+    failed: number;
+  };
+  revenueByDay: Array<{
+    date: string;
+    amount: number;
+  }>;
+  recentTransactions: Array<{
+    id: string;
+    amount: string;
+    chain: string;
+    status: string;
+    timestamp: number;
+    fromAddress: string;
+  }>;
 }
 
-interface EndpointStats {
-  endpoint: string;
-  totalCalls: number;
-  successfulCalls: number;
-  failedCalls: number;
-  revenue: number;
-  averageResponseTime: number;
-}
+const CHAIN_COLORS = {
+  solana: '#14F195',
+  bsc: '#F3BA2F',
+  ethereum: '#627EEA',
+};
 
-interface AnalyticsEvent {
-  id: string;
-  timestamp: number;
-  endpoint: string;
-  method: string;
-  status: number;
-  paymentRequired: boolean;
-  paymentProvided: boolean;
-  paymentValid: boolean;
-  amount?: string;
-  walletAddress?: string;
-  responseTime: number;
-  error?: string;
-}
+const STATUS_COLORS = {
+  completed: '#10B981',
+  pending: '#F59E0B',
+  failed: '#EF4444',
+};
 
 export default function AnalyticsPage() {
   const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filterEndpoint, setFilterEndpoint] = useState<string>('');
-  const [filterDays, setFilterDays] = useState<number>(7);
   const [autoRefresh, setAutoRefresh] = useState(false);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
+      const response = await fetch('/api/analytics');
+      const result = await response.json();
       
-      if (filterEndpoint) {
-        params.append('endpoint', filterEndpoint);
-      }
-      
-      if (filterDays > 0) {
-        const startDate = Date.now() - (filterDays * 24 * 60 * 60 * 1000);
-        params.append('startDate', startDate.toString());
-      }
-
-      const response = await fetch(`/api/analytics?${params.toString()}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setMetrics(data.data);
+      if (result.success) {
+        setMetrics(result.data);
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
@@ -88,68 +97,37 @@ export default function AnalyticsPage() {
     }
   };
 
-  const exportData = async (format: 'json' | 'csv') => {
-    try {
-      const filter: any = {};
-      
-      if (filterEndpoint) {
-        filter.endpoint = filterEndpoint;
-      }
-      
-      if (filterDays > 0) {
-        filter.startDate = Date.now() - (filterDays * 24 * 60 * 60 * 1000);
-      }
-
-      const response = await fetch('/api/analytics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ format, filter }),
-      });
-
-      if (format === 'csv') {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `analytics-${Date.now()}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        const data = await response.json();
-        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `analytics-${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
-    } catch (error) {
-      console.error('Failed to export data:', error);
-    }
-  };
-
   useEffect(() => {
     fetchAnalytics();
-  }, [filterEndpoint, filterDays]);
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (autoRefresh) {
-      interval = setInterval(fetchAnalytics, 10000); // Refresh every 10 seconds
+      interval = setInterval(fetchAnalytics, 10000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [autoRefresh, filterEndpoint, filterDays]);
+  }, [autoRefresh]);
 
-  const endpoints = metrics ? Object.keys(metrics.endpointStats) : [];
+  // Prepare chart data
+  const chainDistributionData = metrics ? [
+    { name: 'Solana', value: metrics.transactionsByChain.solana, color: CHAIN_COLORS.solana },
+    { name: 'BSC', value: metrics.transactionsByChain.bsc, color: CHAIN_COLORS.bsc },
+    { name: 'Ethereum', value: metrics.transactionsByChain.ethereum, color: CHAIN_COLORS.ethereum },
+  ] : [];
+
+  const statusDistributionData = metrics ? [
+    { name: 'Completed', value: metrics.transactionsByStatus.completed, color: STATUS_COLORS.completed },
+    { name: 'Pending', value: metrics.transactionsByStatus.pending, color: STATUS_COLORS.pending },
+    { name: 'Failed', value: metrics.transactionsByStatus.failed, color: STATUS_COLORS.failed },
+  ] : [];
+
+  const revenueData = metrics?.revenueByDay.map(item => ({
+    date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    revenue: item.amount,
+  })) || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -185,61 +163,6 @@ export default function AnalyticsPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5 text-purple-400" />
-            <h2 className="text-lg font-semibold text-white">Filters</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-gray-300 mb-2">Time Period</label>
-              <select
-                value={filterDays}
-                onChange={(e) => setFilterDays(parseInt(e.target.value))}
-                className="w-full px-4 py-2 rounded-lg bg-slate-900 text-white border border-white/10 focus:border-purple-500 focus:outline-none"
-              >
-                <option value={1}>Last 24 hours</option>
-                <option value={7}>Last 7 days</option>
-                <option value={30}>Last 30 days</option>
-                <option value={90}>Last 90 days</option>
-                <option value={0}>All time</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-2">Endpoint</label>
-              <select
-                value={filterEndpoint}
-                onChange={(e) => setFilterEndpoint(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-slate-900 text-white border border-white/10 focus:border-purple-500 focus:outline-none"
-              >
-                <option value="">All endpoints</option>
-                {endpoints.map((endpoint) => (
-                  <option key={endpoint} value={endpoint}>
-                    {endpoint}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end gap-2">
-              <button
-                onClick={() => exportData('json')}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                JSON
-              </button>
-              <button
-                onClick={() => exportData('csv')}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                CSV
-              </button>
-            </div>
-          </div>
-        </div>
-
         {loading && !metrics ? (
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="w-8 h-8 text-purple-400 animate-spin" />
@@ -250,106 +173,176 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <MetricCard
                 icon={<Activity className="w-6 h-6" />}
-                label="Total Requests"
-                value={metrics.totalRequests}
-                subtitle={`${metrics.successfulRequests} successful`}
+                label="Total Transactions"
+                value={metrics.totalTransactions}
+                subtitle={`${metrics.successRate}% success rate`}
                 color="blue"
               />
               <MetricCard
                 icon={<DollarSign className="w-6 h-6" />}
                 label="Total Revenue"
-                value={`$${metrics.totalRevenue.toFixed(2)}`}
-                subtitle={`${metrics.successfulPayments} payments`}
+                value={`$${metrics.totalRevenue}`}
+                subtitle={`Avg: $${metrics.averageTransactionValue}`}
                 color="green"
               />
               <MetricCard
-                icon={<Users className="w-6 h-6" />}
-                label="Unique Wallets"
-                value={metrics.uniqueWallets}
-                subtitle={`${metrics.paymentRequests} payment requests`}
+                icon={<CheckCircle className="w-6 h-6" />}
+                label="Completed"
+                value={metrics.transactionsByStatus.completed}
+                subtitle={`${metrics.transactionsByStatus.failed} failed`}
                 color="purple"
               />
               <MetricCard
                 icon={<Clock className="w-6 h-6" />}
-                label="Avg Response Time"
-                value={`${metrics.averageResponseTime.toFixed(0)}ms`}
-                subtitle={`${metrics.failedRequests} failed`}
+                label="Pending"
+                value={metrics.transactionsByStatus.pending}
+                subtitle="Awaiting confirmation"
                 color="orange"
               />
             </div>
 
-            {/* Endpoint Statistics */}
+            {/* Charts Row 1: Revenue Timeline */}
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 mb-8">
-              <h2 className="text-xl font-semibold text-white mb-4">Endpoint Statistics</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-4 text-gray-300 font-semibold">Endpoint</th>
-                      <th className="text-right py-3 px-4 text-gray-300 font-semibold">Calls</th>
-                      <th className="text-right py-3 px-4 text-gray-300 font-semibold">Success</th>
-                      <th className="text-right py-3 px-4 text-gray-300 font-semibold">Failed</th>
-                      <th className="text-right py-3 px-4 text-gray-300 font-semibold">Revenue</th>
-                      <th className="text-right py-3 px-4 text-gray-300 font-semibold">Avg Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.values(metrics.endpointStats).map((stats) => (
-                      <tr key={stats.endpoint} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="py-3 px-4 text-white font-mono text-sm">{stats.endpoint}</td>
-                        <td className="py-3 px-4 text-right text-gray-300">{stats.totalCalls}</td>
-                        <td className="py-3 px-4 text-right text-green-400">{stats.successfulCalls}</td>
-                        <td className="py-3 px-4 text-right text-red-400">{stats.failedCalls}</td>
-                        <td className="py-3 px-4 text-right text-purple-400">${stats.revenue.toFixed(2)}</td>
-                        <td className="py-3 px-4 text-right text-gray-300">{stats.averageResponseTime.toFixed(0)}ms</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex items-center gap-2 mb-6">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                <h2 className="text-xl font-semibold text-white">Revenue Timeline (Last 7 Days)</h2>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={revenueData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
+                  <XAxis dataKey="date" stroke="#ffffff80" />
+                  <YAxis stroke="#ffffff80" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #ffffff20',
+                      borderRadius: '8px',
+                      color: '#fff',
+                    }}
+                    formatter={(value: any) => `$${value.toFixed(2)}`}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#8B5CF6"
+                    fillOpacity={1}
+                    fill="url(#colorRevenue)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Charts Row 2: Distribution Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {/* Chain Distribution */}
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                <div className="flex items-center gap-2 mb-6">
+                  <PieChartIcon className="w-5 h-5 text-purple-400" />
+                  <h2 className="text-xl font-semibold text-white">Transactions by Chain</h2>
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={chainDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {chainDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #ffffff20',
+                        borderRadius: '8px',
+                        color: '#fff',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Status Distribution */}
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                <div className="flex items-center gap-2 mb-6">
+                  <BarChart3 className="w-5 h-5 text-blue-400" />
+                  <h2 className="text-xl font-semibold text-white">Transaction Status</h2>
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={statusDistributionData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
+                    <XAxis dataKey="name" stroke="#ffffff80" />
+                    <YAxis stroke="#ffffff80" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #ffffff20',
+                        borderRadius: '8px',
+                        color: '#fff',
+                      }}
+                    />
+                    <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                      {statusDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Recent Activity */}
+            {/* Recent Transactions */}
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-              <h2 className="text-xl font-semibold text-white mb-4">Recent Activity</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">Recent Transactions</h2>
               <div className="space-y-2">
-                {metrics.recentEvents.map((event) => (
+                {metrics.recentTransactions.slice(0, 10).map((tx) => (
                   <div
-                    key={event.id}
+                    key={tx.id}
                     className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                   >
                     <div className="flex-shrink-0">
-                      {event.status >= 200 && event.status < 300 ? (
+                      {tx.status === 'completed' ? (
                         <CheckCircle className="w-5 h-5 text-green-400" />
+                      ) : tx.status === 'pending' ? (
+                        <Clock className="w-5 h-5 text-orange-400" />
                       ) : (
                         <XCircle className="w-5 h-5 text-red-400" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-sm text-purple-400">{event.method}</span>
-                        <span className="font-mono text-sm text-white truncate">{event.endpoint}</span>
+                        <span className="font-mono text-sm text-purple-400">${tx.amount}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">
+                          {tx.chain}
+                        </span>
                         <span className={`text-xs px-2 py-0.5 rounded ${
-                          event.status >= 200 && event.status < 300
+                          tx.status === 'completed'
                             ? 'bg-green-500/20 text-green-300'
+                            : tx.status === 'pending'
+                            ? 'bg-orange-500/20 text-orange-300'
                             : 'bg-red-500/20 text-red-300'
                         }`}>
-                          {event.status}
+                          {tx.status}
                         </span>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-gray-400">
-                        <span>{new Date(event.timestamp).toLocaleString()}</span>
-                        <span>{event.responseTime}ms</span>
-                        {event.amount && <span className="text-purple-400">${event.amount}</span>}
-                        {event.walletAddress && (
-                          <span className="font-mono truncate max-w-[150px]">
-                            {event.walletAddress}
-                          </span>
-                        )}
+                        <span>{new Date(tx.timestamp).toLocaleString()}</span>
+                        <span className="font-mono truncate max-w-[150px]">
+                          From: {tx.fromAddress}
+                        </span>
                       </div>
-                      {event.error && (
-                        <div className="text-xs text-red-400 mt-1">{event.error}</div>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -393,4 +386,3 @@ function MetricCard({ icon, label, value, subtitle, color }: MetricCardProps) {
     </div>
   );
 }
-
