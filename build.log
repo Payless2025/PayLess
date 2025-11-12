@@ -1,0 +1,46 @@
+
+> payless@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.33
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+./app/dashboard/page.tsx
+228:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+246:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+264:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/pay/[id]/page.tsx
+35:6  Warning: React Hook useEffect has a missing dependency: 'fetchPaymentLink'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+66:16  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+68:16  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+70:16  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/payment-links/page.tsx
+184:31  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/streams/page.tsx
+144:6  Warning: React Hook useEffect has a missing dependency: 'fetchStreams'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/PaymentConfirmation.tsx
+42:6  Warning: React Hook useEffect has missing dependencies: 'handleCheckPayment' and 'handleMonitorPayment'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+217:6  Warning: React Hook useEffect has a missing dependency: 'loadHistory'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+Failed to compile.
+
+./sdk/react-native/examples/BasicUsage.tsx:9:8
+Type error: Cannot find module 'react-native' or its corresponding type declarations.
+
+[0m [90m  7 |[39m   [33mStyleSheet[39m[33m,[39m[0m
+[0m [90m  8 |[39m   [33mAlert[39m[33m,[39m[0m
+[0m[31m[1m>[22m[39m[90m  9 |[39m } [36mfrom[39m [32m'react-native'[39m[33m;[39m[0m
+[0m [90m    |[39m        [31m[1m^[22m[39m[0m
+[0m [90m 10 |[39m [36mimport[39m {[0m
+[0m [90m 11 |[39m   usePayless[33m,[39m[0m
+[0m [90m 12 |[39m   [33mPaymentButton[39m[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
