@@ -1,0 +1,66 @@
+{
+  "name": "@payless/react-native",
+  "version": "1.0.0",
+  "description": "Official Payless SDK for React Native - Accept crypto payments with x402 protocol on mobile",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "react-native": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "jest",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "keywords": [
+    "payless",
+    "x402",
+    "crypto",
+    "payments",
+    "solana",
+    "bsc",
+    "ethereum",
+    "usdc",
+    "blockchain",
+    "micropayments",
+    "react-native",
+    "mobile",
+    "ios",
+    "android"
+  ],
+  "author": "Payless",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Payless2025/PayLess.git",
+    "directory": "sdk/react-native"
+  },
+  "bugs": {
+    "url": "https://github.com/Payless2025/PayLess/issues"
+  },
+  "homepage": "https://payless.com",
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-native": ">=0.64.0"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "@walletconnect/react-native-compat": "^2.13.0",
+    "@walletconnect/web3wallet": "^1.11.2",
+    "bs58": "^5.0.0",
+    "tweetnacl": "^1.0.3",
+    "ethers": "^6.9.0"
+  },
+  "devDependencies": {
+    "@react-native-async-storage/async-storage": "^1.21.0",
+    "@types/react": "^18.2.45",
+    "@types/react-native": "^0.73.0",
+    "typescript": "^5.3.3",
+    "eslint": "^8.56.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ]
+}
+
