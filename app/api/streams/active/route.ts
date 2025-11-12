@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  streamStore,
-  calculateStreamAmount,
+  getActiveStreams,
+  updateStreamBilling,
+  calculateStreamCost,
 } from '@/lib/x402/payment-streaming';
 
 /**
@@ -9,13 +10,22 @@ import {
  */
 export async function GET(req: NextRequest) {
   try {
-    const activeStreams = streamStore.getActiveStreams();
+    const activeStreams = getActiveStreams();
 
-    const streamsWithAmounts = activeStreams.map(stream => ({
-      ...stream,
-      currentAmount: calculateStreamAmount(stream),
-      duration: Math.floor((Date.now() - stream.startTime) / 1000),
-    }));
+    // Update billing for all active streams and add current amounts
+    const streamsWithAmounts = activeStreams.map(stream => {
+      // Update billing to get latest amounts
+      const updatedStream = updateStreamBilling(stream.id) || stream;
+      
+      // Calculate current duration
+      const currentDuration = updatedStream.totalDuration;
+      
+      return {
+        ...updatedStream,
+        currentAmount: updatedStream.totalCharged,
+        duration: Math.floor(currentDuration),
+      };
+    });
 
     // Calculate total streaming volume
     const totalVolume = streamsWithAmounts.reduce(
