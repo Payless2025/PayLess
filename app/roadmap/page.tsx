@@ -154,6 +154,37 @@ export default function RoadmapPage() {
             </div>
           </section>
 
+              {/* Visual Analytics */}
+              <div className="border-l-4 border-green-500 pl-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Visual Analytics & Charts</h3>
+                  <ul className="space-y-2 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Revenue Timeline</strong> - Area chart showing revenue trends over time</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Chain Distribution</strong> - Pie chart for transaction distribution by blockchain</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Status Analytics</strong> - Bar chart for transaction status breakdown</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Responsive Design</strong> - Mobile-friendly chart rendering</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span>Interactive tooltips & legends with Recharts</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* 🔥 IN PROGRESS */}
           <section>
             <div className="flex items-center gap-3 mb-8">
@@ -173,10 +204,6 @@ export default function RoadmapPage() {
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
                       <span><strong>Payment History</strong> - Detailed transaction history with receipts</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span><strong>Charts & Graphs</strong> - Visual analytics with charts</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />

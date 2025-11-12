@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getAnalyticsMetrics, generateMockTransactions } from '@/lib/x402/analytics';
+import { getAnalyticsMetrics, generateMockTransactions, getAllTransactions } from '@/lib/x402/analytics';
 
 export async function GET() {
   try {
     // Generate mock data if no transactions exist (for demo)
-    generateMockTransactions(25);
+    if (getAllTransactions().length === 0) {
+      generateMockTransactions(50); // More data for better charts
+    }
     
     const metrics = getAnalyticsMetrics();
 
     return NextResponse.json({
       success: true,
-      metrics,
+      data: metrics,
     });
   } catch (error) {
     console.error('Error fetching analytics:', error);
