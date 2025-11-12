@@ -91,6 +91,35 @@ export default function RoadmapPage() {
                   </ul>
                 </div>
               </div>
+
+              {/* Payment Streaming & Mobile */}
+              <div className="border-l-4 border-green-500 pl-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Payment Streaming & Mobile SDK</h3>
+                  <ul className="space-y-2 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Payment Streaming</strong> - Continuous micropayments with real-time monitoring</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Stream Management API</strong> - Create, pause, resume, and cancel streams</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>React Native SDK</strong> - Full mobile support for iOS & Android</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Phantom Mobile Integration</strong> - Native mobile wallet support</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>React Hooks & Components</strong> - Ready-to-use mobile UI components</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -148,10 +177,6 @@ export default function RoadmapPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Payment Streaming</strong> - Pay per second/minute</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span><strong>Multi-Currency Pricing</strong> - USD-based pricing with auto-conversion</span>
                     </li>
                     <li className="flex items-start gap-2">
@@ -161,6 +186,10 @@ export default function RoadmapPage() {
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span>Rate limiting & API key authentication</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                      <span>Advanced webhook retry logic & management</span>
                     </li>
                   </ul>
                 </div>
@@ -202,7 +231,7 @@ export default function RoadmapPage() {
                   <ul className="space-y-2 text-gray-300">
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Mobile SDKs</strong> - React Native & Flutter support</span>
+                      <span><strong>Flutter SDK</strong> - Cross-platform mobile development support</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -219,6 +248,10 @@ export default function RoadmapPage() {
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span>Automated invoice generation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                      <span>WooCommerce plugin support</span>
                     </li>
                   </ul>
                 </div>
