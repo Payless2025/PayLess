@@ -123,6 +123,37 @@ export default function RoadmapPage() {
             </div>
           </section>
 
+              {/* Payment Links & Analytics */}
+              <div className="border-l-4 border-green-500 pl-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Payment Links & Analytics</h3>
+                  <ul className="space-y-2 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Payment Links</strong> - Shareable crypto payment URLs (no code needed)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Analytics Dashboard</strong> - Real-time transaction metrics with export</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>QR Code Generation</strong> - Automatic QR codes for payment links</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>CSV/JSON Export</strong> - Data export functionality</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span>Auto-refresh analytics & filtering</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* 🔥 IN PROGRESS */}
           <section>
             <div className="flex items-center gap-3 mb-8">
@@ -133,23 +164,23 @@ export default function RoadmapPage() {
             <div className="space-y-6 ml-12">
               <div className="border-l-4 border-orange-500 pl-6">
                 <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-orange-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Payment Links & UX</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Enhanced User Experience</h3>
                   <ul className="space-y-2 text-gray-700">
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span><strong>Payment Links</strong> - Shareable crypto payment URLs (no code needed)</span>
+                      <span><strong>Enhanced Playground</strong> - Interactive API tester with code generation</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span><strong>Analytics Dashboard</strong> - Real-time transaction metrics</span>
+                      <span><strong>Payment History</strong> - Detailed transaction history with receipts</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span><strong>Payment History</strong> - Transaction tracking & receipts</span>
+                      <span><strong>Charts & Graphs</strong> - Visual analytics with charts</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span>Enhanced playground with live demos</span>
+                      <span>Email notifications for payments</span>
                     </li>
                   </ul>
                 </div>
