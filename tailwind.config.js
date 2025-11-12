@@ -9,21 +9,34 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          900: '#134e4a',
+        },
+        payless: {
+          cyan: '#00FFD0',
+          blue: '#00B8D4',
+          purple: '#7B3FF2',
+          'purple-dark': '#6366F1',
+          dark: '#1E293B',
+          'dark-bg': '#0F172A',
         },
       },
       animation: {
         'gradient': 'gradient 8s linear infinite',
         'float': 'float 6s ease-in-out infinite',
+        'pulse': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      animationDelay: {
+        '500': '500ms',
+        '1000': '1000ms',
       },
       keyframes: {
         gradient: {
