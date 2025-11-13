@@ -35,6 +35,12 @@ export default function Header() {
               Roadmap
             </Link>
             <Link 
+              href="/history" 
+              className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
+            >
+              History
+            </Link>
+            <Link 
               href="/payment-links" 
               className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
             >
@@ -120,6 +126,13 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Roadmap
+              </Link>
+              <Link 
+                href="/history" 
+                className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                History
               </Link>
               <Link 
                 href="/payment-links" 
