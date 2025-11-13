@@ -207,6 +207,35 @@ export default function RoadmapPage() {
                   </ul>
                 </div>
               </div>
+
+              {/* Payment History */}
+              <div className="border-l-4 border-green-500 pl-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Payment History</h3>
+                  <ul className="space-y-2 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Transaction Tracking</strong> - Complete history of all payments</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Advanced Search & Filters</strong> - Filter by date, chain, status, addresses</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>CSV/JSON Export</strong> - Export transaction data for accounting</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span><strong>Blockchain Receipts</strong> - Detailed transaction proof with explorer links</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span>Real-time updates with 30-second auto-refresh</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -224,15 +253,15 @@ export default function RoadmapPage() {
                   <ul className="space-y-2 text-gray-700">
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span><strong>Payment History</strong> - Detailed transaction history with receipts</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
                       <span><strong>Email Notifications</strong> - Payment alerts and receipts</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span>User dashboard with statistics</span>
+                      <span><strong>User Dashboard Enhancement</strong> - Advanced statistics and insights</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
+                      <span>Custom receipt templates</span>
                     </li>
                   </ul>
                 </div>
