@@ -5,7 +5,7 @@
 Payless offers **token-gated API access** for $PAYLESS holders. Instead of traditional subscriptions, simply hold tokens to unlock premium features and higher rate limits.
 
 **Total Supply:** 1,000,000,000 $PAYLESS tokens  
-**Contract Address (CA):** `FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump`  
+**Contract Address (CA):** `6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump`  
 **Chain:** Solana
 
 ## Why Token-Gating?
@@ -246,7 +246,7 @@ Rate limits reset every hour. If you exceed your limit:
 
 Add to your `.env.local`:
 ```env
-PAYLESS_TOKEN_MINT=FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump
+PAYLESS_TOKEN_MINT=6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump
 SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 ```
 

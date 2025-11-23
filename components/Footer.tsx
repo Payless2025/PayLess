@@ -31,11 +31,11 @@ export default function Footer() {
               <h4 className="text-sm font-semibold text-white mb-2">Contract Address (CA)</h4>
               <div className="flex items-center gap-2 p-3 bg-payless-cyan/10 border border-payless-cyan/30 rounded-lg max-w-md backdrop-blur-sm">
                 <code className="text-xs text-payless-cyan font-mono break-all flex-1">
-                  FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump
+                  6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump
                 </code>
                 <button
                   onClick={(e) => {
-                    navigator.clipboard.writeText('FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump');
+                    navigator.clipboard.writeText('6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump');
                     // Optional: Show toast notification
                     const button = e.currentTarget as HTMLButtonElement;
                     const originalHTML = button.innerHTML;
