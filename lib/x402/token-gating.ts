@@ -8,7 +8,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 // Token Configuration
 export const PAYLESS_TOKEN_CONFIG = {
   TOTAL_SUPPLY: 1_000_000_000, // 1 billion tokens
-  TOKEN_MINT: 'FDgSegoxrdpsct21YVeAbC9dWeTwTxA8Cceeh8BPpump', // $PAYLESS token mint 
+  TOKEN_MINT: '6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump', // $PAYLESS token mint 
   SOLANA_RPC: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
 };
 
