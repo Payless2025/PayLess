@@ -2,11 +2,11 @@
 
 Welcome to Payless - the simplest way to monetize your APIs with crypto payments.
 
-**Contract Address (CA):** `6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump`
+**$PAYLESS Contract Address (Robinhood Chain):** _not yet deployed — set `PAYLESS_TOKEN_ADDRESS` once it is._
 
 ## What is Payless?
 
-Payless is a serverless payment platform built on the x402 protocol for Solana. It lets developers monetize any API with crypto payments in minutes—no accounts, no subscriptions, no complexity.
+Payless is a serverless payment platform built on the x402 protocol for Robinhood Chain. It lets developers monetize any API with crypto payments in minutes—no accounts, no subscriptions, no complexity.
 
 ## Key Features
 
@@ -31,5 +31,5 @@ Payless is a serverless payment platform built on the x402 protocol for Solana. 
 
 ---
 
-Built with ❤️ using x402 protocol on Solana
+Built with ❤️ using x402 protocol on Robinhood Chain
 

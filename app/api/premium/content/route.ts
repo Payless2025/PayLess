@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withMultiChainPayment } from '@/lib/x402/multi-chain-middleware';
+import { withX402Payment } from '@/lib/x402/middleware';
 
 async function handler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -37,5 +37,5 @@ async function handler(req: NextRequest) {
   });
 }
 
-export const GET = withMultiChainPayment(handler);
+export const GET = withX402Payment(handler);
 

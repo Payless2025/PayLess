@@ -62,7 +62,7 @@ export default function StreamsPage() {
           walletAddress: wallet,
           config: {
             ...createForm,
-            chain: 'solana',
+            chain: 'robinhood',
           },
           initialBalance: createForm.initialBalance,
         }),

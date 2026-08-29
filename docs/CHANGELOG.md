@@ -4,6 +4,46 @@ All notable changes to the Payless project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed — BREAKING: single-chain migration to Robinhood Chain
+
+Payless now settles exclusively on **Robinhood Chain** (EVM / Arbitrum Orbit,
+chain ID `4663`). Solana, BSC, Ethereum and the planned Polygon support have
+been removed from the website and its libraries.
+
+- **Payment token is now USDG** (Paxos Global Dollar,
+  `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 decimals). USDC is not
+  deployed on Robinhood Chain.
+- **Signatures are EIP-191** (`personal_sign`, recovered with
+  `ethers.utils.verifyMessage`) instead of Solana ed25519 + base58.
+- `lib/chains/solana.ts`, `bsc.ts` and `ethereum.ts` are replaced by
+  `lib/chains/robinhood.ts`.
+- `lib/x402/multi-chain-middleware.ts` is removed; `withMultiChainPayment` is
+  gone and every paid route now uses `withX402Payment` from
+  `lib/x402/middleware.ts`.
+- Payment payloads use `tokenAddress` (ERC-20 contract) instead of `tokenMint`,
+  and carry a `chainId`.
+- Wallet connection moved from the Solana wallet adapter (Phantom / Solflare)
+  to wagmi + an injected EVM connector (MetaMask, Rabby, …).
+- Environment variables: `SOLANA_*` / `BSC_*` / `ETHEREUM_*` / `USDC_MINT` /
+  `NETWORK` / `RPC_URL` are replaced by `ROBINHOOD_CHAIN_ID`,
+  `ROBINHOOD_RPC_URL`, `ROBINHOOD_EXPLORER_URL` and `USDG_ADDRESS`.
+  `WALLET_ADDRESS` must now be a `0x…` address.
+- Token gating reads an ERC-20 `balanceOf` on Robinhood Chain via
+  `PAYLESS_TOKEN_ADDRESS`. Until that variable is set every wallet resolves to
+  the free tier.
+- `@solana/*`, `bs58` and `tweetnacl` dropped from the website's dependencies.
+- Docs `MULTI_CHAIN.md`, `ETHEREUM_SUPPORT.md` and `MULTI_CHAIN_TEST_RESULTS.md`
+  removed — they documented chains Payless no longer supports.
+
+### Fixed
+- Dashboard metric cards read `data.metrics` from `/api/analytics`, which
+  returns `data`. Every card showed zero while the transaction table below was
+  populated. Now reads `data.data`.
+
+### Historical entries below describe the previous multi-chain releases and are
+### left unchanged as a record of what shipped at the time.
+
+
 ### Added
 - **Ethereum Support**: Full Ethereum mainnet integration for accepting payments in USDC and USDT
   - New `lib/chains/ethereum.ts` with payment verification

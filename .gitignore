@@ -17,10 +17,12 @@
 .DS_Store
 *.pem
 
-# debug
+# debug / build artefacts
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+build.log
 
 # local env files
 .env*.local
@@ -33,3 +35,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local agent/editor config (contains local paths)
+.claude/

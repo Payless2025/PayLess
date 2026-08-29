@@ -103,7 +103,7 @@ def premium():
 **React:**
 ```typescript
 import { createClient } from '@payless/sdk';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@robinhood/wallet-adapter-react';
 
 const { publicKey, signMessage } = useWallet();
 
@@ -195,7 +195,7 @@ const mockPayment = createMockPaymentProof(
   'SENDER_ADDRESS',
   'RECIPIENT_ADDRESS',
   '0.05',
-  'USDC_MINT'
+  'USDG_ADDRESS'
 );
 ```
 

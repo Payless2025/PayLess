@@ -1,24 +1,26 @@
-import { SolanaPaymentPayload } from './types';
-import bs58 from 'bs58';
+import { RobinhoodPaymentPayload } from './types';
+import { ROBINHOOD_CHAIN_ID, USDG_ADDRESS } from '../chains/config';
 
 /**
- * Client-side payment utilities for Solana
+ * Client-side payment utilities for Robinhood Chain
  */
 
-export interface SolanaWalletProvider {
-  publicKey: string; // base58 encoded public key
-  signMessage: (message: Uint8Array) => Promise<Uint8Array>;
+export type SignMessage = (message: string) => Promise<string>;
+
+export interface RobinhoodWalletProvider {
+  address: string; // Checksummed 0x address
+  signMessage: SignMessage;
 }
 
 /**
- * Create payment message to sign
+ * Create the payment message to sign
  */
 export function createPaymentMessage(
   from: string,
   to: string,
   amount: string,
   token: string,
-  tokenMint: string,
+  tokenAddress: string,
   nonce: string,
   timestamp: number
 ): string {
@@ -27,10 +29,11 @@ export function createPaymentMessage(
     to,
     amount,
     token,
-    tokenMint,
+    tokenAddress,
+    chainId: ROBINHOOD_CHAIN_ID,
     nonce,
     timestamp,
-    protocol: 'x402-solana',
+    protocol: 'x402-robinhood',
   });
 }
 
@@ -41,19 +44,20 @@ export function createPaymentPayload(
   from: string,
   to: string,
   amount: string,
-  tokenMint: string,
-  token: string = 'USDC'
-): Omit<SolanaPaymentPayload, 'signature'> {
+  tokenAddress: string = USDG_ADDRESS,
+  token: string = 'USDG'
+): Omit<RobinhoodPaymentPayload, 'signature'> {
   const nonce = Math.random().toString(36).substring(7);
   const timestamp = Date.now();
-  const message = createPaymentMessage(from, to, amount, token, tokenMint, nonce, timestamp);
+  const message = createPaymentMessage(from, to, amount, token, tokenAddress, nonce, timestamp);
 
   return {
     from,
     to,
     amount,
     token,
-    tokenMint,
+    tokenAddress,
+    chainId: ROBINHOOD_CHAIN_ID,
     nonce,
     timestamp,
     message,
@@ -61,33 +65,42 @@ export function createPaymentPayload(
 }
 
 /**
- * Sign payment payload with Solana wallet
+ * Generate a syntactically valid but meaningless 65-byte signature.
+ * Only used in demo mode, where the server skips signature recovery.
+ */
+function mockSignature(): string {
+  const bytes = Array.from({ length: 65 }, () =>
+    Math.floor(Math.random() * 256)
+      .toString(16)
+      .padStart(2, '0')
+  );
+  return `0x${bytes.join('')}`;
+}
+
+/**
+ * Sign payment payload with a connected Robinhood Chain wallet
  */
 export async function signPaymentPayload(
-  payload: Omit<SolanaPaymentPayload, 'signature'>,
-  wallet?: SolanaWalletProvider
-): Promise<SolanaPaymentPayload> {
-  // In production, use Phantom or other Solana wallet to sign
-  // For demo purposes, create a mock signature
-  if (!wallet || process.env.NODE_ENV !== 'production') {
-    const mockSignature = bs58.encode(Buffer.from(Array(64).fill(0).map(() => Math.floor(Math.random() * 256))));
+  payload: Omit<RobinhoodPaymentPayload, 'signature'>,
+  signMessage?: SignMessage
+): Promise<RobinhoodPaymentPayload> {
+  if (!signMessage) {
     return {
       ...payload,
-      signature: mockSignature,
+      signature: mockSignature(),
     };
   }
 
   try {
-    const messageBytes = new TextEncoder().encode(payload.message);
-    const signatureBytes = await wallet.signMessage(messageBytes);
-    const signature = bs58.encode(signatureBytes);
-
+    const signature = await signMessage(payload.message);
     return {
       ...payload,
       signature,
     };
   } catch (error) {
-    throw new Error('Failed to sign payment: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    throw new Error(
+      'Failed to sign payment: ' + (error instanceof Error ? error.message : 'Unknown error')
+    );
   }
 }
 
@@ -100,7 +113,8 @@ export async function makePaymentRequest(
   walletAddress?: string,
   recipientAddress?: string,
   amount?: string,
-  tokenMint?: string
+  tokenAddress?: string,
+  signMessage?: SignMessage
 ): Promise<Response> {
   // First request without payment to get 402 response
   const initialResponse = await fetch(url, options);
@@ -113,16 +127,20 @@ export async function makePaymentRequest(
   const paymentInfo = await initialResponse.json();
   const { payment } = paymentInfo;
 
+  if (!walletAddress) {
+    throw new Error('A connected Robinhood Chain wallet address is required to pay');
+  }
+
   // Create and sign payment
   const paymentPayload = createPaymentPayload(
-    walletAddress || 'YOUR_WALLET_ADDRESS',
+    walletAddress,
     recipientAddress || payment.recipient,
     amount || payment.amount,
-    tokenMint || payment.tokenMint,
+    tokenAddress || payment.tokenAddress,
     payment.currency
   );
 
-  const signedPayment = await signPaymentPayload(paymentPayload);
+  const signedPayment = await signPaymentPayload(paymentPayload, signMessage);
 
   // Retry request with payment
   const paymentResponse = await fetch(url, {
@@ -137,86 +155,54 @@ export async function makePaymentRequest(
 }
 
 /**
- * Test mode: Create mock payment header for Solana
+ * Demo mode: create a mock payment header for Robinhood Chain
  */
 export function createMockPayment(
   from: string,
   to: string,
   amount: string,
-  tokenMint: string = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+  tokenAddress: string = USDG_ADDRESS
 ): string {
-  const nonce = Math.random().toString(36).substring(7);
-  const timestamp = Date.now();
-  const message = createPaymentMessage(from, to, amount, 'USDC', tokenMint, nonce, timestamp);
-  
-  const payload: SolanaPaymentPayload = {
-    from,
-    to,
-    amount,
-    token: 'USDC',
-    tokenMint,
-    nonce,
-    signature: bs58.encode(Buffer.from(Array(64).fill(0).map(() => Math.floor(Math.random() * 256)))),
-    timestamp,
-    message,
+  const payload: RobinhoodPaymentPayload = {
+    ...createPaymentPayload(from, to, amount, tokenAddress),
+    signature: mockSignature(),
   };
 
   return JSON.stringify(payload);
 }
 
 /**
- * Create real payment with connected Solana wallet
+ * Create a real payment with a connected Robinhood Chain wallet
  */
 export async function createRealPayment(
   from: string,
   to: string,
   amount: string,
-  tokenMint: string = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-  signMessage: (message: Uint8Array) => Promise<Uint8Array>
+  tokenAddress: string = USDG_ADDRESS,
+  signMessage: SignMessage
 ): Promise<string> {
-  const nonce = Math.random().toString(36).substring(7);
-  const timestamp = Date.now();
-  const message = createPaymentMessage(from, to, amount, 'USDC', tokenMint, nonce, timestamp);
-  
-  try {
-    // Create message to sign
-    const messageBytes = new TextEncoder().encode(message);
-    
-    // Request signature from wallet (this will trigger Phantom popup)
-    console.log('[Payment] Requesting signature from wallet...');
-    const signatureBytes = await signMessage(messageBytes);
-    const signature = bs58.encode(signatureBytes);
-    console.log('[Payment] Signature received:', signature.substring(0, 20) + '...');
-    
-    const payload: SolanaPaymentPayload = {
-      from,
-      to,
-      amount,
-      token: 'USDC',
-      tokenMint,
-      nonce,
-      signature,
-      timestamp,
-      message,
-    };
+  const payload = createPaymentPayload(from, to, amount, tokenAddress);
 
-    return JSON.stringify(payload);
+  try {
+    // Request signature from wallet (this triggers the wallet popup)
+    console.log('[Payment] Requesting signature from wallet...');
+    const signature = await signMessage(payload.message);
+    console.log('[Payment] Signature received:', signature.substring(0, 20) + '...');
+
+    return JSON.stringify({ ...payload, signature });
   } catch (error) {
     console.error('[Payment] Signature error:', error);
-    throw new Error(`Failed to sign payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to sign payment: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
 /**
- * Validate Solana wallet address
+ * Validate a Robinhood Chain wallet address
  */
-export function isValidSolanaAddress(address: string): boolean {
-  try {
-    const decoded = bs58.decode(address);
-    return decoded.length === 32;
-  } catch {
-    return false;
-  }
+export function isValidRobinhoodAddress(address: string): boolean {
+  return /^0x[0-9a-fA-F]{40}$/.test(address);
 }
 
 /**

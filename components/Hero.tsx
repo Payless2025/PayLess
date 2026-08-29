@@ -32,7 +32,7 @@ export default function Hero() {
           </h1>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-payless-cyan/10 border border-payless-cyan/30 backdrop-blur-sm">
             <Zap className="w-4 h-4 text-payless-cyan" />
-            <span className="text-sm text-payless-cyan font-medium">Powered by x402 on Solana</span>
+            <span className="text-sm text-payless-cyan font-medium">Powered by x402 on Robinhood Chain</span>
           </div>
         </div>
 
@@ -82,8 +82,8 @@ export default function Hero() {
           </div>
           <div className="p-6 rounded-2xl bg-white/5 border border-payless-purple/20 shadow-sm hover:shadow-lg hover:border-payless-purple/50 transition-all backdrop-blur-sm">
             <Globe className="w-12 h-12 text-payless-purple mb-4 mx-auto" />
-            <h3 className="text-xl font-semibold text-white mb-2">Blockchain Agnostic</h3>
-            <p className="text-gray-300">Works with any blockchain and token. Currently supports USDC on Solana.</p>
+            <h3 className="text-xl font-semibold text-white mb-2">Built on Robinhood Chain</h3>
+            <p className="text-gray-300">EVM-native settlement on Robinhood Chain, denominated in USDG.</p>
           </div>
         </div>
       </div>

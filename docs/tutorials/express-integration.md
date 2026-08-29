@@ -5,13 +5,13 @@ Learn how to add Payless x402 payments to your Express.js backend API.
 ## Prerequisites
 
 - Node.js 18+ installed
-- A Solana wallet address for receiving payments
+- A Robinhood Chain wallet address for receiving payments
 - Basic knowledge of Express.js
 
 ## Installation
 
 ```bash
-npm install express @payless/sdk @solana/web3.js bs58 tweetnacl cors dotenv
+npm install express @payless/sdk @robinhood/web3.js bs58 tweetnacl cors dotenv
 ```
 
 ## Step 1: Project Setup
@@ -21,8 +21,8 @@ Create `.env` file:
 ```env
 PORT=3000
 WALLET_ADDRESS=YOUR_WALLET_ADDRESS_HERE
-NETWORK=mainnet-beta
-USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+ROBINHOOD_CHAIN_ID=4663
+USDG_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168
 ```
 
 ## Step 2: Create x402 Middleware
@@ -30,7 +30,7 @@ USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 Create `middleware/x402.js`:
 
 ```javascript
-const { PublicKey } = require('@solana/web3.js');
+const { PublicKey } = require('@robinhood/web3.js');
 const nacl = require('tweetnacl');
 const bs58 = require('bs58');
 
@@ -58,10 +58,10 @@ function withX402Payment(price) {
         message: 'Payment Required',
         payment: {
           amount: endpointPrice,
-          currency: 'USDC',
+          currency: 'USDG',
           recipient: process.env.WALLET_ADDRESS,
           network: process.env.NETWORK,
-          tokenMint: process.env.USDC_MINT,
+          tokenAddress: process.env.USDG_ADDRESS,
         },
       });
     }
@@ -260,7 +260,7 @@ Response:
   "message": "Payment Required",
   "payment": {
     "amount": "0.10",
-    "currency": "USDC",
+    "currency": "USDG",
     "recipient": "YOUR_WALLET_ADDRESS"
   }
 }
@@ -275,7 +275,7 @@ const mockPayment = createMockPaymentProof(
   'SENDER_ADDRESS',
   process.env.WALLET_ADDRESS,
   '0.10',
-  process.env.USDC_MINT
+  process.env.USDG_ADDRESS
 );
 
 const paymentHeader = paymentProofToHeader(mockPayment);
@@ -402,7 +402,7 @@ app.get('/api/analytics', getAnalytics);
 ```bash
 heroku create your-app-name
 heroku config:set WALLET_ADDRESS=your_wallet_address
-heroku config:set NETWORK=mainnet-beta
+heroku config:set ROBINHOOD_CHAIN_ID=4663
 git push heroku main
 ```
 

@@ -53,7 +53,7 @@ interface PaymentConfirmation {
   recipient: string;
   amount: string;
   token: string;
-  tokenMint: string;
+  tokenAddress: string;
   endpoint: string;
   confirmedAt: number;
   status: 'confirmed' | 'pending' | 'failed';
@@ -106,8 +106,8 @@ curl "https://your-domain.com/api/payment/confirm?walletAddress=YOUR_WALLET_ADDR
       "walletAddress": "YOUR_WALLET_ADDRESS",
       "recipient": "UnknownPayless2025WalletAddress123456789ABC",
       "amount": "0.10",
-      "token": "USDC",
-      "tokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "token": "USDG",
+      "tokenAddress": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
       "endpoint": "/api/ai/chat",
       "confirmedAt": 1730390400000,
       "status": "confirmed",
@@ -278,7 +278,7 @@ const payment = await createRealPayment(
   walletAddress,
   recipientAddress,
   '0.10',
-  tokenMint,
+  tokenAddress,
   signMessage
 );
 

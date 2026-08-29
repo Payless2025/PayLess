@@ -10,13 +10,10 @@
 
 * [How It Works](how-it-works.md)
 * [x402 Protocol](x402-protocol.md)
-* [Multi-Chain Support](MULTI_CHAIN.md)
 
 ## Chain Integration
 
-* [Solana](solana-integration.md)
-* [Ethereum Support](ETHEREUM_SUPPORT.md)
-* [BSC (Binance Smart Chain)](bsc-integration.md)
+* [Robinhood Chain](ROBINHOOD_CHAIN.md)
 
 ## Guides
 

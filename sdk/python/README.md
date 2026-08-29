@@ -47,7 +47,7 @@ import asyncio
 from payless import create_client
 
 client = create_client({
-    'wallet_address': 'YOUR_WALLET_ADDRESS',
+    'wallet_address': '0xYourRobinhoodChainWalletAddressHere',
     'network': 'mainnet-beta',  # or 'devnet', 'testnet'
 })
 

@@ -37,7 +37,7 @@ curl -X POST https://payless.network/api/payment-links \
     "amount": "5.00",
     "description": "Payment for Product XYZ",
     "recipientAddress": "YOUR_WALLET_ADDRESS",
-    "chains": ["solana", "bsc", "ethereum"]
+    "chains": ["robinhood"]
   }'
 ```
 
@@ -81,7 +81,7 @@ Customer clicks the link, selects their preferred blockchain, and sends payment.
   "amount": "10.00",
   "description": "Optional description",
   "recipientAddress": "YOUR_WALLET_ADDRESS",
-  "chains": ["solana", "bsc", "ethereum"],
+  "chains": ["robinhood"],
   "expiresIn": 3600000,
   "metadata": {
     "orderId": "12345",
@@ -109,7 +109,7 @@ Customer clicks the link, selects their preferred blockchain, and sends payment.
     "id": "abc123",
     "url": "https://payless.network/pay/abc123",
     "amount": "10.00",
-    "currency": "USDC/USDT",
+    "currency": "USDG/USDT",
     "status": "active",
     "createdAt": 1699564800000
   }
@@ -129,7 +129,7 @@ Customer clicks the link, selects their preferred blockchain, and sends payment.
     "amount": "10.00",
     "status": "active",
     "recipientAddress": "YOUR_WALLET",
-    "chains": ["solana", "bsc", "ethereum"]
+    "chains": ["robinhood"]
   }
 }
 ```
@@ -232,7 +232,7 @@ export default async function handler(req, res) {
       amount,
       description,
       recipientAddress: process.env.WALLET_ADDRESS,
-      chains: ['solana', 'ethereum']
+      chains: ['robinhood']
     })
   });
   
@@ -374,15 +374,13 @@ app.post('/webhooks/payless', express.raw({ type: 'application/json' }), (req, r
 
 ---
 
-## Supported Blockchains
+## Supported Blockchain
 
-| Chain | Native Currency | Tokens | Network ID |
-|-------|----------------|---------|------------|
-| Solana | SOL | USDC, USDT | mainnet-beta |
-| BSC | BNB | USDT, BUSD, USDC | 56 |
-| Ethereum | ETH | USDC, USDT | 1 |
+| Chain | Native Currency | Tokens | Chain ID |
+|-------|----------------|---------|----------|
+| Robinhood Chain | ETH | USDG, WETH | 4663 |
 
-Users can choose their preferred blockchain when paying.
+Payless settles exclusively on Robinhood Chain.
 
 ---
 
@@ -422,11 +420,11 @@ Track orders and customers:
 ### 3. **Webhooks for Automation**
 Don't poll—use webhooks for instant notifications.
 
-### 4. **Multi-Chain Support**
-Let users choose their preferred blockchain:
+### 4. **Be Explicit About the Chain**
+Payment links always settle on Robinhood Chain:
 ```javascript
 {
-  "chains": ["solana", "bsc", "ethereum"]
+  "chains": ["robinhood"]
 }
 ```
 
@@ -563,7 +561,6 @@ A: Zero protocol fees! You keep 100% of payments.
 
 Explore more features:
 - [Webhooks Guide](./WEBHOOKS.md)
-- [Multi-Chain Support](./MULTI_CHAIN.md)
 - [API Reference](./api-reference.md)
 - [SDK Documentation](../sdk/nodejs/README.md)
 

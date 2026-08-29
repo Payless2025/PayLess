@@ -5,8 +5,8 @@
 Payless offers **token-gated API access** for $PAYLESS holders. Instead of traditional subscriptions, simply hold tokens to unlock premium features and higher rate limits.
 
 **Total Supply:** 1,000,000,000 $PAYLESS tokens  
-**Contract Address (CA):** `6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump`  
-**Chain:** Solana
+**$PAYLESS Contract Address (Robinhood Chain):** _not yet deployed — set `PAYLESS_TOKEN_ADDRESS` once it is._  
+**Chain:** Robinhood Chain
 
 ## Why Token-Gating?
 
@@ -242,15 +242,17 @@ Rate limits reset every hour. If you exceed your limit:
 
 ## Setup for Developers
 
-### 1. Configure Token Mint
+### 1. Configure the token contract
 
 Add to your `.env.local`:
 ```env
-PAYLESS_TOKEN_MINT=6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+PAYLESS_TOKEN_ADDRESS=0xYourPaylessTokenContractOnRobinhoodChain
+ROBINHOOD_RPC_URL=https://rpc.mainnet.chain.robinhood.com
 ```
 
-> **Note:** The token mint address is already configured in the codebase. This env variable is optional.
+> **Note:** `PAYLESS_TOKEN_ADDRESS` is **required** for token gating. It has no
+> default — while it is unset, `getTokenBalance()` returns `0` and every wallet
+> resolves to the free tier.
 
 ### 2. Protect Your Endpoints
 
@@ -286,8 +288,8 @@ A: Yes, each wallet is tracked separately based on its token holdings.
 **Q: Do staked tokens count?**  
 A: Currently only liquid tokens in your wallet count. Staked token support coming soon.
 
-**Q: Is this only on Solana?**  
-A: Currently yes, but we're exploring multi-chain token gating.
+**Q: Which chain is $PAYLESS on?**  
+A: Robinhood Chain. Token gating reads an ERC-20 `balanceOf` there.
 
 ---
 
@@ -298,7 +300,6 @@ A: Currently yes, but we're exploring multi-chain token gating.
 - ✅ Holder-only endpoints
 - 🔄 Staked token support
 - 🔄 NFT-based access
-- 🔄 Multi-chain token gating
 - 🔄 Revenue sharing for large holders
 - 🔄 Governance voting for holders
 

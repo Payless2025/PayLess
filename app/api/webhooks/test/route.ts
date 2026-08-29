@@ -30,11 +30,11 @@ export async function POST(req: NextRequest) {
     const testData: PaymentWebhookData = {
       paymentId: 'test_' + Date.now(),
       signature: 'test_signature_' + Math.random().toString(36).substring(7),
-      chain: 'solana',
+      chain: 'robinhood',
       from: '11111111111111111111111111111111',
       to: '22222222222222222222222222222222',
       amount: '1.00',
-      token: 'USDC',
+      token: 'USDG',
       endpoint: '/api/test',
       timestamp: Date.now(),
       status: 'confirmed',

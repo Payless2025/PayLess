@@ -6,9 +6,9 @@ import { ClientProviders } from '@/components/ClientProviders'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Payless - Accept Crypto Payments Without Accounts | x402 on Solana',
-  description: 'Payless: The simplest way to monetize APIs with crypto. Built on x402 protocol for Solana. Zero fees, instant settlements, one line of code. Perfect for developers and AI agents.',
-  keywords: 'payless, x402, crypto payments, solana, USDC, micropayments, serverless, blockchain, API monetization, AI agent payments, no accounts',
+  title: 'Payless - Accept Crypto Payments Without Accounts | x402 on Robinhood Chain',
+  description: 'Payless: The simplest way to monetize APIs with crypto. Built on the x402 protocol for Robinhood Chain. Zero fees, instant settlements, one line of code. Perfect for developers and AI agents.',
+  keywords: 'payless, x402, crypto payments, robinhood chain, USDG, micropayments, serverless, blockchain, API monetization, AI agent payments, no accounts',
 }
 
 export default function RootLayout({

@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PublicKey } from '@solana/web3.js';
-import nacl from 'tweetnacl';
-import bs58 from 'bs58';
-import { PaymentVerificationResult, X402Response, SolanaPaymentPayload } from './types';
+import { PaymentVerificationResult, X402Response, RobinhoodPaymentPayload } from './types';
 import { PAYMENT_CONFIG, ENDPOINT_PRICING, FREE_ENDPOINTS } from './config';
 import { trackApiRequest, analyticsStore } from './analytics';
+import { verifyRobinhoodPayment } from '../chains/robinhood';
+import { ROBINHOOD_CONFIG } from '../chains/config';
 
 /**
- * Verify Solana payment signature
+ * Verify a Robinhood Chain payment
  */
 export async function verifyPayment(
   paymentHeader: string | null,
   expectedAmount: string
 ): Promise<PaymentVerificationResult> {
   console.log('[x402] Verifying payment...', { expectedAmount, nodeEnv: process.env.NODE_ENV });
-  
+
   if (!paymentHeader) {
     console.log('[x402] No payment header provided');
     return {
@@ -25,100 +24,78 @@ export async function verifyPayment(
 
   try {
     // Parse payment payload
-    const payment: SolanaPaymentPayload = JSON.parse(paymentHeader);
-    console.log('[x402] Payment payload:', { 
-      from: payment.from, 
-      to: payment.to, 
+    const payment: RobinhoodPaymentPayload = JSON.parse(paymentHeader);
+    console.log('[x402] Payment payload:', {
+      from: payment.from,
+      to: payment.to,
       amount: payment.amount,
-      expectedTo: PAYMENT_CONFIG.walletAddress 
+      expectedTo: PAYMENT_CONFIG.walletAddress,
     });
 
-    // Basic validation
-    if (payment.to !== PAYMENT_CONFIG.walletAddress) {
-      console.log('[x402] Recipient mismatch:', { 
-        received: payment.to, 
-        expected: PAYMENT_CONFIG.walletAddress 
-      });
+    // Verify the token is one Payless accepts on Robinhood Chain
+    const acceptedToken = ROBINHOOD_CONFIG.paymentTokens.find(
+      (token) => token.address.toLowerCase() === (payment.tokenAddress || '').toLowerCase()
+    );
+
+    if (!acceptedToken) {
+      const accepted = ROBINHOOD_CONFIG.paymentTokens.map((t) => t.symbol).join(', ');
       return {
         valid: false,
-        error: 'Invalid recipient address',
+        error: `Invalid token. Accepted tokens on Robinhood Chain: ${accepted}.`,
       };
     }
 
-    if (parseFloat(payment.amount) < parseFloat(expectedAmount)) {
-      return {
-        valid: false,
-        error: 'Insufficient payment amount',
-      };
-    }
+    // Test mode short-circuits signature verification so the playground and
+    // local development work without a funded wallet.
+    const isTestMode =
+      process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_PAYMENTS === 'true';
+    console.log(
+      '[x402] Test mode:',
+      isTestMode,
+      '(NODE_ENV:',
+      process.env.NODE_ENV,
+      'ENABLE_DEMO_PAYMENTS:',
+      process.env.ENABLE_DEMO_PAYMENTS,
+      ')'
+    );
 
-    // Verify timestamp (payment should be recent, within 5 minutes)
-    const now = Date.now();
-    const paymentAge = now - payment.timestamp;
-    if (paymentAge > 5 * 60 * 1000) {
-      return {
-        valid: false,
-        error: 'Payment expired',
-      };
-    }
-
-    // Verify token mint
-    if (payment.tokenMint !== PAYMENT_CONFIG.usdcMint) {
-      return {
-        valid: false,
-        error: 'Invalid token. Only USDC is accepted.',
-      };
-    }
-
-    // In production, verify signature
-    // Allow test mode to be enabled even in production for demo purposes
-    const isTestMode = process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_PAYMENTS === 'true';
-    console.log('[x402] Test mode:', isTestMode, '(NODE_ENV:', process.env.NODE_ENV, 'ENABLE_DEMO_PAYMENTS:', process.env.ENABLE_DEMO_PAYMENTS, ')');
-    
-    if (!isTestMode) {
-      try {
-        // Verify Solana signature
-        const message = payment.message;
-        const signature = bs58.decode(payment.signature);
-        const publicKey = new PublicKey(payment.from);
-        const messageBytes = new TextEncoder().encode(message);
-
-        const isValid = nacl.sign.detached.verify(
-          messageBytes,
-          signature,
-          publicKey.toBytes()
-        );
-
-        if (!isValid) {
-          return {
-            valid: false,
-            error: 'Invalid signature',
-          };
-        }
-
-        // In a real implementation, you would also:
-        // 1. Check on-chain that the transaction exists
-        // 2. Verify the transaction transfers the correct amount
-        // 3. Check that the transaction hasn't been used before (nonce check)
-        
-        // For now, if signature is valid, we accept it
-        return {
-          valid: true,
-          signature: payment.signature,
-        };
-      } catch (error) {
-        return {
-          valid: false,
-          error: error instanceof Error ? error.message : 'Signature verification failed',
-        };
+    if (isTestMode) {
+      // Still enforce the cheap, non-cryptographic checks in test mode
+      if (
+        PAYMENT_CONFIG.walletAddress &&
+        payment.to.toLowerCase() !== PAYMENT_CONFIG.walletAddress.toLowerCase()
+      ) {
+        return { valid: false, error: 'Invalid recipient address' };
       }
+
+      if (parseFloat(payment.amount) < parseFloat(expectedAmount)) {
+        return { valid: false, error: 'Insufficient payment amount' };
+      }
+
+      console.log('[x402] Test mode - accepting payment');
+      return {
+        valid: true,
+        signature: payment.signature,
+      };
     }
 
-    // Test mode - simulate successful verification
-    console.log('[x402] Test mode - accepting payment');
+    const result = await verifyRobinhoodPayment(
+      payment,
+      expectedAmount,
+      PAYMENT_CONFIG.walletAddress
+    );
+
+    if (!result.valid) {
+      return { valid: false, error: result.error };
+    }
+
+    // In a full implementation you would also:
+    // 1. Check on-chain that the transfer exists on Robinhood Chain
+    // 2. Verify it moves the correct amount of the correct token
+    // 3. Reject a nonce that has already been spent
     return {
       valid: true,
-      signature: payment.signature || bs58.encode(Buffer.from(Array(64).fill(0))),
+      signature: payment.signature,
     };
   } catch (error) {
     console.log('[x402] Payment verification error:', error);
@@ -142,7 +119,15 @@ export function create402Response(amount: string): NextResponse<X402Response> {
       recipient: PAYMENT_CONFIG.walletAddress,
       facilitator: PAYMENT_CONFIG.facilitatorUrl,
       network: PAYMENT_CONFIG.network,
-      tokenMint: PAYMENT_CONFIG.usdcMint,
+      tokenAddress: PAYMENT_CONFIG.tokenAddress,
+      chains: [
+        {
+          chain: 'robinhood',
+          recipient: PAYMENT_CONFIG.walletAddress,
+          network: PAYMENT_CONFIG.network,
+          tokens: ROBINHOOD_CONFIG.paymentTokens.map((token) => token.symbol),
+        },
+      ],
     },
   };
 
@@ -174,8 +159,7 @@ export function withX402Payment(
       if (FREE_ENDPOINTS.includes(pathname)) {
         const response = await handler(req);
         responseStatus = response.status;
-        
-        // Track free endpoint usage
+
         trackApiRequest({
           endpoint: pathname,
           method,
@@ -186,17 +170,17 @@ export function withX402Payment(
           responseTime: Date.now() - startTime,
           userAgent,
         });
-        
+
         return response;
       }
 
       // Get price for endpoint
       const endpointPrice = price || ENDPOINT_PRICING[pathname];
-      
+
       if (!endpointPrice) {
         responseStatus = 500;
         errorMessage = 'Endpoint not configured';
-        
+
         trackApiRequest({
           endpoint: pathname,
           method,
@@ -208,11 +192,8 @@ export function withX402Payment(
           userAgent,
           error: errorMessage,
         });
-        
-        return NextResponse.json(
-          { error: errorMessage },
-          { status: 500 }
-        );
+
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
       }
 
       paymentAmount = endpointPrice;
@@ -222,7 +203,7 @@ export function withX402Payment(
 
       if (!paymentHeader) {
         responseStatus = 402;
-        
+
         trackApiRequest({
           endpoint: pathname,
           method,
@@ -234,7 +215,7 @@ export function withX402Payment(
           responseTime: Date.now() - startTime,
           userAgent,
         });
-        
+
         return create402Response(endpointPrice);
       }
 
@@ -242,7 +223,7 @@ export function withX402Payment(
 
       // Extract wallet address from payment
       try {
-        const payment: SolanaPaymentPayload = JSON.parse(paymentHeader);
+        const payment: RobinhoodPaymentPayload = JSON.parse(paymentHeader);
         walletAddress = payment.from;
       } catch (e) {
         // Ignore parsing errors for analytics
@@ -256,7 +237,7 @@ export function withX402Payment(
         console.log('[x402] Payment verification failed:', verification.error);
         responseStatus = 402;
         errorMessage = verification.error;
-        
+
         trackApiRequest({
           endpoint: pathname,
           method,
@@ -270,7 +251,7 @@ export function withX402Payment(
           userAgent,
           error: errorMessage,
         });
-        
+
         return NextResponse.json(
           { error: verification.error || 'Payment verification failed' },
           { status: 402 }
@@ -282,7 +263,7 @@ export function withX402Payment(
 
       // Store payment confirmation
       try {
-        const payment: SolanaPaymentPayload = JSON.parse(paymentHeader);
+        const payment: RobinhoodPaymentPayload = JSON.parse(paymentHeader);
         const confirmation = analyticsStore.addConfirmation({
           paymentSignature: verification.signature || payment.signature,
           nonce: payment.nonce,
@@ -290,7 +271,7 @@ export function withX402Payment(
           recipient: payment.to,
           amount: payment.amount,
           token: payment.token,
-          tokenMint: payment.tokenMint,
+          tokenAddress: payment.tokenAddress,
           endpoint: pathname,
           status: 'confirmed',
           metadata: {
@@ -307,10 +288,11 @@ export function withX402Payment(
       // Payment valid - proceed with request
       const response = await handler(req);
       responseStatus = response.status;
-      
+
       // Add payment confirmation header
       if (verification.signature) {
         response.headers.set('x-payment-confirmed', verification.signature);
+        response.headers.set('x-payment-chain', 'robinhood');
       }
 
       // Track successful payment
@@ -332,7 +314,7 @@ export function withX402Payment(
       // Track unexpected errors
       responseStatus = 500;
       errorMessage = error instanceof Error ? error.message : 'Internal server error';
-      
+
       trackApiRequest({
         endpoint: pathname,
         method,
@@ -346,7 +328,7 @@ export function withX402Payment(
         userAgent,
         error: errorMessage,
       });
-      
+
       throw error;
     }
   };

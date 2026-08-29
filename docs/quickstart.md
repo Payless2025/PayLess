@@ -5,7 +5,7 @@ Get Payless running in under 5 minutes.
 ## Prerequisites
 
 - Node.js 18+ installed
-- A Solana wallet address (Phantom, Solflare, etc.)
+- A Robinhood Chain wallet address (MetaMask, Rabby, or any EVM wallet)
 - Basic knowledge of Next.js/React
 
 ## Installation
@@ -29,12 +29,12 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` and add your Solana wallet address:
+Edit `.env` and add your Robinhood Chain wallet address:
 
 ```env
-WALLET_ADDRESS=YourSolanaWalletAddressHere
+WALLET_ADDRESS=0xYourRobinhoodChainWalletAddressHere
 FACILITATOR_URL=https://facilitator.x402.org
-NETWORK=mainnet-beta
+ROBINHOOD_CHAIN_ID=4663
 ```
 
 ### 4. Start Development Server

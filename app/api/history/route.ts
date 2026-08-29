@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     }
 
     const chain = searchParams.get('chain');
-    if (chain && ['solana', 'bsc', 'ethereum'].includes(chain)) {
+    if (chain && ['robinhood'].includes(chain)) {
       filters.chain = chain as Transaction['chain'];
     }
 

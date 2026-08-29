@@ -22,8 +22,8 @@ export default function PaymentConfirmationPage() {
   const [isChecking, setIsChecking] = useState<boolean>(false);
 
   // Example test data
-  const exampleWallet = 'YOUR_WALLET_ADDRESS';
-  const exampleRecipient = 'UnknownPayless2025WalletAddress123456789ABC';
+  const exampleWallet = '0x1111111111111111111111111111111111111111';
+  const exampleRecipient = '0x2222222222222222222222222222222222222222';
 
   const handleGenerateTestPayment = () => {
     const testNonce = Math.random().toString(36).substring(7);

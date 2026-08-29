@@ -29,11 +29,11 @@ All webhook events follow this structure:
   "data": {
     "paymentId": "pay_abc123",
     "signature": "5X7J...",
-    "chain": "solana",
+    "chain": "robinhood",
     "from": "9WzDXwBb...",
     "to": "FDgSegox...",
     "amount": "0.05",
-    "token": "USDC",
+    "token": "USDG",
     "endpoint": "/api/ai/chat",
     "timestamp": 1699564800000,
     "status": "confirmed",

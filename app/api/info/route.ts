@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ENDPOINT_PRICING, PAYMENT_CONFIG } from '@/lib/x402/config';
+import { ROBINHOOD_CONFIG } from '@/lib/chains/config';
 
 export async function GET(req: NextRequest) {
   return NextResponse.json({
@@ -9,8 +10,19 @@ export async function GET(req: NextRequest) {
     payment: {
       protocol: 'x402',
       wallet: PAYMENT_CONFIG.walletAddress,
+      chain: PAYMENT_CONFIG.chain,
+      chainName: PAYMENT_CONFIG.chainName,
       network: PAYMENT_CONFIG.network,
       currency: PAYMENT_CONFIG.currency,
+      tokenAddress: PAYMENT_CONFIG.tokenAddress,
+      tokenDecimals: PAYMENT_CONFIG.tokenDecimals,
+      rpcUrl: PAYMENT_CONFIG.rpcUrl,
+      explorerUrl: PAYMENT_CONFIG.explorerUrl,
+      acceptedTokens: ROBINHOOD_CONFIG.paymentTokens.map((token) => ({
+        symbol: token.symbol,
+        address: token.address,
+        decimals: token.decimals,
+      })),
       facilitator: PAYMENT_CONFIG.facilitatorUrl,
     },
     endpoints: Object.entries(ENDPOINT_PRICING).map(([path, price]) => ({
@@ -18,7 +30,6 @@ export async function GET(req: NextRequest) {
       price: `$${price} ${PAYMENT_CONFIG.currency}`,
       method: 'GET/POST',
     })),
-    documentation: 'https://github.com/yourusername/payless',
+    documentation: 'https://payless.gitbook.io/payless-documentation',
   });
 }
-

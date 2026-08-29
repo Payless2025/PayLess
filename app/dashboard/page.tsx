@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { getRobinhoodTransactionLink } from '@/lib/chains/robinhood';
 
 interface AnalyticsMetrics {
   totalTransactions: number;
@@ -21,9 +22,7 @@ interface AnalyticsMetrics {
   successRate: number;
   averageTransactionValue: string;
   transactionsByChain: {
-    solana: number;
-    bsc: number;
-    ethereum: number;
+    robinhood: number;
   };
   transactionsByStatus: {
     pending: number;
@@ -41,7 +40,7 @@ interface Transaction {
   id: string;
   amount: string;
   currency: string;
-  chain: 'solana' | 'bsc' | 'ethereum';
+  chain: 'robinhood';
   status: 'pending' | 'completed' | 'failed';
   fromAddress: string;
   toAddress: string;
@@ -66,7 +65,7 @@ export default function DashboardPage() {
       const response = await fetch('/api/analytics');
       const data = await response.json();
       if (data.success) {
-        setMetrics(data.metrics);
+        setMetrics(data.data);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -89,9 +88,7 @@ export default function DashboardPage() {
 
   const getChainColor = (chain: string) => {
     switch (chain) {
-      case 'solana': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'bsc': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'ethereum': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'robinhood': return 'bg-green-100 text-green-700 border-green-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
@@ -105,14 +102,8 @@ export default function DashboardPage() {
     }
   };
 
-  const getExplorerUrl = (chain: string, hash: string) => {
-    switch (chain) {
-      case 'solana': return `https://solscan.io/tx/${hash}`;
-      case 'bsc': return `https://bscscan.com/tx/${hash}`;
-      case 'ethereum': return `https://etherscan.io/tx/${hash}`;
-      default: return '';
-    }
-  };
+  const getExplorerUrl = (chain: string, hash: string) =>
+    getRobinhoodTransactionLink(hash);
 
   const filteredTransactions = filter === 'all' 
     ? transactions 
@@ -225,52 +216,16 @@ export default function DashboardPage() {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
-                      <img src="/assets/sol-logo.png" alt="Solana" className="w-5 h-5" />
-                      <span className="text-sm font-medium text-gray-700">Solana</span>
+                      <img src="/assets/robinhood-logo.svg" alt="Robinhood Chain" className="w-5 h-5" />
+                      <span className="text-sm font-medium text-gray-700">Robinhood Chain</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-900">{metrics?.transactionsByChain.solana || 0}</span>
+                    <span className="text-sm font-bold text-gray-900">{metrics?.transactionsByChain.robinhood || 0}</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div 
-                      className="bg-purple-600 h-2 rounded-full transition-all"
-                      style={{ 
-                        width: `${((metrics?.transactionsByChain.solana || 0) / (metrics?.totalTransactions || 1)) * 100}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-2">
-                      <img src="/assets/bsc-logo.png" alt="BSC" className="w-5 h-5" />
-                      <span className="text-sm font-medium text-gray-700">BSC</span>
-                    </div>
-                    <span className="text-sm font-bold text-gray-900">{metrics?.transactionsByChain.bsc || 0}</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div 
-                      className="bg-yellow-600 h-2 rounded-full transition-all"
-                      style={{ 
-                        width: `${((metrics?.transactionsByChain.bsc || 0) / (metrics?.totalTransactions || 1)) * 100}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-2">
-                      <img src="/assets/eth-logo.png" alt="Ethereum" className="w-5 h-5" />
-                      <span className="text-sm font-medium text-gray-700">Ethereum</span>
-                    </div>
-                    <span className="text-sm font-bold text-gray-900">{metrics?.transactionsByChain.ethereum || 0}</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all"
-                      style={{ 
-                        width: `${((metrics?.transactionsByChain.ethereum || 0) / (metrics?.totalTransactions || 1)) * 100}%` 
+                    <div
+                      className="bg-green-600 h-2 rounded-full transition-all"
+                      style={{
+                        width: `${((metrics?.transactionsByChain.robinhood || 0) / (metrics?.totalTransactions || 1)) * 100}%`
                       }}
                     />
                   </div>
@@ -337,7 +292,7 @@ export default function DashboardPage() {
                         </td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded text-xs font-medium border ${getChainColor(tx.chain)}`}>
-                            {tx.chain}
+                            Robinhood
                           </span>
                         </td>
                         <td className="py-3 px-4">

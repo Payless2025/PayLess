@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { CheckCircle2, Clock, XCircle, Copy, ExternalLink } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { getRobinhoodAddressLink } from '@/lib/chains/robinhood';
 
 interface PaymentLink {
   id: string;
@@ -62,34 +63,22 @@ export default function PaymentPage() {
 
   const getChainIcon = (chain: string) => {
     switch (chain) {
-      case 'solana': 
-        return <img src="/assets/sol-logo.png" alt="Solana" className="w-6 h-6" />;
-      case 'bsc': 
-        return <img src="/assets/bsc-logo.png" alt="BSC" className="w-6 h-6" />;
-      case 'ethereum': 
-        return <img src="/assets/eth-logo.png" alt="Ethereum" className="w-6 h-6" />;
-      default: 
+      case 'robinhood':
+        return <img src="/assets/robinhood-logo.svg" alt="Robinhood Chain" className="w-6 h-6" />;
+      default:
         return <span className="text-2xl">🔗</span>;
     }
   };
 
   const getChainName = (chain: string) => {
     switch (chain) {
-      case 'solana': return 'Solana';
-      case 'bsc': return 'BSC';
-      case 'ethereum': return 'Ethereum';
+      case 'robinhood': return 'Robinhood Chain';
       default: return chain;
     }
   };
 
-  const getExplorerUrl = (chain: string, address: string) => {
-    switch (chain) {
-      case 'solana': return `https://solscan.io/account/${address}`;
-      case 'bsc': return `https://bscscan.com/address/${address}`;
-      case 'ethereum': return `https://etherscan.io/address/${address}`;
-      default: return '';
-    }
-  };
+  const getExplorerUrl = (chain: string, address: string) =>
+    getRobinhoodAddressLink(address);
 
   if (loading) {
     return (
