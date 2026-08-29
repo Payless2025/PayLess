@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withMultiChainPayment } from '@/lib/x402/multi-chain-middleware';
+import { withX402Payment } from '@/lib/x402/middleware';
 
 async function handler(req: NextRequest) {
   const body = await req.json();
@@ -48,5 +48,5 @@ async function handler(req: NextRequest) {
   });
 }
 
-export const POST = withMultiChainPayment(handler);
+export const POST = withX402Payment(handler);
 

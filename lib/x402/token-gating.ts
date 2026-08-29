@@ -3,13 +3,26 @@
  * Total Supply: 1,000,000,000 tokens
  */
 
-import { Connection, PublicKey } from '@solana/web3.js';
+import { ethers } from 'ethers';
+import { ROBINHOOD_RPC_URL } from '../chains/config';
+
+// Minimal ERC-20 surface needed for holder checks
+const ERC20_ABI = [
+  'function balanceOf(address owner) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+];
 
 // Token Configuration
 export const PAYLESS_TOKEN_CONFIG = {
   TOTAL_SUPPLY: 1_000_000_000, // 1 billion tokens
-  TOKEN_MINT: '6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump', // $PAYLESS token mint 
-  SOLANA_RPC: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+  // $PAYLESS ERC-20 contract on Robinhood Chain.
+  // Set PAYLESS_TOKEN_ADDRESS once the token is deployed; until then every
+  // wallet resolves to the free tier instead of silently granting access.
+  TOKEN_ADDRESS: process.env.PAYLESS_TOKEN_ADDRESS || '',
+  TOKEN_DECIMALS: process.env.PAYLESS_TOKEN_DECIMALS
+    ? Number(process.env.PAYLESS_TOKEN_DECIMALS)
+    : undefined,
+  RPC_URL: ROBINHOOD_RPC_URL,
 };
 
 // Token Tiers based on holdings
@@ -84,36 +97,37 @@ export interface TierCheckResult {
 }
 
 /**
- * Get wallet's $PAYLESS token balance
+ * Get wallet's $PAYLESS token balance on Robinhood Chain
  */
+let cachedDecimals: number | undefined = PAYLESS_TOKEN_CONFIG.TOKEN_DECIMALS;
+
 export async function getTokenBalance(walletAddress: string): Promise<number> {
   try {
-    // For development/testing, return mock balance if no RPC configured
-    if (!PAYLESS_TOKEN_CONFIG.SOLANA_RPC || !PAYLESS_TOKEN_CONFIG.TOKEN_MINT) {
-      console.warn('Token gating: Using mock balance for development');
+    if (!PAYLESS_TOKEN_CONFIG.TOKEN_ADDRESS) {
+      console.warn(
+        'Token gating: PAYLESS_TOKEN_ADDRESS is not set — treating every wallet as the free tier'
+      );
       return 0;
     }
 
-    const connection = new Connection(PAYLESS_TOKEN_CONFIG.SOLANA_RPC, 'confirmed');
-    const walletPublicKey = new PublicKey(walletAddress);
+    if (!ethers.utils.isAddress(walletAddress)) {
+      console.warn('Token gating: invalid wallet address', walletAddress);
+      return 0;
+    }
 
-    // Get token accounts for this wallet
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-      walletPublicKey,
-      { mint: new PublicKey(PAYLESS_TOKEN_CONFIG.TOKEN_MINT) }
+    const provider = new ethers.providers.JsonRpcProvider(PAYLESS_TOKEN_CONFIG.RPC_URL);
+    const contract = new ethers.Contract(
+      PAYLESS_TOKEN_CONFIG.TOKEN_ADDRESS,
+      ERC20_ABI,
+      provider
     );
 
-    if (tokenAccounts.value.length === 0) {
-      return 0;
+    if (cachedDecimals === undefined) {
+      cachedDecimals = await contract.decimals();
     }
 
-    // Sum all token balances (in case of multiple accounts)
-    const totalBalance = tokenAccounts.value.reduce((sum, account) => {
-      const amount = account.account.data.parsed.info.tokenAmount.uiAmount || 0;
-      return sum + amount;
-    }, 0);
-
-    return totalBalance;
+    const raw = await contract.balanceOf(walletAddress);
+    return parseFloat(ethers.utils.formatUnits(raw, cachedDecimals));
   } catch (error) {
     console.error('Error fetching token balance:', error);
     return 0;

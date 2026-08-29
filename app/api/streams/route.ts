@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const streamConfig: StreamConfig = {
       ratePerInterval: config.ratePerInterval,
       billingInterval: config.billingInterval as BillingInterval,
-      chain: config.chain || SupportedChain.SOLANA,
+      chain: config.chain || SupportedChain.ROBINHOOD,
       serviceName: config.serviceName,
       description: config.description,
       minBalance: config.minBalance,

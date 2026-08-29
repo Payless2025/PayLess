@@ -7,9 +7,10 @@ import {
   Code2, FileJson, Terminal, Share2, Download,
   Sparkles, Database, Wrench, Crown
 } from 'lucide-react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useAccount, useSignMessage } from 'wagmi';
+import { WalletConnectButton } from '@/components/WalletConnectButton';
 import { createMockPayment, createRealPayment } from '@/lib/x402/client';
+import { USDG_ADDRESS } from '@/lib/chains/config';
 
 interface ApiEndpoint {
   path: string;
@@ -132,7 +133,8 @@ const categoryIcons = {
 };
 
 export default function Playground() {
-  const { publicKey, signMessage, connected } = useWallet();
+  const { address, isConnected: connected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const [selectedCategory, setSelectedCategory] = useState<string>('AI');
   const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint>(endpoints[0]);
   const [activeTab, setActiveTab] = useState<TabType>('request');
@@ -145,8 +147,26 @@ export default function Playground() {
   const [requestBody, setRequestBody] = useState(JSON.stringify(endpoints[0].bodyExample || {}, null, 2));
   const [useRealWallet, setUseRealWallet] = useState(false);
 
-  const mockWalletAddress = 'YOUR_WALLET_ADDRESS';
-  const mockRecipientAddress = 'YOUR_WALLET_ADDRESS';
+  // Demo payer used when "Use real wallet" is off
+  const mockWalletAddress = '0x1111111111111111111111111111111111111111';
+  // The recipient the server actually expects; loaded from /api/info so the
+  // demo keeps working whatever WALLET_ADDRESS is configured.
+  const [recipientAddress, setRecipientAddress] = useState(
+    '0x0000000000000000000000000000000000000000'
+  );
+  const [tokenAddress, setTokenAddress] = useState(USDG_ADDRESS);
+
+  useEffect(() => {
+    fetch('/api/info')
+      .then((res) => res.json())
+      .then((info) => {
+        if (info?.payment?.wallet) setRecipientAddress(info.payment.wallet);
+        if (info?.payment?.tokenAddress) setTokenAddress(info.payment.tokenAddress);
+      })
+      .catch(() => {
+        /* keep the defaults */
+      });
+  }, []);
 
   const filteredEndpoints = endpoints.filter(e => e.category === selectedCategory);
 
@@ -173,18 +193,17 @@ export default function Playground() {
 
       if (withPayment) {
         const priceAmount = selectedEndpoint.price.replace('$', '');
-        const usdcMint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
-        
+
         let payment: string;
-        
-        if (useRealWallet && connected && publicKey && signMessage) {
+
+        if (useRealWallet && connected && address) {
           try {
             payment = await createRealPayment(
-              publicKey.toString(),
-              mockRecipientAddress,
+              address,
+              recipientAddress,
               priceAmount,
-              usdcMint,
-              signMessage
+              tokenAddress,
+              (message) => signMessageAsync({ message })
             );
           } catch (walletError) {
             setError(`Wallet error: ${walletError instanceof Error ? walletError.message : 'Failed'}`);
@@ -192,7 +211,7 @@ export default function Playground() {
             return;
           }
         } else {
-          payment = createMockPayment(mockWalletAddress, mockRecipientAddress, priceAmount, usdcMint);
+          payment = createMockPayment(mockWalletAddress, recipientAddress, priceAmount, tokenAddress);
         }
         
         options.headers = { ...options.headers, 'X-Payment': payment };
@@ -311,9 +330,7 @@ function MyComponent() {
             </Link>
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-bold text-white">API Playground</h1>
-              <div className="wallet-adapter-button-wrapper">
-                <WalletMultiButton />
-              </div>
+              <WalletConnectButton />
             </div>
           </div>
         </div>
@@ -378,7 +395,7 @@ function MyComponent() {
                       <p className="text-sm font-semibold text-green-200">Connected</p>
                     </div>
                     <p className="text-xs text-green-300 font-mono truncate">
-                      {publicKey?.toString()}
+                      {address}
                     </p>
                     <label className="flex items-center gap-2 mt-2 cursor-pointer">
                       <input
@@ -450,7 +467,7 @@ function MyComponent() {
                       {selectedEndpoint.method}
                     </span>
                     <span className="px-3 py-1 rounded-lg bg-green-600 text-white text-sm font-semibold">
-                      {selectedEndpoint.price} USDC
+                      {selectedEndpoint.price} USDG
                     </span>
                   </div>
 

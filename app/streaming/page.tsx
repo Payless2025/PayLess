@@ -57,7 +57,7 @@ export default function PaymentStreamingPage() {
         body: JSON.stringify({
           serviceId: 'streaming-chat-demo',
           recipientAddress: '9aXHxhNtiAjbysGFmm4RG4hVDMtvhMMQfKpT2xQ7GLg1',
-          chain: 'solana',
+          chain: 'robinhood',
           ratePerSecond: 1_000_000, // 0.001 SOL/sec
           payerAddress: walletAddress,
           metadata: { demo: true },
@@ -194,7 +194,7 @@ export default function PaymentStreamingPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Your Wallet Address (Solana)
+                      Your Wallet Address (Robinhood Chain)
                     </label>
                     <input
                       type="text"

@@ -1,13 +1,26 @@
 import { EndpointConfig } from './types';
+import {
+  ROBINHOOD_CHAIN_ID,
+  ROBINHOOD_RPC_URL,
+  ROBINHOOD_EXPLORER_URL,
+  DEFAULT_PAYMENT_TOKEN,
+} from '../chains/config';
 
 export const PAYMENT_CONFIG = {
-  walletAddress: process.env.WALLET_ADDRESS || process.env.NEXT_PUBLIC_WALLET_ADDRESS || 'YOUR_WALLET_ADDRESS',
+  walletAddress:
+    process.env.ROBINHOOD_WALLET_ADDRESS ||
+    process.env.WALLET_ADDRESS ||
+    process.env.NEXT_PUBLIC_WALLET_ADDRESS ||
+    '',
   facilitatorUrl: process.env.FACILITATOR_URL || 'https://facilitator.x402.org',
-  network: process.env.NETWORK || 'mainnet-beta', // Solana network
-  rpcUrl: process.env.RPC_URL || 'https://api.mainnet-beta.solana.com',
-  currency: 'USDC',
-  // USDC SPL Token Mint Address on Solana Mainnet
-  usdcMint: process.env.USDC_MINT || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  chain: 'robinhood',
+  chainName: 'Robinhood Chain',
+  network: ROBINHOOD_CHAIN_ID,
+  rpcUrl: ROBINHOOD_RPC_URL,
+  explorerUrl: ROBINHOOD_EXPLORER_URL,
+  currency: DEFAULT_PAYMENT_TOKEN.symbol,
+  tokenAddress: DEFAULT_PAYMENT_TOKEN.address,
+  tokenDecimals: DEFAULT_PAYMENT_TOKEN.decimals,
 };
 
 export const ENDPOINT_PRICING: EndpointConfig = {

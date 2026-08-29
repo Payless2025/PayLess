@@ -5,7 +5,7 @@ Learn how to add Payless x402 payments to your Python backend API using Flask or
 ## Prerequisites
 
 - Python 3.8+ installed
-- A Solana wallet address for receiving payments
+- A Robinhood Chain wallet address for receiving payments
 - Basic knowledge of Python web frameworks
 
 ## Installation
@@ -22,8 +22,8 @@ Create `.env` file:
 
 ```env
 WALLET_ADDRESS=YOUR_WALLET_ADDRESS_HERE
-NETWORK=mainnet-beta
-USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+ROBINHOOD_CHAIN_ID=4663
+USDG_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168
 ```
 
 ### Step 2: Create x402 Middleware
@@ -66,10 +66,10 @@ def with_x402_payment(price=None):
                     'message': 'Payment Required',
                     'payment': {
                         'amount': endpoint_price,
-                        'currency': 'USDC',
+                        'currency': 'USDG',
                         'recipient': os.getenv('WALLET_ADDRESS'),
-                        'network': os.getenv('NETWORK', 'mainnet-beta'),
-                        'tokenMint': os.getenv('USDC_MINT'),
+                        'network': os.getenv('ROBINHOOD_CHAIN_ID', '4663'),
+                        'tokenAddress': os.getenv('USDG_ADDRESS'),
                     }
                 }), 402
             
@@ -233,10 +233,10 @@ async def verify_x402_payment(request: Request, price: str = None):
                 'message': 'Payment Required',
                 'payment': {
                     'amount': endpoint_price,
-                    'currency': 'USDC',
+                    'currency': 'USDG',
                     'recipient': os.getenv('WALLET_ADDRESS'),
-                    'network': os.getenv('NETWORK', 'mainnet-beta'),
-                    'tokenMint': os.getenv('USDC_MINT'),
+                    'network': os.getenv('ROBINHOOD_CHAIN_ID', '4663'),
+                    'tokenAddress': os.getenv('USDG_ADDRESS'),
                 }
             }
         )

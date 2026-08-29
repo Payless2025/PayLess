@@ -41,9 +41,7 @@ interface AnalyticsMetrics {
   successRate: number;
   averageTransactionValue: string;
   transactionsByChain: {
-    solana: number;
-    bsc: number;
-    ethereum: number;
+    robinhood: number;
   };
   transactionsByStatus: {
     pending: number;
@@ -65,9 +63,7 @@ interface AnalyticsMetrics {
 }
 
 const CHAIN_COLORS = {
-  solana: '#14F195',
-  bsc: '#F3BA2F',
-  ethereum: '#627EEA',
+  robinhood: '#00C805',
 };
 
 const STATUS_COLORS = {
@@ -113,9 +109,7 @@ export default function AnalyticsPage() {
 
   // Prepare chart data
   const chainDistributionData = metrics ? [
-    { name: 'Solana', value: metrics.transactionsByChain.solana, color: CHAIN_COLORS.solana },
-    { name: 'BSC', value: metrics.transactionsByChain.bsc, color: CHAIN_COLORS.bsc },
-    { name: 'Ethereum', value: metrics.transactionsByChain.ethereum, color: CHAIN_COLORS.ethereum },
+    { name: 'Robinhood Chain', value: metrics.transactionsByChain.robinhood, color: CHAIN_COLORS.robinhood },
   ] : [];
 
   const statusDistributionData = metrics ? [

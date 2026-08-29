@@ -24,7 +24,7 @@ export default function PaymentLinksPage() {
   // Form state
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedChains, setSelectedChains] = useState<string[]>(['solana', 'bsc', 'ethereum']);
+  const [selectedChains, setSelectedChains] = useState<string[]>(['robinhood']);
   const [recipientAddress, setRecipientAddress] = useState('');
 
   useEffect(() => {
@@ -173,19 +173,12 @@ export default function PaymentLinksPage() {
                         <p className="text-gray-600 text-sm mb-3">{link.description}</p>
                       )}
                       <div className="flex items-center gap-2 flex-wrap">
-                        {link.chains.map((chain) => {
-                          const logo = chain === 'solana' 
-                            ? '/assets/sol-logo.png'
-                            : chain === 'bsc'
-                            ? '/assets/bsc-logo.png'
-                            : '/assets/eth-logo.png';
-                          return (
-                            <span key={chain} className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs flex items-center gap-1 border border-purple-200">
-                              <img src={logo} alt={chain} className="w-3 h-3" />
-                              {chain}
-                            </span>
-                          );
-                        })}
+                        {link.chains.map((chain) => (
+                          <span key={chain} className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs flex items-center gap-1 border border-purple-200">
+                            <img src="/assets/robinhood-logo.svg" alt={chain} className="w-3 h-3" />
+                            Robinhood Chain
+                          </span>
+                        ))}
                       </div>
                     </div>
                     <button
@@ -284,17 +277,17 @@ export default function PaymentLinksPage() {
                       Supported Chains
                     </label>
                     <div className="flex gap-2">
-                      {['solana', 'bsc', 'ethereum'].map((chain) => (
+                      {['robinhood'].map((chain) => (
                         <button
                           key={chain}
                           onClick={() => toggleChain(chain)}
-                          className={`px-4 py-2 rounded-lg border-2 transition-all capitalize ${
+                          className={`px-4 py-2 rounded-lg border-2 transition-all ${
                             selectedChains.includes(chain)
                               ? 'border-purple-600 bg-purple-50 text-purple-700 font-semibold'
                               : 'border-gray-300 bg-white text-gray-600'
                           }`}
                         >
-                          {chain}
+                          Robinhood Chain
                         </button>
                       ))}
                     </div>

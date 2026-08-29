@@ -8,7 +8,7 @@ Payment Streaming allows you to charge users **per-second, per-minute, or per-ho
 - ⚡ Real-time billing (pay-per-second possible!)
 - ⏸️ Pause/Resume streams anytime
 - 💰 Automatic balance tracking
-- 🔄 Multi-chain support (Solana, BSC, Ethereum)
+- 🔄 Settles on Robinhood Chain
 - 📊 Live usage metrics
 - 🛡️ Insufficient funds protection
 
@@ -92,7 +92,7 @@ POST /api/streams
     "description": "GPT-4 alternative API",
     "ratePerInterval": 0.001,
     "billingInterval": "per_second",
-    "chain": "solana",
+    "chain": "robinhood",
     "minBalance": 0.1,
     "maxDuration": 3600
   },
@@ -190,7 +190,7 @@ Ends stream and finalizes billing.
     description?: string;
     ratePerInterval: number;  // Amount per interval
     billingInterval: 'per_second' | 'per_minute' | 'per_hour';
-    chain: 'solana' | 'bsc' | 'ethereum';
+    chain: 'robinhood';
     minBalance?: number;      // Stop stream if balance goes below
     maxDuration?: number;     // Max seconds before auto-complete
   };
@@ -488,7 +488,7 @@ const stream = await createStream(wallet, {
   serviceName: 'GPT-4 Inference',
   ratePerInterval: 0.001,
   billingInterval: 'per_second',
-  chain: 'solana',
+  chain: 'robinhood',
   minBalance: 0.06,  // 60 seconds buffer
   maxDuration: 300   // 5 min max
 }, 1.0);
@@ -505,7 +505,7 @@ const stream = await createStream(wallet, {
   serviceName: 'RTX 4090 Rental',
   ratePerInterval: 0.02,
   billingInterval: 'per_minute',
-  chain: 'solana',
+  chain: 'robinhood',
   minBalance: 1.0,
   maxDuration: 14400  // 4 hours
 }, 10.0);
@@ -517,7 +517,7 @@ const stream = await createStream(wallet, {
   serviceName: '4K Video Stream',
   ratePerInterval: 0.0005,
   billingInterval: 'per_minute',
-  chain: 'solana',
+  chain: 'robinhood',
   minBalance: 0.03,  // 60 min buffer
 }, 0.5);
 

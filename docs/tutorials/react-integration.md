@@ -11,7 +11,7 @@ Learn how to integrate Payless x402 payments into your React application.
 ## Installation
 
 ```bash
-npm install @payless/sdk @solana/wallet-adapter-react @solana/wallet-adapter-react-ui @solana/wallet-adapter-wallets @solana/web3.js
+npm install @payless/sdk @robinhood/wallet-adapter-react @robinhood/wallet-adapter-react-ui @robinhood/wallet-adapter-wallets @robinhood/web3.js
 ```
 
 ## Step 1: Setup Wallet Provider
@@ -20,14 +20,14 @@ Create `providers/WalletProvider.tsx`:
 
 ```typescript
 import React, { FC, ReactNode, useMemo } from 'react';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { clusterApiUrl } from '@solana/web3.js';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { ConnectionProvider, WalletProvider } from '@robinhood/wallet-adapter-react';
+import { WalletModalProvider } from '@robinhood/wallet-adapter-react-ui';
+import { MetaMaskWalletAdapter, RabbyWalletAdapter } from '@robinhood/wallet-adapter-wallets';
+import { clusterApiUrl } from '@robinhood/web3.js';
+import { WalletAdapterNetwork } from '@robinhood/wallet-adapter-base';
 
 // Import wallet adapter CSS
-import '@solana/wallet-adapter-react-ui/styles.css';
+import '@robinhood/wallet-adapter-react-ui/styles.css';
 
 interface Props {
   children: ReactNode;
@@ -39,8 +39,8 @@ export const AppWalletProvider: FC<Props> = ({ children }) => {
   
   const wallets = useMemo(
     () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter({ network }),
+      new MetaMaskWalletAdapter(),
+      new RabbyWalletAdapter({ network }),
     ],
     [network]
   );
@@ -76,7 +76,7 @@ function App() {
 Create `hooks/usePayless.ts`:
 
 ```typescript
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@robinhood/wallet-adapter-react';
 import { createClient, PaylessClient } from '@payless/sdk';
 import { useEffect, useState } from 'react';
 
@@ -115,7 +115,7 @@ Create `components/PaymentButton.tsx`:
 ```typescript
 import React, { useState } from 'react';
 import { usePayless } from '../hooks/usePayless';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { WalletMultiButton } from '@robinhood/wallet-adapter-react-ui';
 
 interface PaymentButtonProps {
   endpoint: string;
@@ -234,7 +234,7 @@ Create `components/AIChat.tsx`:
 ```typescript
 import React, { useState } from 'react';
 import { usePayless } from '../hooks/usePayless';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { WalletMultiButton } from '@robinhood/wallet-adapter-react-ui';
 
 export const AIChat: React.FC = () => {
   const { client, connected } = usePayless();
@@ -470,7 +470,7 @@ function MyComponent() {
 ## Resources
 
 - [React Documentation](https://react.dev/)
-- [Solana Wallet Adapter](https://github.com/solana-labs/wallet-adapter)
+- [Robinhood Chain Wallet Adapter](https://github.com/robinhood-labs/wallet-adapter)
 - [Payless SDK](../../sdk/nodejs/README.md)
 
 ## Support

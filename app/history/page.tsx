@@ -16,12 +16,13 @@ import {
 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { getRobinhoodTransactionLink } from '@/lib/chains/robinhood';
 
 interface Transaction {
   id: string;
   amount: string;
   currency: string;
-  chain: 'solana' | 'bsc' | 'ethereum';
+  chain: 'robinhood';
   status: 'pending' | 'completed' | 'failed';
   fromAddress: string;
   toAddress: string;
@@ -128,13 +129,7 @@ export default function PaymentHistoryPage() {
   const getChainExplorerUrl = (tx: Transaction) => {
     if (!tx.transactionHash) return null;
     
-    const explorers = {
-      solana: `https://solscan.io/tx/${tx.transactionHash}`,
-      ethereum: `https://etherscan.io/tx/${tx.transactionHash}`,
-      bsc: `https://bscscan.com/tx/${tx.transactionHash}`,
-    };
-    
-    return explorers[tx.chain];
+    return getRobinhoodTransactionLink(tx.transactionHash);
   };
 
   const getStatusIcon = (status: string) => {
@@ -152,9 +147,7 @@ export default function PaymentHistoryPage() {
 
   const getChainColor = (chain: string) => {
     const colors = {
-      solana: 'bg-purple-100 text-purple-800 border-purple-300',
-      ethereum: 'bg-blue-100 text-blue-800 border-blue-300',
-      bsc: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      robinhood: 'bg-green-100 text-green-800 border-green-300',
     };
     return colors[chain as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -316,9 +309,7 @@ export default function PaymentHistoryPage() {
                     className="w-full px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-payless-cyan"
                   >
                     <option value="">All</option>
-                    <option value="solana">Solana</option>
-                    <option value="ethereum">Ethereum</option>
-                    <option value="bsc">BSC</option>
+                    <option value="robinhood">Robinhood Chain</option>
                   </select>
                 </div>
 
@@ -381,7 +372,7 @@ export default function PaymentHistoryPage() {
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-white font-mono text-sm">{tx.id}</span>
                           <span className={`px-2 py-1 rounded-md text-xs border ${getChainColor(tx.chain)}`}>
-                            {tx.chain.toUpperCase()}
+                            ROBINHOOD
                           </span>
                         </div>
                         

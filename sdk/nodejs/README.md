@@ -45,7 +45,7 @@ console.log(response.data);
 import { createClient } from '@payless/sdk';
 
 const client = createClient({
-  walletAddress: 'YOUR_WALLET_ADDRESS',
+  walletAddress: '0xYourRobinhoodChainWalletAddressHere',
   network: 'mainnet-beta', // or 'devnet', 'testnet'
 });
 

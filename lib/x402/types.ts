@@ -4,19 +4,19 @@ export interface PaymentConfig {
   recipient: string;
   facilitator?: string;
   network?: string;
-  tokenMint?: string; // Solana SPL token mint address
+  tokenAddress?: string; // ERC-20 contract address on Robinhood Chain
 }
 
 export interface PaymentVerificationResult {
   valid: boolean;
-  signature?: string; // Solana transaction signature
+  signature?: string; // Signature recovered from the signed payment message
   error?: string;
 }
 
 export interface ChainPaymentInfo {
   chain: string;
   recipient: string;
-  network: string;
+  network: string; // Chain ID
   tokens: string[];
 }
 
@@ -26,11 +26,11 @@ export interface X402Response {
   payment: {
     amount: string;
     currency: string;
-    recipient?: string; // For single-chain (backward compatibility)
+    recipient?: string;
     facilitator: string;
-    network?: string; // For single-chain (backward compatibility)
-    tokenMint?: string; // For single-chain (backward compatibility)
-    chains?: ChainPaymentInfo[]; // For multi-chain support
+    network?: string; // Chain ID
+    tokenAddress?: string;
+    chains?: ChainPaymentInfo[];
   };
 }
 
@@ -38,14 +38,15 @@ export interface EndpointConfig {
   [endpoint: string]: string;
 }
 
-export interface SolanaPaymentPayload {
-  from: string; // Payer's Solana wallet address (base58)
-  to: string; // Recipient's Solana wallet address (base58)
-  amount: string; // Amount in USDC (not lamports)
-  token: string; // Token symbol (e.g., "USDC")
-  tokenMint: string; // SPL token mint address
+export interface RobinhoodPaymentPayload {
+  from: string; // Payer's wallet address (0x…)
+  to: string; // Recipient's wallet address (0x…)
+  amount: string; // Amount in whole tokens (e.g. "0.05"), not base units
+  token: string; // Token symbol (e.g. "USDG")
+  tokenAddress: string; // ERC-20 contract address
+  chainId: string; // Chain ID (4663 for Robinhood Chain mainnet)
   nonce: string; // Unique identifier
-  signature: string; // Base58 encoded signature
+  signature: string; // EIP-191 personal_sign signature
   timestamp: number; // Unix timestamp
   message: string; // Message that was signed
 }
@@ -58,7 +59,7 @@ export interface PaymentConfirmation {
   recipient: string; // Recipient's wallet address
   amount: string; // Payment amount
   token: string; // Token symbol
-  tokenMint: string; // Token mint address
+  tokenAddress: string; // ERC-20 contract address
   endpoint: string; // API endpoint that was accessed
   confirmedAt: number; // Timestamp of confirmation
   status: 'confirmed' | 'pending' | 'failed'; // Confirmation status
@@ -102,7 +103,7 @@ export enum WebhookEventType {
 export interface PaymentWebhookData {
   paymentId: string;
   signature: string; // Transaction signature
-  chain: string; // solana, bsc, ethereum
+  chain: string; // robinhood
   from: string; // Payer wallet address
   to: string; // Recipient wallet address
   amount: string;

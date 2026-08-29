@@ -1,13 +1,16 @@
 /**
- * Multi-chain configuration for Payless
- * Supports Solana, BSC, and more
+ * Chain configuration for Payless
+ *
+ * Payless settles exclusively on Robinhood Chain — an EVM (Arbitrum Orbit) L2
+ * that uses ETH for gas. Network parameters:
+ *   https://robinhood.com/us/en/support/articles/robinhood-chain-mainnet/
+ *
+ * Every value below can be overridden with an environment variable so the same
+ * build can be pointed at the testnet without a code change.
  */
 
 export enum SupportedChain {
-  SOLANA = 'solana',
-  BSC = 'bsc',
-  ETHEREUM = 'ethereum',
-  POLYGON = 'polygon',
+  ROBINHOOD = 'robinhood',
 }
 
 export interface ChainConfig {
@@ -35,205 +38,99 @@ export interface ChainConfig {
 export interface PaymentToken {
   symbol: string;
   name: string;
-  address: string; // Token contract address
+  address: string; // ERC-20 contract address
   decimals: number;
   icon?: string;
 }
 
-// Solana Configuration
-export const SOLANA_CONFIG: ChainConfig = {
-  id: 'solana-mainnet',
-  name: 'Solana Mainnet',
-  shortName: 'Solana',
-  nativeCurrency: {
-    name: 'Solana',
-    symbol: 'SOL',
-    decimals: 9,
-  },
-  rpcUrls: {
-    default: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
-    public: [
-      'https://api.mainnet-beta.solana.com',
-      'https://solana-api.projectserum.com',
-    ],
-  },
-  blockExplorers: {
-    default: 'https://solscan.io',
-  },
-  testnet: false,
-  icon: '☀️',
-  walletAddress: process.env.SOLANA_WALLET_ADDRESS || process.env.WALLET_ADDRESS || '',
-  paymentTokens: [
-    {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-      decimals: 6,
-    },
-    {
-      symbol: 'USDT',
-      name: 'Tether USD',
-      address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-      decimals: 6,
-    },
-  ],
-};
+// Canonical Robinhood Chain token contracts.
+// Source: https://docs.robinhood.com/chain/contracts/
+export const USDG_ADDRESS = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
+export const WETH_ADDRESS = '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
 
-// BSC Configuration
-export const BSC_CONFIG: ChainConfig = {
-  id: '56', // BSC Mainnet Chain ID
-  name: 'BNB Smart Chain',
-  shortName: 'BSC',
-  nativeCurrency: {
-    name: 'BNB',
-    symbol: 'BNB',
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: process.env.BSC_RPC_URL || 'https://bsc-dataseed1.binance.org',
-    public: [
-      'https://bsc-dataseed1.binance.org',
-      'https://bsc-dataseed2.binance.org',
-      'https://bsc-dataseed3.binance.org',
-    ],
-  },
-  blockExplorers: {
-    default: 'https://bscscan.com',
-  },
-  testnet: false,
-  icon: '🟡',
-  walletAddress: process.env.BSC_WALLET_ADDRESS || process.env.WALLET_ADDRESS || '',
-  paymentTokens: [
-    {
-      symbol: 'USDT',
-      name: 'Tether USD',
-      address: '0x55d398326f99059fF775485246999027B3197955',
-      decimals: 18,
-    },
-    {
-      symbol: 'BUSD',
-      name: 'Binance USD',
-      address: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
-      decimals: 18,
-    },
-    {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
-      decimals: 18,
-    },
-  ],
-};
+export const ROBINHOOD_CHAIN_ID =
+  process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID || process.env.ROBINHOOD_CHAIN_ID || '4663';
 
-// Ethereum Configuration (for future)
-export const ETHEREUM_CONFIG: ChainConfig = {
-  id: '1',
-  name: 'Ethereum Mainnet',
-  shortName: 'Ethereum',
+export const ROBINHOOD_RPC_URL =
+  process.env.NEXT_PUBLIC_ROBINHOOD_RPC_URL ||
+  process.env.ROBINHOOD_RPC_URL ||
+  'https://rpc.mainnet.chain.robinhood.com';
+
+export const ROBINHOOD_EXPLORER_URL =
+  process.env.NEXT_PUBLIC_ROBINHOOD_EXPLORER_URL ||
+  process.env.ROBINHOOD_EXPLORER_URL ||
+  'https://robinhoodchain.blockscout.com';
+
+export const ROBINHOOD_CONFIG: ChainConfig = {
+  id: ROBINHOOD_CHAIN_ID,
+  name: 'Robinhood Chain',
+  shortName: 'Robinhood',
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
     decimals: 18,
   },
   rpcUrls: {
-    default: process.env.ETHEREUM_RPC_URL || 'https://eth.llamarpc.com',
-    public: [
-      'https://eth.llamarpc.com',
-      'https://rpc.ankr.com/eth',
-    ],
+    default: ROBINHOOD_RPC_URL,
+    public: ['https://rpc.mainnet.chain.robinhood.com'],
   },
   blockExplorers: {
-    default: 'https://etherscan.io',
+    default: ROBINHOOD_EXPLORER_URL,
   },
-  testnet: false,
-  icon: '⟠',
-  walletAddress: process.env.ETHEREUM_WALLET_ADDRESS || process.env.WALLET_ADDRESS || '',
+  testnet: process.env.ROBINHOOD_NETWORK === 'testnet',
+  icon: '🪶',
+  walletAddress:
+    process.env.ROBINHOOD_WALLET_ADDRESS || process.env.WALLET_ADDRESS || '',
   paymentTokens: [
     {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      symbol: 'USDG',
+      name: 'Global Dollar',
+      address: process.env.USDG_ADDRESS || USDG_ADDRESS,
       decimals: 6,
     },
     {
-      symbol: 'USDT',
-      name: 'Tether USD',
-      address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-      decimals: 6,
-    },
-  ],
-};
-
-// Polygon Configuration (for future)
-export const POLYGON_CONFIG: ChainConfig = {
-  id: '137',
-  name: 'Polygon Mainnet',
-  shortName: 'Polygon',
-  nativeCurrency: {
-    name: 'MATIC',
-    symbol: 'MATIC',
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
-    public: [
-      'https://polygon-rpc.com',
-      'https://rpc-mainnet.matic.network',
-    ],
-  },
-  blockExplorers: {
-    default: 'https://polygonscan.com',
-  },
-  testnet: false,
-  icon: '🟣',
-  walletAddress: process.env.POLYGON_WALLET_ADDRESS || process.env.WALLET_ADDRESS || '',
-  paymentTokens: [
-    {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-      decimals: 6,
-    },
-    {
-      symbol: 'USDT',
-      name: 'Tether USD',
-      address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
-      decimals: 6,
+      symbol: 'WETH',
+      name: 'Wrapped Ether',
+      address: process.env.WETH_ADDRESS || WETH_ADDRESS,
+      decimals: 18,
     },
   ],
 };
 
 // All supported chains
 export const SUPPORTED_CHAINS: Record<SupportedChain, ChainConfig> = {
-  [SupportedChain.SOLANA]: SOLANA_CONFIG,
-  [SupportedChain.BSC]: BSC_CONFIG,
-  [SupportedChain.ETHEREUM]: ETHEREUM_CONFIG,
-  [SupportedChain.POLYGON]: POLYGON_CONFIG,
+  [SupportedChain.ROBINHOOD]: ROBINHOOD_CONFIG,
 };
 
 // Default chain
-export const DEFAULT_CHAIN = SupportedChain.SOLANA;
+export const DEFAULT_CHAIN = SupportedChain.ROBINHOOD;
+
+// The token payments are denominated in
+export const DEFAULT_PAYMENT_TOKEN = ROBINHOOD_CONFIG.paymentTokens[0];
 
 // Get chain configuration
-export function getChainConfig(chain: SupportedChain): ChainConfig {
+export function getChainConfig(chain: SupportedChain = DEFAULT_CHAIN): ChainConfig {
   return SUPPORTED_CHAINS[chain];
 }
 
-// Get all active chains (currently Solana and BSC)
+// Get all active chains
 export function getActiveChains(): ChainConfig[] {
-  return [
-    SUPPORTED_CHAINS[SupportedChain.SOLANA],
-    SUPPORTED_CHAINS[SupportedChain.BSC],
-  ];
+  return [ROBINHOOD_CONFIG];
 }
 
 // Check if chain is supported
 export function isChainSupported(chainId: string): boolean {
-  return Object.values(SUPPORTED_CHAINS).some(config => config.id === chainId);
+  return Object.values(SUPPORTED_CHAINS).some((config) => config.id === chainId);
 }
 
 // Get chain by ID
 export function getChainById(chainId: string): ChainConfig | undefined {
-  return Object.values(SUPPORTED_CHAINS).find(config => config.id === chainId);
+  return Object.values(SUPPORTED_CHAINS).find((config) => config.id === chainId);
 }
 
+// Look up a payment token by symbol (case-insensitive)
+export function getPaymentToken(symbol: string): PaymentToken | undefined {
+  return ROBINHOOD_CONFIG.paymentTokens.find(
+    (token) => token.symbol.toLowerCase() === symbol.toLowerCase()
+  );
+}

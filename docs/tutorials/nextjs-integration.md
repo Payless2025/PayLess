@@ -5,13 +5,13 @@ Learn how to integrate Payless x402 payments into your Next.js application in mi
 ## Prerequisites
 
 - Node.js 18+ installed
-- A Solana wallet address for receiving payments
+- A Robinhood Chain wallet address for receiving payments
 - Basic knowledge of Next.js App Router
 
 ## Installation
 
 ```bash
-npm install @payless/sdk @solana/web3.js bs58 tweetnacl
+npm install @payless/sdk @robinhood/web3.js bs58 tweetnacl
 ```
 
 ## Step 1: Set Up Configuration
@@ -19,17 +19,17 @@ npm install @payless/sdk @solana/web3.js bs58 tweetnacl
 Create a `.env.local` file in your project root:
 
 ```env
-# Your Solana wallet address to receive payments
+# Your Robinhood Chain wallet address to receive payments
 WALLET_ADDRESS=YOUR_WALLET_ADDRESS_HERE
 
-# Network (mainnet-beta, devnet, testnet)
-NETWORK=mainnet-beta
+# Robinhood Chain network
+ROBINHOOD_CHAIN_ID=4663
 
-# USDC Token Mint (Mainnet)
-USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+# USDG ERC-20 contract (Robinhood Chain mainnet)
+USDG_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168
 
 # Optional: Custom RPC URL
-RPC_URL=https://api.mainnet-beta.solana.com
+ROBINHOOD_RPC_URL=https://rpc.mainnet.chain.robinhood.com
 ```
 
 ## Step 2: Create x402 Middleware
@@ -38,7 +38,7 @@ Create `lib/x402/middleware.ts`:
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@robinhood/web3.js';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 
@@ -46,7 +46,7 @@ interface PaymentPayload {
   from: string;
   to: string;
   amount: string;
-  tokenMint: string;
+  tokenAddress: string;
   timestamp: number;
   message: string;
   signature: string;
@@ -84,10 +84,10 @@ export function withX402Payment(
           message: 'Payment Required',
           payment: {
             amount: endpointPrice,
-            currency: 'USDC',
+            currency: 'USDG',
             recipient: process.env.WALLET_ADDRESS,
-            network: process.env.NETWORK || 'mainnet-beta',
-            tokenMint: process.env.USDC_MINT,
+            network: process.env.ROBINHOOD_CHAIN_ID || '4663',
+            tokenAddress: process.env.USDG_ADDRESS,
           },
         },
         { status: 402 }
@@ -185,7 +185,7 @@ export const GET = withX402Payment(handler, '0.10');
 ### Install Frontend Dependencies
 
 ```bash
-npm install @solana/wallet-adapter-react @solana/wallet-adapter-react-ui @solana/wallet-adapter-wallets
+npm install @robinhood/wallet-adapter-react @robinhood/wallet-adapter-react-ui @robinhood/wallet-adapter-wallets
 ```
 
 ### Create Wallet Provider
@@ -196,21 +196,21 @@ Create `components/WalletProvider.tsx`:
 'use client';
 
 import { FC, ReactNode, useMemo } from 'react';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { clusterApiUrl } from '@solana/web3.js';
+import { ConnectionProvider, WalletProvider } from '@robinhood/wallet-adapter-react';
+import { WalletAdapterNetwork } from '@robinhood/wallet-adapter-base';
+import { MetaMaskWalletAdapter, RabbyWalletAdapter } from '@robinhood/wallet-adapter-wallets';
+import { WalletModalProvider } from '@robinhood/wallet-adapter-react-ui';
+import { clusterApiUrl } from '@robinhood/web3.js';
 
-import '@solana/wallet-adapter-react-ui/styles.css';
+import '@robinhood/wallet-adapter-react-ui/styles.css';
 
 export const AppWalletProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const network = WalletAdapterNetwork.Mainnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   const wallets = useMemo(
     () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter({ network }),
+      new MetaMaskWalletAdapter(),
+      new RabbyWalletAdapter({ network }),
     ],
     [network]
   );
@@ -235,8 +235,8 @@ Create `app/premium/page.tsx`:
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useWallet } from '@robinhood/wallet-adapter-react';
+import { WalletMultiButton } from '@robinhood/wallet-adapter-react-ui';
 import { createClient } from '@payless/sdk';
 
 export default function PremiumPage() {
@@ -356,7 +356,7 @@ Response:
   "message": "Payment Required",
   "payment": {
     "amount": "0.10",
-    "currency": "USDC",
+    "currency": "USDG",
     "recipient": "YOUR_WALLET_ADDRESS"
   }
 }
@@ -365,7 +365,7 @@ Response:
 ### 3. Test With Frontend
 
 1. Open `http://localhost:3000/premium`
-2. Connect your wallet (Phantom/Solflare)
+2. Connect your wallet (MetaMask/Rabby)
 3. Click "Access Premium Content"
 4. Approve the transaction signature
 5. Content appears!

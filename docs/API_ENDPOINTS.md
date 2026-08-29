@@ -6,7 +6,7 @@ Complete list of available API endpoints with pricing and usage examples.
 
 ### 1. AI Chat Completion
 **Endpoint:** `POST /api/ai/chat`  
-**Price:** $0.05 USDC  
+**Price:** $0.05 USDG  
 **Description:** Get AI-powered responses for chat conversations
 
 ```json
@@ -18,7 +18,7 @@ Complete list of available API endpoints with pricing and usage examples.
 
 ### 2. AI Image Generation
 **Endpoint:** `POST /api/ai/image`  
-**Price:** $0.10 USDC  
+**Price:** $0.10 USDG  
 **Description:** Create images from text descriptions
 
 ```json
@@ -30,7 +30,7 @@ Complete list of available API endpoints with pricing and usage examples.
 
 ### 3. Language Translation
 **Endpoint:** `POST /api/ai/translate`  
-**Price:** $0.03 USDC  
+**Price:** $0.03 USDG  
 **Description:** Translate text between multiple languages
 
 **Supported Languages:** Spanish (es), French (fr), German (de), Japanese (ja), Chinese (zh)
@@ -45,7 +45,7 @@ Complete list of available API endpoints with pricing and usage examples.
 
 ### 4. Text-to-Speech
 **Endpoint:** `POST /api/ai/tts`  
-**Price:** $0.08 USDC  
+**Price:** $0.08 USDG  
 **Description:** Convert text to audio with multiple voice options
 
 ```json
@@ -60,30 +60,30 @@ Complete list of available API endpoints with pricing and usage examples.
 
 ### 5. Weather Data
 **Endpoint:** `GET /api/data/weather?city={city}`  
-**Price:** $0.01 USDC  
+**Price:** $0.01 USDG  
 **Description:** Get current weather information for any city
 
 **Example:** `/api/data/weather?city=London`
 
 ### 6. Stock Market Data
 **Endpoint:** `GET /api/data/stock?symbol={symbol}`  
-**Price:** $0.02 USDC  
+**Price:** $0.02 USDG  
 **Description:** Get real-time stock quotes and market data
 
 **Example:** `/api/data/stock?symbol=AAPL`
 
 ### 7. Cryptocurrency Prices
 **Endpoint:** `GET /api/data/crypto?symbol={symbol}`  
-**Price:** $0.015 USDC  
+**Price:** $0.015 USDG  
 **Description:** Get real-time cryptocurrency market data
 
-**Supported Symbols:** BTC, ETH, SOL, USDC, BNB
+**Supported Symbols:** BTC, ETH, SOL, USDG, BNB
 
 **Example:** `/api/data/crypto?symbol=SOL`
 
 ### 8. News Aggregation
 **Endpoint:** `GET /api/data/news?category={category}&limit={limit}`  
-**Price:** $0.025 USDC  
+**Price:** $0.025 USDG  
 **Description:** Get latest news articles by category
 
 **Categories:** technology, crypto, business, science, all
@@ -94,7 +94,7 @@ Complete list of available API endpoints with pricing and usage examples.
 
 ### 9. QR Code Generator
 **Endpoint:** `POST /api/tools/qrcode`  
-**Price:** $0.005 USDC  
+**Price:** $0.005 USDG  
 **Description:** Generate QR codes from text or URLs
 
 ```json
@@ -109,7 +109,7 @@ Complete list of available API endpoints with pricing and usage examples.
 
 ### 10. Premium Content Access
 **Endpoint:** `GET /api/premium/content?id={id}`  
-**Price:** $1.00 USDC  
+**Price:** $1.00 USDG  
 **Description:** Access exclusive articles and premium content
 
 **Example:** `/api/premium/content?id=article-123`

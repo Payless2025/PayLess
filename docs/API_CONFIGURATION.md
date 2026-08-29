@@ -10,13 +10,12 @@ Payless supports real API integrations for all endpoints. This guide shows you h
 
 ## 📝 Environment Variables
 
-Create `/path/to/payless/.env.local`:
+Create `.env.local` in the project root:
 
 ```bash
 # Wallet Addresses (Required for payments)
 WALLET_ADDRESS=your_default_wallet_address
-SOLANA_WALLET_ADDRESS=your_solana_wallet_address
-BSC_WALLET_ADDRESS=your_bsc_evm_address
+ROBINHOOD_WALLET_ADDRESS=your_robinhood_chain_wallet_address
 
 # API Keys (Optional - APIs work without them)
 OPENAI_API_KEY=sk-your-key-here

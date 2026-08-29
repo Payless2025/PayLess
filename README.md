@@ -2,14 +2,14 @@
 
 ## Accept Crypto Payments Without Accounts
 
-The simplest way to monetize your APIs using the x402 protocol on Solana. Zero fees, instant settlements, one line of code.
+The simplest way to monetize your APIs using the x402 protocol on Robinhood Chain. Zero fees, instant settlements, one line of code.
 
 [![GitHub](https://img.shields.io/badge/GitHub-Payless2025%2FPayLess-blue?logo=github)](https://github.com/Payless2025/PayLess)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Solana](https://img.shields.io/badge/Blockchain-Solana-blueviolet)](https://solana.com)
+[![Robinhood Chain](https://img.shields.io/badge/Blockchain-Robinhood%20Chain-00C805)](https://docs.robinhood.com/chain/)
 [![x402](https://img.shields.io/badge/Protocol-x402-orange)](https://x402.org)
 
-**Contract Address (CA):** `6zgpKxYoaXJ6Eo8pAHkdLbADzts4P7Dfv1rnx6nhpump`
+**$PAYLESS Contract Address (Robinhood Chain):** _not yet deployed — set `PAYLESS_TOKEN_ADDRESS` once it is._
 
 ---
 
@@ -17,21 +17,21 @@ The simplest way to monetize your APIs using the x402 protocol on Solana. Zero f
 
 **Payless** is a serverless payment platform built on the x402 protocol. It lets developers monetize any API with crypto payments in minutes—no accounts, no subscriptions, no complexity.
 
-**🌐 Multi-Chain Support:** Solana, BSC (Binance Smart Chain), Ethereum, with Polygon coming soon!
+**⛓️ Network:** Payless settles exclusively on [Robinhood Chain](https://docs.robinhood.com/chain/) — an EVM (Arbitrum Orbit) L2, chain ID `4663` — denominated in **USDG**.
 
 Perfect for:
 - 🤖 **AI Agent APIs** - Let agents pay for your services autonomously
 - 💰 **Micropayments** - Accept payments as low as $0.01
 - ⚡ **Instant Settlement** - Money in your wallet in 2 seconds
 - 🚀 **Serverless APIs** - Deploy anywhere (Vercel, AWS, Netlify)
-- 🌐 **Multi-Chain** - Users choose their preferred blockchain
+- ⛓️ **EVM Native** - Works with MetaMask, Rabby, and any EVM tooling
 
 ## 🌟 Features
 
 - **💰 Zero Protocol Fees** - Keep 100% of your revenue
 - **⚡ Instant Settlement** - Money in your wallet in 2 seconds
 - **🔐 Privacy First** - No accounts, emails, or OAuth required
-- **🌐 Multi-Chain Support** - Solana + BSC + Ethereum (Polygon coming soon!)
+- **⛓️ Robinhood Chain** - EVM settlement in USDG, ETH for gas
 - **🚀 Serverless Ready** - Deploy to Vercel, Netlify, or AWS Lambda
 - **🤖 Perfect for AI Agents** - Autonomous payments without human intervention
 - **⚡ Payment Streaming** - Pay-per-second for real-time services (AI APIs, compute, streaming)
@@ -44,10 +44,7 @@ Perfect for:
 ### Prerequisites
 
 - Node.js 18+ installed
-- Wallet addresses for supported chains:
-  - **Solana:** Phantom, Solflare, etc.
-  - **BSC:** MetaMask, Trust Wallet, Binance Wallet
-  - **Ethereum:** MetaMask, Coinbase Wallet, etc.
+- A Robinhood Chain wallet address (`0x…`) to receive payments — MetaMask, Rabby, or any EVM wallet
 - (Optional) x402 facilitator endpoint
 
 ### Installation
@@ -68,14 +65,14 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` and add your Solana wallet address:
+Edit `.env` and add your Robinhood Chain wallet address:
 ```env
-# Solana wallet address (base58 format)
-WALLET_ADDRESS=YourSolanaWalletAddressHere1111111111111111
+# Robinhood Chain wallet address (base58 format)
+WALLET_ADDRESS=0xYourRobinhoodChainWalletAddressHere
 FACILITATOR_URL=https://facilitator.x402.org
-NETWORK=mainnet-beta
-RPC_URL=https://api.mainnet-beta.solana.com
-USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+ROBINHOOD_CHAIN_ID=4663
+ROBINHOOD_RPC_URL=https://rpc.mainnet.chain.robinhood.com
+USDG_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168
 
 # Enable demo payments (set to 'true' for playground/testing)
 ENABLE_DEMO_PAYMENTS=true
@@ -237,11 +234,11 @@ vercel
 ```
 
 3. **Set environment variables in Vercel Dashboard**
-   - `WALLET_ADDRESS` - Your Solana wallet address
+   - `WALLET_ADDRESS` - Your Robinhood Chain wallet address
    - `FACILITATOR_URL` - Facilitator endpoint
-   - `NETWORK` - Solana network (mainnet-beta, devnet)
-   - `RPC_URL` - Solana RPC endpoint
-   - `USDC_MINT` - USDC SPL token mint address
+   - `ROBINHOOD_CHAIN_ID` - Robinhood Chain ID (4663)
+   - `RPC_URL` - Robinhood Chain RPC endpoint
+   - `USDG_ADDRESS` - USDG ERC-20 contract address
 
 ### Deploy to Netlify
 
@@ -279,9 +276,13 @@ Never commit these to version control:
 
 ### Documentation
 
-- [Ethereum Support](./docs/ETHEREUM_SUPPORT.md) - How to accept Ethereum payments
+- [Robinhood Chain](./docs/ROBINHOOD_CHAIN.md) - Network details, USDG, and how a payment is verified
+- [Quick Start](./docs/quickstart.md) - Get running in five minutes
+- [API Reference](./docs/api-reference.md) - Endpoints, payloads, and errors
+- [Payment Links](./docs/PAYMENT_LINKS.md) - Shareable payment URLs
+- [Payment Streaming](./docs/PAYMENT_STREAMING.md) - Pay-per-second billing
+- [Token Gating](./docs/TOKEN_GATING.md) - Holder-only access for $PAYLESS
 - [Webhooks](./docs/WEBHOOKS.md) - Real-time payment notifications
-- [Multi-Chain Guide](./docs/MULTI_CHAIN.md) - Complete multi-chain integration
 - [API Configuration](./docs/API_CONFIGURATION.md) - Configure your API
 
 ### x402 Protocol
@@ -337,7 +338,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | **🛝 Built-in Playground** | Test all endpoints without writing code |
 | **🔐 Privacy First** | No accounts, emails, or OAuth required |
 | **🤖 AI Agent Ready** | Perfect for autonomous payments |
-| **💵 True Micropayments** | Accept payments as low as $0.01 USDC |
+| **💵 True Micropayments** | Accept payments as low as $0.01 USDG |
 | **⚡ Instant Settlement** | Money in your wallet in 2 seconds |
 
 The simplest, most developer-friendly way to monetize APIs with crypto. Zero fees, zero complexity, zero compromises.

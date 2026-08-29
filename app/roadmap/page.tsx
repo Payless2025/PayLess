@@ -41,11 +41,11 @@ export default function RoadmapPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span>Solana payment integration</span>
+                      <span>Robinhood Chain payment integration</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span>BSC (Binance Smart Chain) support</span>
+                      <span>USDG settlement on Robinhood Chain</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -70,7 +70,7 @@ export default function RoadmapPage() {
                   <ul className="space-y-2 text-gray-700">
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Ethereum support</strong> - Full mainnet integration with USDC/USDT</span>
+                      <span><strong>Robinhood Chain support</strong> - Full mainnet integration with USDG</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -82,7 +82,7 @@ export default function RoadmapPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Multi-chain middleware</strong> - Unified payment interface</span>
+                      <span><strong>x402 payment middleware</strong> - One-line API monetization</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -111,7 +111,7 @@ export default function RoadmapPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Phantom Mobile Integration</strong> - Native mobile wallet support</span>
+                      <span><strong>Mobile Wallet Integration</strong> - Native EVM mobile wallet support</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -314,11 +314,11 @@ export default function RoadmapPage() {
                   <ul className="space-y-2 text-gray-300">
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Polygon Network</strong> - Layer 2 scaling solution</span>
+                      <span><strong>On-chain settlement checks</strong> - Verify transfers landed, not just authorized</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Arbitrum & Optimism</strong> - Additional L2 support</span>
+                      <span><strong>Nonce replay protection</strong> - Reject reused payment authorizations</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />

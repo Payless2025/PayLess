@@ -20,7 +20,7 @@ withX402Payment(
 **Parameters:**
 - `handler` - Your API route handler function
 - `price` - Price in USD (e.g., "0.01" for 1 cent)
-- `currency` - Currency code (default: "USDC")
+- `currency` - Currency code (default: "USDG")
 
 **Returns:**
 - Wrapped handler that requires payment
@@ -45,12 +45,12 @@ Global payment configuration object.
 
 ```typescript
 export const PAYMENT_CONFIG = {
-  walletAddress: string;        // Your Solana wallet
+  walletAddress: string;        // Your Robinhood Chain wallet
   facilitatorUrl: string;        // x402 facilitator URL
-  network: string;               // Solana network
-  rpcUrl: string;                // Solana RPC endpoint
+  network: string;               // Robinhood Chain
+  rpcUrl: string;                // Robinhood Chain RPC endpoint
   currency: string;              // Payment currency
-  usdcMint: string;              // USDC token mint address
+  tokenAddress: string;              // USDG ERC-20 contract address
 };
 ```
 
@@ -90,7 +90,7 @@ Sign payment with wallet.
 ```typescript
 signPaymentPayload(
   payload: X402PaymentPayload,
-  wallet?: SolanaWalletProvider
+  wallet?: Robinhood ChainWalletProvider
 ): Promise<string>
 ```
 
@@ -111,10 +111,10 @@ verifyPayment(
 
 ```typescript
 interface X402PaymentPayload {
-  from: string;      // Payer's Solana wallet
-  to: string;        // Recipient's Solana wallet
+  from: string;      // Payer's Robinhood Chain wallet
+  to: string;        // Recipient's Robinhood Chain wallet
   amount: string;    // Payment amount
-  currency: string;  // Currency code (e.g., "USDC")
+  currency: string;  // Currency code (e.g., "USDG")
   timestamp: number; // Unix timestamp
   nonce: string;     // Unique transaction ID
 }
@@ -134,11 +134,11 @@ interface X402PaymentHeader {
 Required environment variables:
 
 ```env
-WALLET_ADDRESS=<your-solana-wallet>
+WALLET_ADDRESS=<your-robinhood-wallet>
 FACILITATOR_URL=https://facilitator.x402.org
-NETWORK=mainnet-beta
-RPC_URL=https://api.mainnet-beta.solana.com
-USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+ROBINHOOD_CHAIN_ID=4663
+ROBINHOOD_RPC_URL=https://rpc.mainnet.chain.robinhood.com
+USDG_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168
 ```
 
 ## Error Handling

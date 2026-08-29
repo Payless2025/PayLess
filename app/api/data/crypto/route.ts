@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withMultiChainPayment } from '@/lib/x402/multi-chain-middleware';
+import { withX402Payment } from '@/lib/x402/middleware';
 import axios from 'axios';
 
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
@@ -21,10 +21,10 @@ const SYMBOL_TO_ID: { [key: string]: string } = {
 async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const symbol = searchParams.get('symbol')?.toUpperCase() || 'SOL';
+    const symbol = searchParams.get('symbol')?.toUpperCase() || 'ETH';
     
     // Get CoinGecko ID from symbol
-    const coinId = SYMBOL_TO_ID[symbol] || 'solana';
+    const coinId = SYMBOL_TO_ID[symbol] || 'ethereum';
 
     // Fetch real data from CoinGecko API (free tier, no API key)
     const response = await axios.get(
@@ -82,4 +82,4 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = withMultiChainPayment(handler);
+export const GET = withX402Payment(handler);

@@ -4,7 +4,7 @@
  * Perfect for AI APIs, compute time, streaming media
  */
 
-import { SupportedChain } from '../chains/config';
+import { SupportedChain, getChainConfig } from '../chains/config';
 
 export enum StreamStatus {
   ACTIVE = 'active',
@@ -405,11 +405,10 @@ export function formatStreamDuration(seconds: number): string {
 /**
  * Format rate for display
  */
-export function formatStreamRate(rate: number, interval: BillingInterval, chain: SupportedChain): string {
+export function formatStreamRate(rate: number, interval: BillingInterval, chain: SupportedChain = SupportedChain.ROBINHOOD): string {
   const intervalStr = interval.replace('per_', '');
-  const chainSymbol = chain === SupportedChain.SOLANA ? 'SOL' : 
-                      chain === SupportedChain.BSC ? 'BNB' : 'ETH';
-  
+  const chainSymbol = getChainConfig(chain).nativeCurrency.symbol;
+
   return `${rate} ${chainSymbol}/${intervalStr}`;
 }
 

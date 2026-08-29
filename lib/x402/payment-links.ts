@@ -9,7 +9,7 @@ export interface PaymentLink {
   amount: string;
   currency: string;
   description?: string;
-  chains: string[]; // solana, bsc, ethereum
+  chains: string[]; // robinhood
   recipientAddress: string;
   createdAt: number;
   expiresAt?: number;
@@ -50,9 +50,9 @@ export function createPaymentLink(params: CreatePaymentLinkParams): PaymentLink 
   const link: PaymentLink = {
     id,
     amount: params.amount,
-    currency: 'USDC/USDT',
+    currency: 'USDG',
     description: params.description,
-    chains: params.chains || ['solana', 'bsc', 'ethereum'],
+    chains: params.chains || ['robinhood'],
     recipientAddress: params.recipientAddress,
     createdAt: now,
     expiresAt: params.expiresIn ? now + params.expiresIn : undefined,

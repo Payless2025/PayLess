@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         {
           error: 'Wallet address is required',
-          example: '/api/token-tier?wallet=YOUR_SOLANA_WALLET',
+          example: '/api/token-tier?wallet=YOUR_ROBINHOOD_CHAIN_WALLET',
         },
         { status: 400 }
       );

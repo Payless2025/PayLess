@@ -6,7 +6,7 @@ export interface Transaction {
   id: string;
   amount: string;
   currency: string;
-  chain: 'solana' | 'bsc' | 'ethereum';
+  chain: 'robinhood';
   status: 'pending' | 'completed' | 'failed';
   fromAddress: string;
   toAddress: string;
@@ -22,9 +22,7 @@ export interface AnalyticsMetrics {
   successRate: number;
   averageTransactionValue: string;
   transactionsByChain: {
-    solana: number;
-    bsc: number;
-    ethereum: number;
+    robinhood: number;
   };
   transactionsByStatus: {
     pending: number;
@@ -160,9 +158,7 @@ export function getAnalyticsMetrics(): AnalyticsMetrics {
     : 0;
 
   const transactionsByChain = {
-    solana: transactions.filter(tx => tx.chain === 'solana').length,
-    bsc: transactions.filter(tx => tx.chain === 'bsc').length,
-    ethereum: transactions.filter(tx => tx.chain === 'ethereum').length,
+    robinhood: transactions.filter(tx => tx.chain === 'robinhood').length,
   };
 
   const transactionsByStatus = {
@@ -235,8 +231,8 @@ export const analyticsStore = {
     // Convert to transaction format
     recordTransaction({
       amount: data.amount || '0',
-      currency: data.token || 'USDC',
-      chain: 'solana',
+      currency: data.token || 'USDG',
+      chain: 'robinhood',
       status: 'completed',
       fromAddress: data.walletAddress || '',
       toAddress: data.recipient || '',
@@ -252,7 +248,6 @@ export const analyticsStore = {
  * Generate mock transactions for demo purposes
  */
 export function generateMockTransactions(count: number = 20): void {
-  const chains: Array<'solana' | 'bsc' | 'ethereum'> = ['solana', 'bsc', 'ethereum'];
   const statuses: Array<'pending' | 'completed' | 'failed'> = ['completed', 'completed', 'completed', 'completed', 'pending', 'failed'];
   const descriptions = [
     'AI API Chat Request',
@@ -267,13 +262,12 @@ export function generateMockTransactions(count: number = 20): void {
     const daysAgo = Math.floor(Math.random() * 7);
     const timestamp = Date.now() - (daysAgo * 24 * 60 * 60 * 1000) - (Math.random() * 24 * 60 * 60 * 1000);
     const amount = (Math.random() * 50 + 0.5).toFixed(2);
-    const chain = chains[Math.floor(Math.random() * chains.length)];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
 
     recordTransaction({
       amount,
-      currency: 'USDC',
-      chain,
+      currency: 'USDG',
+      chain: 'robinhood',
       status,
       fromAddress: `0x${Math.random().toString(16).substr(2, 40)}`,
       toAddress: `0x${Math.random().toString(16).substr(2, 40)}`,
