@@ -75,16 +75,20 @@ client on the defaults.
 
 ## How a payment works
 
-Payless implements the x402 flow. Nothing is submitted on-chain by the
-middleware — it verifies a **signed authorization** from the payer.
+Payless implements the x402 flow.
 
 1. The client calls a paid endpoint with no payment.
 2. The server answers `402 Payment Required` with the amount, recipient, chain
    ID and accepted token contracts.
-3. The client builds a payload, signs `message` with `personal_sign` (EIP-191),
-   and retries with an `X-Payment` header.
-4. The server recovers the signer with `ethers.utils.verifyMessage` and checks
-   it equals `from`.
+3. The client sends that amount of USDG to the recipient on Robinhood Chain.
+4. The client retries with an `X-Payment` header carrying the transfer's
+   `transactionHash` (and, optionally, a signature binding the payer to the
+   request).
+5. The server reads the receipt, confirms the transfer really paid it, and marks
+   the hash spent so it cannot buy a second response.
+
+The signature is supporting evidence, not the payment. **The receipt is the
+payment.**
 
 ### Payload
 
@@ -96,10 +100,11 @@ interface RobinhoodPaymentPayload {
   token: string;        // "USDG"
   tokenAddress: string; // ERC-20 contract
   chainId: string;      // "4663"
-  nonce: string;
+  transactionHash: string; // The on-chain transfer that pays for this request
+  nonce: string;        // Demo mode only — settled payments key off transactionHash
   timestamp: number;    // Unix ms
   message: string;      // The exact string that was signed
-  signature: string;    // EIP-191 signature (0x…, 65 bytes)
+  signature: string;    // EIP-191 signature (0x…, 65 bytes), optional
 }
 ```
 
@@ -109,9 +114,11 @@ interface RobinhoodPaymentPayload {
 byte for byte — the signature is over that exact string, so any drift fails
 verification.
 
-### What the server checks
+### What the signature check covers
 
-Implemented in [`lib/chains/robinhood.ts`](../lib/chains/robinhood.ts):
+Implemented in [`lib/chains/robinhood.ts`](../lib/chains/robinhood.ts). This runs
+only when a signature is supplied, and it is not sufficient on its own — see
+**Settlement** below:
 
 | Check | Failure |
 |---|---|
@@ -129,14 +136,41 @@ skipped so the playground works without a funded wallet. Recipient, amount and
 token are still enforced. **Never set this in production** — it accepts any
 signature.
 
-### Not yet implemented
+### Settlement
 
-Signature verification proves the payer *authorized* the amount. It does not yet
-prove settlement. Before taking real money you still need to:
+Outside demo mode a signature alone is not accepted. The caller sends the USDG
+transfer on Robinhood Chain first, then puts its hash in the payload as
+`transactionHash`. The server reads the receipt and requires all of:
 
-- confirm the transfer landed on Robinhood Chain for the right amount and token;
-- reject a `nonce` that has already been spent (replay protection — the
-  5-minute window narrows it, it does not close it).
+| Check | Failure |
+|---|---|
+| Receipt exists | `not confirmed yet` + `retry: true` (402) |
+| `status === 'success'` | `transaction reverted on chain` |
+| Block is under 30 minutes old | `transaction is too old` |
+| A Transfer log of an accepted token pays the configured wallet | `No USDG or WETH transfer to … found` |
+| Transferred value ≥ the endpoint price | `Underpaid: sent X, needed Y` |
+| The hash has not been spent before | `Payment … was already spent on …` |
+
+The transaction hash doubles as the replay key — it is unique, already on chain,
+and needs no client-generated nonce to trust. See
+[`lib/chains/settlement.ts`](../lib/chains/settlement.ts).
+
+An unmined transaction is answered with `402` and `retry: true`. That is a
+"come back in a moment", not "pay again".
+
+### Replay protection needs a shared store on serverless
+
+[`lib/x402/spent-store.ts`](../lib/x402/spent-store.ts) ships an in-memory
+`SpentStore`. That is correct for one long-lived server, but on Vercel each
+instance keeps its own map, so a payment could be spent once per warm instance.
+Before taking real money, call `setSpentStore()` at startup with something
+shared and atomic — Vercel KV, Upstash Redis, Postgres.
+
+### The public RPC will rate-limit you
+
+Settlement adds two RPC reads per paid request (receipt + block). The public
+endpoint returns `429` under light load — we hit it while testing. Point
+`ROBINHOOD_RPC_URL` at a dedicated provider before launch.
 
 ---
 

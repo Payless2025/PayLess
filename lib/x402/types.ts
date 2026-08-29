@@ -9,8 +9,20 @@ export interface PaymentConfig {
 
 export interface PaymentVerificationResult {
   valid: boolean;
-  signature?: string; // Signature recovered from the signed payment message
+  /** Settled payments report the on-chain transaction hash here. */
+  signature?: string;
   error?: string;
+  /** The transfer is not mined yet — the caller should retry rather than re-pay. */
+  pending?: boolean;
+  settlement?: {
+    txHash: string;
+    from: string;
+    to: string;
+    token: string;
+    tokenSymbol: string;
+    amount: string;
+    blockNumber: string;
+  };
 }
 
 export interface ChainPaymentInfo {
@@ -45,7 +57,13 @@ export interface RobinhoodPaymentPayload {
   token: string; // Token symbol (e.g. "USDG")
   tokenAddress: string; // ERC-20 contract address
   chainId: string; // Chain ID (4663 for Robinhood Chain mainnet)
-  nonce: string; // Unique identifier
+  /**
+   * Hash of the on-chain USDG transfer that pays for this request. Required
+   * outside demo mode — this, not the signature, is what proves payment. It
+   * also doubles as the replay key.
+   */
+  transactionHash?: string;
+  nonce: string; // Unique identifier (demo mode only; settled payments key off transactionHash)
   signature: string; // EIP-191 personal_sign signature
   timestamp: number; // Unix timestamp
   message: string; // Message that was signed

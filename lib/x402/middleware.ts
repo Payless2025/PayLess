@@ -3,6 +3,8 @@ import { PaymentVerificationResult, X402Response, RobinhoodPaymentPayload } from
 import { PAYMENT_CONFIG, ENDPOINT_PRICING, FREE_ENDPOINTS } from './config';
 import { trackApiRequest, analyticsStore } from './analytics';
 import { verifyRobinhoodPayment } from '../chains/robinhood';
+import { verifySettlement } from '../chains/settlement';
+import { claimSettlement } from './spent-store';
 import { ROBINHOOD_CONFIG } from '../chains/config';
 
 /**
@@ -79,23 +81,43 @@ export async function verifyPayment(
       };
     }
 
-    const result = await verifyRobinhoodPayment(
-      payment,
-      expectedAmount,
-      PAYMENT_CONFIG.walletAddress
-    );
-
-    if (!result.valid) {
-      return { valid: false, error: result.error };
+    // The signature only proves intent. Settlement proves payment, so outside
+    // demo mode an on-chain transaction hash is required.
+    if (!payment.transactionHash) {
+      return {
+        valid: false,
+        error:
+          'Missing transactionHash. Send the USDG transfer on Robinhood Chain first, then retry with its hash.',
+      };
     }
 
-    // In a full implementation you would also:
-    // 1. Check on-chain that the transfer exists on Robinhood Chain
-    // 2. Verify it moves the correct amount of the correct token
-    // 3. Reject a nonce that has already been spent
+    // Signature is still checked when present: it binds the payer address to
+    // the request, which the transfer alone does not.
+    if (payment.signature && payment.message) {
+      const signed = await verifyRobinhoodPayment(
+        payment,
+        expectedAmount,
+        PAYMENT_CONFIG.walletAddress
+      );
+      if (!signed.valid) {
+        return { valid: false, error: signed.error };
+      }
+    }
+
+    const settlement = await verifySettlement({
+      txHash: payment.transactionHash,
+      expectedAmount,
+      expectedRecipient: PAYMENT_CONFIG.walletAddress,
+    });
+
+    if (!settlement.valid) {
+      return { valid: false, error: settlement.error, pending: settlement.pending };
+    }
+
     return {
       valid: true,
-      signature: payment.signature,
+      signature: payment.transactionHash,
+      settlement: settlement.details,
     };
   } catch (error) {
     console.log('[x402] Payment verification error:', error);
@@ -253,12 +275,46 @@ export function withX402Payment(
         });
 
         return NextResponse.json(
-          { error: verification.error || 'Payment verification failed' },
+          {
+            error: verification.error || 'Payment verification failed',
+            ...(verification.pending ? { pending: true, retry: true } : {}),
+          },
           { status: 402 }
         );
       }
 
       console.log('[x402] Payment verified successfully!');
+
+      // One settled transaction buys one response. Claim before doing any work.
+      if (verification.settlement) {
+        const claim = await claimSettlement(verification.settlement.txHash, {
+          endpoint: pathname,
+          amount: verification.settlement.amount,
+          spentAt: Date.now(),
+        });
+        if (!claim.ok) {
+          responseStatus = 402;
+          errorMessage = `Payment ${verification.settlement.txHash} was already spent on ${claim.previous?.endpoint}`;
+          console.log('[x402] Replay rejected:', errorMessage);
+
+          trackApiRequest({
+            endpoint: pathname,
+            method,
+            status: responseStatus,
+            paymentRequired: true,
+            paymentProvided: true,
+            paymentValid: false,
+            amount: paymentAmount,
+            walletAddress,
+            responseTime: Date.now() - startTime,
+            userAgent,
+            error: errorMessage,
+          });
+
+          return NextResponse.json({ error: errorMessage }, { status: 402 });
+        }
+      }
+
       paymentValid = true;
 
       // Store payment confirmation
