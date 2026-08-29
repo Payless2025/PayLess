@@ -3,14 +3,26 @@
  * Total Supply: 1,000,000,000 tokens
  */
 
-import { ethers } from 'ethers';
+import { createPublicClient, http, formatUnits, isAddress, getAddress } from 'viem';
 import { ROBINHOOD_RPC_URL } from '../chains/config';
 
 // Minimal ERC-20 surface needed for holder checks
 const ERC20_ABI = [
-  'function balanceOf(address owner) view returns (uint256)',
-  'function decimals() view returns (uint8)',
-];
+  {
+    name: 'balanceOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'decimals',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint8' }],
+  },
+] as const;
 
 // Token Configuration
 export const PAYLESS_TOKEN_CONFIG = {
@@ -97,6 +109,20 @@ export interface TierCheckResult {
 }
 
 /**
+ * ethers v5's fetch layer sets `referrer: "client"`, which Node's undici
+ * rejects inside Next.js route handlers. viem is already a dependency and does
+ * plain fetch, so the server-side read goes through it.
+ */
+let client: ReturnType<typeof createPublicClient> | undefined;
+
+function getClient() {
+  if (!client) {
+    client = createPublicClient({ transport: http(PAYLESS_TOKEN_CONFIG.RPC_URL) });
+  }
+  return client;
+}
+
+/**
  * Get wallet's $PAYLESS token balance on Robinhood Chain
  */
 let cachedDecimals: number | undefined = PAYLESS_TOKEN_CONFIG.TOKEN_DECIMALS;
@@ -110,24 +136,29 @@ export async function getTokenBalance(walletAddress: string): Promise<number> {
       return 0;
     }
 
-    if (!ethers.utils.isAddress(walletAddress)) {
+    if (!isAddress(walletAddress)) {
       console.warn('Token gating: invalid wallet address', walletAddress);
       return 0;
     }
 
-    const provider = new ethers.providers.JsonRpcProvider(PAYLESS_TOKEN_CONFIG.RPC_URL);
-    const contract = new ethers.Contract(
-      PAYLESS_TOKEN_CONFIG.TOKEN_ADDRESS,
-      ERC20_ABI,
-      provider
-    );
+    const token = getAddress(PAYLESS_TOKEN_CONFIG.TOKEN_ADDRESS);
+    const owner = getAddress(walletAddress);
+    const rpc = getClient();
 
     if (cachedDecimals === undefined) {
-      cachedDecimals = await contract.decimals();
+      cachedDecimals = Number(
+        await rpc.readContract({ address: token, abi: ERC20_ABI, functionName: 'decimals' })
+      );
     }
 
-    const raw = await contract.balanceOf(walletAddress);
-    return parseFloat(ethers.utils.formatUnits(raw, cachedDecimals));
+    const raw = (await rpc.readContract({
+      address: token,
+      abi: ERC20_ABI,
+      functionName: 'balanceOf',
+      args: [owner],
+    })) as bigint;
+
+    return parseFloat(formatUnits(raw, cachedDecimals));
   } catch (error) {
     console.error('Error fetching token balance:', error);
     return 0;
