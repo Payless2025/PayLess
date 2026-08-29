@@ -3,201 +3,137 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { Github, Twitter, Menu, X } from 'lucide-react';
 
+const nav = [
+  { href: '/playground', label: 'Playground' },
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/history', label: 'History' },
+  { href: '/payment-links', label: 'Payment links' },
+  { href: '/streams', label: 'Streams' },
+  { href: '/roadmap', label: 'Roadmap' },
+];
+
+const DOCS = 'https://github.com/Payless2025/PayLess/tree/master/docs';
+
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-payless-dark-bg/95 backdrop-blur-md border-b border-payless-cyan/20">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <Image 
-              src="/logo.png" 
-              alt="Payless" 
-              width={40}
-              height={40}
-              className="transition-transform group-hover:scale-110"
-            />
-            <span className="text-xl font-bold bg-gradient-to-r from-payless-cyan via-payless-blue to-payless-purple bg-clip-text text-transparent">
-              Payless
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-bg/95 backdrop-blur-sm">
+      <nav className="mx-auto max-w-7xl px-6">
+        <div className="flex h-14 items-center justify-between gap-6">
+          <Link href="/" className="flex shrink-0 items-center gap-2">
+            <Image src="/logo.png" alt="" width={22} height={22} />
+            <span className="font-mono text-sm font-medium tracking-tight text-text">
+              payless
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link 
-              href="/roadmap" 
-              className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-            >
-              Roadmap
-            </Link>
-            <Link 
-              href="/history" 
-              className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-            >
-              History
-            </Link>
-            <Link 
-              href="/payment-links" 
-              className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-            >
-              Payment Links
-            </Link>
-            <Link 
-              href="/streams" 
-              className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-            >
-              Streams
-            </Link>
-            <Link 
-              href="/playground" 
-              className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-            >
-              Playground
-            </Link>
-            <Link 
-              href="/dashboard" 
-              className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-            >
-              Dashboard
-            </Link>
-            <a 
-              href="https://github.com/Payless2025/PayLess/tree/master/docs" 
+          <div className="hidden items-center gap-1 md:flex">
+            {nav.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded px-2.5 py-1.5 text-sm transition-colors ${
+                    active ? 'text-accent' : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+            <a
+              href={DOCS}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
+              className="rounded px-2.5 py-1.5 text-sm text-text-muted transition-colors hover:text-text"
             >
               Docs
             </a>
           </div>
 
-          {/* Social Links + CTA */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden items-center gap-3 md:flex">
             <a
               href="https://github.com/Payless2025/PayLess"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-lg text-gray-400 hover:text-payless-cyan hover:bg-payless-cyan/10 transition-all"
+              className="text-text-faint transition-colors hover:text-text"
               aria-label="GitHub"
             >
-              <Github className="w-5 h-5" />
+              <Github className="h-4 w-4" />
             </a>
             <a
               href="https://x.com/paylessnetwork"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-lg text-gray-400 hover:text-payless-cyan hover:bg-payless-cyan/10 transition-all"
-              aria-label="X (Twitter)"
+              className="text-text-faint transition-colors hover:text-text"
+              aria-label="X"
             >
-              <Twitter className="w-5 h-5" />
+              <Twitter className="h-4 w-4" />
             </a>
             <Link
               href="/playground"
-              className="px-5 py-2 bg-gradient-to-r from-payless-cyan to-payless-blue text-payless-dark-bg rounded-lg font-semibold hover:shadow-lg hover:shadow-payless-cyan/50 transition-all"
+              className="rounded border border-accent bg-accent px-3 py-1.5 text-sm font-medium text-bg transition-colors hover:bg-transparent hover:text-accent"
             >
-              Get Started
+              Try it
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-gray-300 hover:bg-payless-cyan/10"
-            aria-label="Toggle menu"
+            onClick={() => setOpen(!open)}
+            className="text-text-muted md:hidden"
+            aria-label="Menu"
           >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-payless-cyan/20">
-            <div className="flex flex-col space-y-4">
-              <Link 
-                href="/roadmap" 
-                className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-                onClick={() => setMobileMenuOpen(false)}
+        {open && (
+          <div className="border-t border-line py-2 md:hidden">
+            {nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`block px-1 py-2 text-sm ${
+                  pathname === item.href ? 'text-accent' : 'text-text-muted'
+                }`}
               >
-                Roadmap
+                {item.label}
               </Link>
-              <Link 
-                href="/history" 
-                className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                History
-              </Link>
-              <Link 
-                href="/payment-links" 
-                className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Payment Links
-              </Link>
-              <Link 
-                href="/streams" 
-                className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Streams
-              </Link>
-              <Link 
-                href="/playground" 
-                className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Playground
-              </Link>
-              <Link 
-                href="/dashboard" 
-                className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <a 
-                href="https://github.com/Payless2025/PayLess/tree/master/docs" 
+            ))}
+            <a
+              href={DOCS}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-1 py-2 text-sm text-text-muted"
+            >
+              Docs
+            </a>
+            <div className="mt-2 flex items-center gap-4 border-t border-line px-1 pt-3">
+              <a
+                href="https://github.com/Payless2025/PayLess"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
+                className="text-text-faint"
+                aria-label="GitHub"
               >
-                Docs
+                <Github className="h-4 w-4" />
               </a>
-              
-              {/* Mobile Social Links */}
-              <div className="flex items-center space-x-4 pt-4 border-t border-payless-cyan/20">
-                <a
-                  href="https://github.com/Payless2025/PayLess"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-lg text-gray-400 hover:text-payless-cyan hover:bg-payless-cyan/10 transition-all"
-                >
-                  <Github className="w-5 h-5" />
-                </a>
-                <a
-                  href="https://x.com/paylessnetwork"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-lg text-gray-400 hover:text-payless-cyan hover:bg-payless-cyan/10 transition-all"
-                >
-                  <Twitter className="w-5 h-5" />
-                </a>
-              </div>
-
-              <Link
-                href="/playground"
-                className="px-5 py-2 bg-gradient-to-r from-payless-cyan to-payless-blue text-payless-dark-bg rounded-lg font-semibold hover:shadow-lg transition-all text-center"
-                onClick={() => setMobileMenuOpen(false)}
+              <a
+                href="https://x.com/paylessnetwork"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-text-faint"
+                aria-label="X"
               >
-                Get Started
-              </Link>
+                <Twitter className="h-4 w-4" />
+              </a>
             </div>
           </div>
         )}
@@ -205,4 +141,3 @@ export default function Header() {
     </header>
   );
 }
-

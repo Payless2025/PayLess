@@ -1,93 +1,80 @@
-'use client';
-
 import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowRight, Zap, Shield, Globe } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-payless-dark-bg via-payless-dark to-payless-dark-bg pt-16">
-      {/* Animated Background Gradient */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-payless-cyan/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-payless-purple/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-payless-blue/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-      </div>
+    <section className="relative overflow-hidden border-b border-line pt-14">
+      {/* The one decorative element: a faint engineering grid, masked out at the edges */}
+      <div className="grid-bg pointer-events-none absolute inset-0" aria-hidden="true" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 text-center">
-        {/* Logo/Brand */}
-        <div className="mb-8">
-          <div className="mb-6 flex justify-center">
-            <Image 
-              src="/logo.png" 
-              alt="Payless Logo" 
-              width={160}
-              height={160}
-              className="drop-shadow-2xl"
-              priority
-            />
-          </div>
-          <h1 className="text-6xl md:text-8xl font-black mb-6 bg-gradient-to-r from-payless-cyan via-payless-blue to-payless-purple bg-clip-text text-transparent tracking-tight">
-            Payless
-          </h1>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-payless-cyan/10 border border-payless-cyan/30 backdrop-blur-sm">
-            <Zap className="w-4 h-4 text-payless-cyan" />
-            <span className="text-sm text-payless-cyan font-medium">Powered by x402 on Robinhood Chain</span>
-          </div>
+      <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32">
+        <div className="inline-flex items-center gap-2 rounded border border-line bg-surface px-2.5 py-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          <span className="font-mono text-xs text-text-muted">
+            x402 · Robinhood Chain · chain 4663
+          </span>
         </div>
 
-        {/* Main heading */}
-        <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-          Accept Payments
+        <h1 className="mt-8 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-tight text-text md:text-6xl">
+          Charge for an API call
           <br />
-          <span className="bg-gradient-to-r from-payless-cyan via-payless-blue to-payless-purple bg-clip-text text-transparent">
-            Without Accounts
-          </span>
-        </h2>
+          <span className="text-text-muted">without an account on either side.</span>
+        </h1>
 
-        {/* Subheading */}
-        <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-          Serverless payment platform using x402 protocol. 
-          Pay-per-use APIs with instant crypto settlements. No registration, no subscriptions.
+        <p className="mt-6 max-w-xl text-lg leading-relaxed text-text-muted">
+          Wrap a route, name a price. The caller pays per request in USDG and the money
+          lands in your wallet — no signup, no subscription, no processor in between.
         </p>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-24">
-          <Link 
+        <div className="mt-10 flex flex-wrap items-center gap-3">
+          <Link
             href="/playground"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-payless-cyan to-payless-blue text-payless-dark-bg rounded-xl font-semibold hover:shadow-lg hover:shadow-payless-cyan/50 transition-all transform hover:scale-105"
+            className="inline-flex items-center gap-2 rounded border border-accent bg-accent px-4 py-2.5 text-sm font-medium text-bg transition-colors hover:bg-transparent hover:text-accent"
           >
-            Try Demo
-            <ArrowRight className="w-5 h-5" />
+            Open the playground
+            <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link 
+          <Link
             href="#how-it-works"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-all border border-payless-cyan/30 backdrop-blur-sm"
+            className="rounded border border-line-strong bg-surface-raised px-4 py-2.5 text-sm font-medium text-text transition-colors hover:border-text-faint"
           >
             How it works
           </Link>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div className="p-6 rounded-2xl bg-white/5 border border-payless-cyan/20 shadow-sm hover:shadow-lg hover:border-payless-cyan/50 transition-all backdrop-blur-sm">
-            <Zap className="w-12 h-12 text-payless-cyan mb-4 mx-auto" />
-            <h3 className="text-xl font-semibold text-white mb-2">Instant Settlement</h3>
-            <p className="text-gray-300">Settlement lands in your own wallet. No processor sits in between.</p>
+        {/* The pitch, as the thing itself */}
+        <div className="mt-16 max-w-2xl overflow-x-auto rounded border border-line bg-surface">
+          <div className="border-b border-line px-4 py-2.5">
+            <span className="font-mono text-xs text-text-faint">
+              app/api/your-endpoint/route.ts
+            </span>
           </div>
-          <div className="p-6 rounded-2xl bg-white/5 border border-payless-blue/20 shadow-sm hover:shadow-lg hover:border-payless-blue/50 transition-all backdrop-blur-sm">
-            <Shield className="w-12 h-12 text-payless-blue mb-4 mx-auto" />
-            <h3 className="text-xl font-semibold text-white mb-2">Zero Protocol Fees</h3>
-            <p className="text-gray-300">Payless takes nothing. You pay Robinhood Chain gas, that&apos;s all.</p>
-          </div>
-          <div className="p-6 rounded-2xl bg-white/5 border border-payless-purple/20 shadow-sm hover:shadow-lg hover:border-payless-purple/50 transition-all backdrop-blur-sm">
-            <Globe className="w-12 h-12 text-payless-purple mb-4 mx-auto" />
-            <h3 className="text-xl font-semibold text-white mb-2">Built on Robinhood Chain</h3>
-            <p className="text-gray-300">EVM-native settlement on Robinhood Chain, denominated in USDG.</p>
-          </div>
+          <pre className="p-4 font-mono text-sm leading-relaxed text-text-muted">
+            <code>
+              {`import { withX402Payment } from '@/lib/x402/middleware';
+
+export const POST = withX402Payment(handler, `}
+              <span className="text-accent">&quot;0.01&quot;</span>
+              {`);`}
+            </code>
+          </pre>
         </div>
+
+        <dl className="mt-10 flex flex-wrap gap-x-12 gap-y-4">
+          {[
+            ['Protocol fee', '0%'],
+            ['Settles in', 'USDG'],
+            ['Accounts required', 'none'],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <dt className="font-mono text-xs uppercase tracking-widest text-text-faint">
+                {label}
+              </dt>
+              <dd className="mt-1 font-mono text-lg text-text">{value}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </section>
   );
 }
-

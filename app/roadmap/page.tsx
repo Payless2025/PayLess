@@ -7,14 +7,14 @@ export default function RoadmapPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-white pt-20">
+      <div className="min-h-screen bg-bg pt-20">
         <div className="container mx-auto px-4 py-16 max-w-6xl">
           {/* Header */}
           <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">
+            <h1 className="text-5xl font-bold text-text mb-4">
               Payless Roadmap
             </h1>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-text-muted">
               Building the future of internet-native payments for AI
             </p>
           </div>
@@ -25,38 +25,38 @@ export default function RoadmapPage() {
           {/* ✅ COMPLETED */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-              <h2 className="text-3xl font-bold text-gray-900">Completed ✅</h2>
+              <CheckCircle2 className="w-8 h-8 text-ok" />
+              <h2 className="text-3xl font-bold text-text">Completed ✅</h2>
             </div>
             
             <div className="space-y-6 ml-12">
               {/* Core Platform */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Core Platform Launch</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Core Platform Launch</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>x402 protocol implementation</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Robinhood Chain payment integration</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>USDG settlement on Robinhood Chain</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Interactive API playground</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Node.js & Python SDKs</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Built-in analytics system</span>
                     </li>
                   </ul>
@@ -65,27 +65,27 @@ export default function RoadmapPage() {
 
               {/* Major Technical Upgrade */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Major Technical Upgrade</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Major Technical Upgrade</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Robinhood Chain support</strong> - Full mainnet integration with USDG</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Webhook system</strong> - Real-time payment notifications</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Enhanced SDKs</strong> - Better error handling & examples</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>x402 payment middleware</strong> - One-line API monetization</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Comprehensive documentation overhaul</span>
                     </li>
                   </ul>
@@ -94,27 +94,27 @@ export default function RoadmapPage() {
 
               {/* Payment Streaming & Mobile */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Payment Streaming & Mobile SDK</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Payment Streaming & Mobile SDK</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Payment Streaming</strong> - Continuous micropayments with real-time monitoring</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Stream Management API</strong> - Create, pause, resume, and cancel streams</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>React Native SDK</strong> - Full mobile support for iOS & Android</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Mobile Wallet Integration</strong> - Native EVM mobile wallet support</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>React Hooks & Components</strong> - Ready-to-use mobile UI components</span>
                     </li>
                   </ul>
@@ -123,27 +123,27 @@ export default function RoadmapPage() {
 
               {/* Payment Links & Analytics */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Payment Links & Analytics</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Payment Links & Analytics</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Payment Links</strong> - Shareable crypto payment URLs (no code needed)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Analytics Dashboard</strong> - Real-time transaction metrics with export</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>QR Code Generation</strong> - Automatic QR codes for payment links</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>CSV/JSON Export</strong> - Data export functionality</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Auto-refresh analytics & filtering</span>
                     </li>
                   </ul>
@@ -152,27 +152,27 @@ export default function RoadmapPage() {
 
               {/* Visual Analytics */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Visual Analytics & Charts</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Visual Analytics & Charts</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Revenue Timeline</strong> - Area chart showing revenue trends over time</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Chain Distribution</strong> - Pie chart for transaction distribution by blockchain</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Status Analytics</strong> - Bar chart for transaction status breakdown</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Responsive Design</strong> - Mobile-friendly chart rendering</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Interactive tooltips & legends with Recharts</span>
                     </li>
                   </ul>
@@ -181,27 +181,27 @@ export default function RoadmapPage() {
 
               {/* Enhanced Playground */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Enhanced API Playground</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Enhanced API Playground</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Multi-SDK Code Generator</strong> - Generate code for cURL, Node.js, Python, React Native</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Categorized Endpoints</strong> - AI, Data, Tools, and Premium categories</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Tabbed Interface</strong> - Request, Response, and Code tabs</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Copy-to-Clipboard</strong> - One-click code copying</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Share playground state via URL</span>
                     </li>
                   </ul>
@@ -210,27 +210,27 @@ export default function RoadmapPage() {
 
               {/* Payment History */}
               <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-green-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Payment History</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Payment History</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Transaction Tracking</strong> - Complete history of all payments</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Advanced Search & Filters</strong> - Filter by date, chain, status, addresses</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>CSV/JSON Export</strong> - Export transaction data for accounting</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span><strong>Blockchain Receipts</strong> - Detailed transaction proof with explorer links</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
                       <span>Real-time updates with 30-second auto-refresh</span>
                     </li>
                   </ul>
@@ -242,15 +242,15 @@ export default function RoadmapPage() {
           {/* 🔥 IN PROGRESS */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <Zap className="w-8 h-8 text-orange-600" />
-              <h2 className="text-3xl font-bold text-gray-900">In Progress 🔥</h2>
+              <Zap className="w-8 h-8 text-warn" />
+              <h2 className="text-3xl font-bold text-text">In Progress 🔥</h2>
             </div>
             
             <div className="space-y-6 ml-12">
               <div className="border-l-4 border-orange-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-orange-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">User Features</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-orange-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">User Features</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
                       <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
                       <span><strong>Email Notifications</strong> - Payment alerts and receipts</span>
@@ -272,17 +272,17 @@ export default function RoadmapPage() {
           {/* 🚀 PLANNED */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <Circle className="w-8 h-8 text-blue-600" />
-              <h2 className="text-3xl font-bold text-gray-900">Planned 🚀</h2>
+              <Circle className="w-8 h-8 text-text-faint" />
+              <h2 className="text-3xl font-bold text-text">Planned</h2>
             </div>
             
             <div className="space-y-6 ml-12">
               
               {/* Advanced Features */}
               <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-lg transition-all">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Advanced Features</h3>
-                  <ul className="space-y-2 text-gray-700">
+                <div className="bg-surface border border-line rounded p-6 hover:border-blue-500 hover: transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Advanced Features</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span><strong>Token-Gated Content</strong> - Holder-only API access</span>
@@ -309,9 +309,9 @@ export default function RoadmapPage() {
 
               {/* Ecosystem Expansion */}
               <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 hover:border-blue-500 transition-all">
-                  <h3 className="text-xl font-bold text-white mb-4">Ecosystem Expansion</h3>
-                  <ul className="space-y-2 text-gray-300">
+                <div className="bg-surface border border-line rounded p-6 hover:border-blue-500 transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Ecosystem Expansion</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span><strong>On-chain settlement checks</strong> - Verify transfers landed, not just authorized</span>
@@ -338,9 +338,9 @@ export default function RoadmapPage() {
 
               {/* Enterprise & Integrations */}
               <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 hover:border-blue-500 transition-all">
-                  <h3 className="text-xl font-bold text-white mb-4">Enterprise & Integrations</h3>
-                  <ul className="space-y-2 text-gray-300">
+                <div className="bg-surface border border-line rounded p-6 hover:border-blue-500 transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Enterprise & Integrations</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span><strong>Flutter SDK</strong> - Cross-platform mobile development support</span>
@@ -371,9 +371,9 @@ export default function RoadmapPage() {
 
               {/* Payment Enhancements */}
               <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 hover:border-blue-500 transition-all">
-                  <h3 className="text-xl font-bold text-white mb-4">Payment Enhancements</h3>
-                  <ul className="space-y-2 text-gray-300">
+                <div className="bg-surface border border-line rounded p-6 hover:border-blue-500 transition-all">
+                  <h3 className="text-xl font-bold text-text mb-4">Payment Enhancements</h3>
+                  <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span><strong>Fiat On-Ramps</strong> - Credit card to crypto payments</span>
@@ -404,8 +404,8 @@ export default function RoadmapPage() {
 
         {/* Call to Action */}
         <div className="mt-16 text-center">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-8 border border-purple-500">
-            <h3 className="text-2xl font-bold text-white mb-4">
+          <div className="rounded border border-accent/30 bg-accent-wash p-8">
+            <h3 className="text-2xl font-bold text-text mb-4">
               Building the Future Together
             </h3>
             <p className="text-gray-200 mb-6">
@@ -414,7 +414,7 @@ export default function RoadmapPage() {
             <div className="flex gap-4 justify-center flex-wrap">
               <a
                 href="/playground"
-                className="px-6 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-all"
+                className="px-6 py-3 bg-surface text-accent rounded font-semibold hover:bg-surface-raised transition-all"
               >
                 Try Playground
               </a>
@@ -422,7 +422,7 @@ export default function RoadmapPage() {
                 href="https://github.com/Payless2025/PayLess"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-all border border-gray-600"
+                className="px-6 py-3 bg-gray-800 text-text rounded font-semibold hover:bg-gray-700 transition-all border border-gray-600"
               >
                 View on GitHub
               </a>

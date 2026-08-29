@@ -49,56 +49,56 @@ export default function PaymentConfirmationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-8">
+    <div className="min-h-screen bg-bg p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-2 text-text">
             Payment Confirmation System
           </h1>
-          <p className="text-gray-600">
+          <p className="text-text-muted">
             Track, verify, and monitor payment confirmations in real-time
           </p>
         </div>
 
         {/* Feature Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-md border-2 border-purple-200">
+          <div className="bg-surface p-6 rounded  border-2 border-accent/30">
             <div className="text-3xl mb-3">🔍</div>
             <h3 className="text-lg font-semibold mb-2">Check by Signature</h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-muted">
               Verify payment confirmation using the transaction signature
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md border-2 border-blue-200">
+          <div className="bg-surface p-6 rounded  border-2 border-blue-200">
             <div className="text-3xl mb-3">🔢</div>
             <h3 className="text-lg font-semibold mb-2">Check by Nonce</h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-muted">
               Look up payment confirmation using the unique nonce identifier
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md border-2 border-green-200">
+          <div className="bg-surface p-6 rounded  border-2 border-ok/30">
             <div className="text-3xl mb-3">⏱️</div>
             <h3 className="text-lg font-semibold mb-2">Auto-Monitor</h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-muted">
               Automatically poll and monitor payment confirmation status
             </p>
           </div>
         </div>
 
         {/* Demo Controls */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <div className="bg-surface rounded  p-6 mb-8">
           <h2 className="text-2xl font-bold mb-4">Try It Out</h2>
 
           {/* Test Data Generator */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <div className="bg-surface-raised p-4 rounded mb-6">
             <h3 className="font-semibold mb-2">Quick Start</h3>
-            <p className="text-sm text-gray-600 mb-3">
+            <p className="text-sm text-text-muted mb-3">
               Generate test payment data to try out the confirmation system
             </p>
             <button
               onClick={handleGenerateTestPayment}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+              className="px-4 py-2 bg-accent text-text rounded hover:opacity-90 transition-colors"
             >
               Generate Test Payment Data
             </button>
@@ -112,7 +112,7 @@ export default function PaymentConfirmationPage() {
                 onClick={() => setCheckMode('signature')}
                 className={`px-4 py-2 rounded transition-colors ${
                   checkMode === 'signature'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-accent text-text'
                     : 'bg-gray-200 hover:bg-gray-300'
                 }`}
               >
@@ -122,7 +122,7 @@ export default function PaymentConfirmationPage() {
                 onClick={() => setCheckMode('nonce')}
                 className={`px-4 py-2 rounded transition-colors ${
                   checkMode === 'nonce'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-600 text-text'
                     : 'bg-gray-200 hover:bg-gray-300'
                 }`}
               >
@@ -132,7 +132,7 @@ export default function PaymentConfirmationPage() {
                 onClick={() => setCheckMode('monitor')}
                 className={`px-4 py-2 rounded transition-colors ${
                   checkMode === 'monitor'
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-ok text-text'
                     : 'bg-gray-200 hover:bg-gray-300'
                 }`}
               >
@@ -203,7 +203,7 @@ export default function PaymentConfirmationPage() {
               (checkMode === 'signature' && !signature) ||
               ((checkMode === 'nonce' || checkMode === 'monitor') && !nonce)
             }
-            className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-accent text-bg font-medium rounded hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {checkMode === 'monitor' ? 'Start Monitoring' : 'Check Confirmation'}
           </button>
@@ -222,7 +222,7 @@ export default function PaymentConfirmationPage() {
         )}
 
         {/* Payment History Section */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-surface rounded  p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold">Payment History</h2>
             <button
@@ -251,7 +251,7 @@ export default function PaymentConfirmationPage() {
               {walletAddress && <PaymentHistory walletAddress={walletAddress} limit={10} />}
 
               {!walletAddress && (
-                <div className="text-center text-gray-500 py-8">
+                <div className="text-center text-text-faint py-8">
                   Enter a wallet address to view payment history
                 </div>
               )}
@@ -260,17 +260,17 @@ export default function PaymentConfirmationPage() {
         </div>
 
         {/* API Documentation Link */}
-        <div className="mt-8 p-6 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg border-2 border-purple-300">
+        <div className="mt-8 p-6 rounded border border-accent/30 bg-accent-wash">
           <h3 className="font-semibold mb-2">📚 API Documentation</h3>
-          <p className="text-sm text-gray-700 mb-3">
+          <p className="text-sm text-text-muted mb-3">
             Integrate the Payment Confirmation System into your application using our API
           </p>
           <div className="space-y-2 text-sm">
-            <div className="font-mono bg-white p-2 rounded">
-              <span className="text-green-600">GET</span> /api/payment/confirm?walletAddress=...
+            <div className="font-mono bg-surface p-2 rounded">
+              <span className="text-ok">GET</span> /api/payment/confirm?walletAddress=...
             </div>
-            <div className="font-mono bg-white p-2 rounded">
-              <span className="text-blue-600">POST</span> /api/payment/confirm
+            <div className="font-mono bg-surface p-2 rounded">
+              <span className="text-text-faint">POST</span> /api/payment/confirm
             </div>
           </div>
         </div>

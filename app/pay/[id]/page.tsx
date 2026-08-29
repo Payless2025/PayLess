@@ -84,8 +84,8 @@ export default function PaymentPage() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-white flex items-center justify-center pt-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
+        <div className="min-h-screen bg-bg flex items-center justify-center pt-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
         </div>
         <Footer />
       </>
@@ -96,11 +96,11 @@ export default function PaymentPage() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-white flex items-center justify-center p-4 pt-20">
-          <div className="bg-white border-2 border-red-300 rounded-lg p-8 max-w-md w-full text-center shadow-lg">
-            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Link Not Found</h1>
-            <p className="text-gray-600">{error}</p>
+        <div className="min-h-screen bg-bg flex items-center justify-center p-4 pt-20">
+          <div className="bg-surface border-2 border-err/30 rounded p-8 max-w-md w-full text-center ">
+            <XCircle className="w-16 h-16 text-err mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-text mb-2">Payment Link Not Found</h1>
+            <p className="text-text-muted">{error}</p>
           </div>
         </div>
         <Footer />
@@ -112,15 +112,15 @@ export default function PaymentPage() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-white flex items-center justify-center p-4 pt-20">
-          <div className="bg-white border-2 border-green-300 rounded-lg p-8 max-w-md w-full text-center shadow-lg">
-            <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Completed</h1>
-            <p className="text-gray-600 mb-4">This payment link has already been used</p>
+        <div className="min-h-screen bg-bg flex items-center justify-center p-4 pt-20">
+          <div className="bg-surface border-2 border-ok/30 rounded p-8 max-w-md w-full text-center ">
+            <CheckCircle2 className="w-16 h-16 text-ok mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-text mb-2">Payment Completed</h1>
+            <p className="text-text-muted mb-4">This payment link has already been used</p>
             {paymentLink.transactionSignature && (
-              <div className="bg-gray-50 border border-gray-200 rounded p-3 text-sm">
-                <p className="text-gray-600 mb-1">Transaction:</p>
-                <p className="text-gray-900 break-all font-mono">{paymentLink.transactionSignature}</p>
+              <div className="bg-surface-raised border border-line rounded p-3 text-sm">
+                <p className="text-text-muted mb-1">Transaction:</p>
+                <p className="text-text break-all font-mono">{paymentLink.transactionSignature}</p>
               </div>
             )}
           </div>
@@ -134,11 +134,11 @@ export default function PaymentPage() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-white flex items-center justify-center p-4 pt-20">
-          <div className="bg-white border-2 border-orange-300 rounded-lg p-8 max-w-md w-full text-center shadow-lg">
+        <div className="min-h-screen bg-bg flex items-center justify-center p-4 pt-20">
+          <div className="bg-surface border-2 border-orange-300 rounded p-8 max-w-md w-full text-center ">
             <Clock className="w-16 h-16 text-orange-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Link Expired</h1>
-            <p className="text-gray-600">This payment link is no longer valid</p>
+            <h1 className="text-2xl font-bold text-text mb-2">Payment Link Expired</h1>
+            <p className="text-text-muted">This payment link is no longer valid</p>
           </div>
         </div>
         <Footer />
@@ -149,26 +149,26 @@ export default function PaymentPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-white flex items-center justify-center p-4 pt-20">
-        <div className="bg-white border border-gray-200 rounded-lg p-8 max-w-md w-full shadow-xl">
+      <div className="min-h-screen bg-bg flex items-center justify-center p-4 pt-20">
+        <div className="bg-surface border border-line rounded p-8 max-w-md w-full shadow-xl">
           {/* Header */}
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Request</h1>
+            <h1 className="text-3xl font-bold text-text mb-2">Payment Request</h1>
             {paymentLink.description && (
-              <p className="text-gray-600">{paymentLink.description}</p>
+              <p className="text-text-muted">{paymentLink.description}</p>
             )}
           </div>
 
           {/* Amount */}
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 mb-6 text-center shadow-md">
+          <div className="rounded border border-accent/30 bg-accent-wash p-6 mb-6 text-center ">
             <p className="text-purple-100 text-sm mb-1">Amount</p>
-            <p className="text-4xl font-bold text-white">${paymentLink.amount}</p>
+            <p className="text-4xl font-bold text-text">${paymentLink.amount}</p>
             <p className="text-purple-100 text-sm mt-1">{paymentLink.currency}</p>
           </div>
 
           {/* Chain Selection */}
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
+            <label className="block text-text-muted text-sm font-medium mb-2">
               Select Blockchain
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -176,14 +176,14 @@ export default function PaymentPage() {
                 <button
                   key={chain}
                   onClick={() => setSelectedChain(chain)}
-                  className={`p-3 rounded-lg border-2 transition-all ${
+                  className={`p-3 rounded border-2 transition-all ${
                     selectedChain === chain
-                      ? 'border-purple-600 bg-purple-50'
-                      : 'border-gray-300 bg-white hover:border-gray-400'
+                      ? 'border-accent bg-accent-wash'
+                      : 'border-line bg-surface hover:border-gray-400'
                   }`}
                 >
                   <div className="flex items-center justify-center mb-1">{getChainIcon(chain)}</div>
-                  <div className="text-xs text-gray-700">{getChainName(chain)}</div>
+                  <div className="text-xs text-text-muted">{getChainName(chain)}</div>
                 </button>
               ))}
             </div>
@@ -191,12 +191,12 @@ export default function PaymentPage() {
 
           {/* Recipient Address */}
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
+            <label className="block text-text-muted text-sm font-medium mb-2">
               Send Payment To
             </label>
-            <div className="bg-gray-50 border border-gray-300 rounded-lg p-3">
+            <div className="bg-surface-raised border border-line rounded p-3">
               <div className="flex items-center gap-2 mb-2">
-                <code className="flex-1 text-xs font-mono text-gray-900 break-all">
+                <code className="flex-1 text-xs font-mono text-text break-all">
                   {paymentLink.recipientAddress}
                 </code>
                 <button
@@ -205,9 +205,9 @@ export default function PaymentPage() {
                   title="Copy address"
                 >
                   {copied ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <CheckCircle2 className="w-4 h-4 text-ok" />
                   ) : (
-                    <Copy className="w-4 h-4 text-gray-500" />
+                    <Copy className="w-4 h-4 text-text-faint" />
                   )}
                 </button>
                 <a
@@ -217,15 +217,15 @@ export default function PaymentPage() {
                   className="p-2 hover:bg-gray-200 rounded transition-all"
                   title="View on explorer"
                 >
-                  <ExternalLink className="w-4 h-4 text-gray-500" />
+                  <ExternalLink className="w-4 h-4 text-text-faint" />
                 </a>
               </div>
             </div>
           </div>
 
           {/* Instructions */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-purple-900 mb-2">Payment Instructions</h3>
+          <div className="bg-accent-wash border border-accent/30 rounded p-4">
+            <h3 className="text-sm font-medium text-text mb-2">Payment Instructions</h3>
             <ol className="text-sm text-purple-800 space-y-1 list-decimal list-inside">
               <li>Copy the recipient address above</li>
               <li>Open your {getChainName(selectedChain)} wallet</li>
@@ -235,8 +235,8 @@ export default function PaymentPage() {
           </div>
 
           {/* Warning */}
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-xs text-yellow-800">
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-xs text-warn">
               ⚠️ Make sure to send the exact amount to the correct address on the selected blockchain.
               Payments to wrong addresses or incorrect amounts cannot be refunded.
             </p>
@@ -244,9 +244,9 @@ export default function PaymentPage() {
 
           {/* Powered by */}
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-text-faint">
               Powered by{' '}
-              <a href="https://payless.network" className="text-purple-600 hover:text-purple-700 font-medium">
+              <a href="https://payless.network" className="text-accent hover:text-accent font-medium">
                 Payless
               </a>
             </p>
