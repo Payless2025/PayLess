@@ -314,5 +314,5 @@ A: Robinhood Chain. Token gating reads an ERC-20 `balanceOf` there.
 
 **Contact:** support@payless.network  
 **Website:** https://payless.network  
-**Docs:** https://payless.gitbook.io
+**Docs:** https://github.com/Payless2025/PayLess/tree/master/docs
 

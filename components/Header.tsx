@@ -65,7 +65,7 @@ export default function Header() {
               Dashboard
             </Link>
             <a 
-              href="https://payless.gitbook.io/payless-documentation" 
+              href="https://github.com/Payless2025/PayLess/tree/master/docs" 
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"
@@ -163,7 +163,7 @@ export default function Header() {
                 Dashboard
               </Link>
               <a 
-                href="https://payless.gitbook.io/payless-documentation" 
+                href="https://github.com/Payless2025/PayLess/tree/master/docs" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-300 hover:text-payless-cyan transition-colors font-medium"

@@ -550,7 +550,7 @@ A: Zero protocol fees! You keep 100% of payments.
 
 ## Support
 
-- **Documentation**: [payless.gitbook.io](https://payless.gitbook.io)
+- **Documentation**: [GitHub docs](https://github.com/Payless2025/PayLess/tree/master/docs)
 - **GitHub**: [github.com/Payless2025/PayLess](https://github.com/Payless2025/PayLess)
 - **Discord**: [Join community]
 - **X/Twitter**: [@paylessnetwork](https://x.com/paylessnetwork)

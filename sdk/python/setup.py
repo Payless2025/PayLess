@@ -14,7 +14,7 @@ setup(
     url="https://github.com/Payless2025/PayLess",
     project_urls={
         "Bug Tracker": "https://github.com/Payless2025/PayLess/issues",
-        "Documentation": "https://payless.gitbook.io/payless-documentation",
+        "Documentation": "https://github.com/Payless2025/PayLess/tree/master/docs",
         "Source Code": "https://github.com/Payless2025/PayLess/tree/master/sdk/python",
     },
     packages=find_packages(where="src"),

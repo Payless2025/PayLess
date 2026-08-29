@@ -265,7 +265,7 @@ MIT
 
 ## Links
 
-- [Documentation](https://payless.gitbook.io/payless-documentation)
+- [Documentation](https://github.com/Payless2025/PayLess/tree/master/docs)
 - [GitHub](https://github.com/Payless2025/PayLess)
 - [Website](https://payless.com)
 

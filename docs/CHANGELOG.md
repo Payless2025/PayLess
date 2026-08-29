@@ -243,7 +243,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for more details.
 
 ## Support
 
-- **Documentation**: https://payless.gitbook.io
+- **Documentation**: https://github.com/Payless2025/PayLess/tree/master/docs
 - **GitHub**: https://github.com/Payless2025/PayLess
 - **Discord**: [Join our community]
 - **X/Twitter**: [@PaylessNetwork]

@@ -112,7 +112,7 @@ All API methods return a response object with the following structure:
 
 ## Need Help?
 
-- Documentation: https://payless.gitbook.io
+- Documentation: https://github.com/Payless2025/PayLess/tree/master/docs
 - GitHub Issues: https://github.com/Payless2025/PayLess/issues
 - Discord: [Join our community]
 
