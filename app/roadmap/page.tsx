@@ -314,11 +314,7 @@ export default function RoadmapPage() {
                   <ul className="space-y-2 text-text-muted">
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>On-chain settlement checks</strong> - Verify transfers landed, not just authorized</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Nonce replay protection</strong> - Reject reused payment authorizations</span>
+                      <span><strong>Shared spent-transaction store</strong> - Replay protection that survives serverless scale-out</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
