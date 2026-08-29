@@ -1,93 +1,59 @@
-'use client';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
-import { Bot, Cloud, FileText, Image, TrendingUp, Zap } from 'lucide-react';
-
-const useCases = [
-  {
-    icon: Bot,
-    title: 'AI API Gateway',
-    description: 'Proxy AI models (GPT, Claude) with micropayments per request',
-    price: '$0.05/request',
-    gradient: 'from-purple-500 to-pink-500',
-  },
-  {
-    icon: Image,
-    title: 'Image Generation',
-    description: 'DALL-E, Midjourney, Stable Diffusion with pay-per-image',
-    price: '$0.10/image',
-    gradient: 'from-blue-500 to-cyan-500',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Market Data API',
-    description: 'Real-time stock quotes, crypto prices, financial data',
-    price: '$0.02/query',
-    gradient: 'from-green-500 to-emerald-500',
-  },
-  {
-    icon: Cloud,
-    title: 'Cloud Storage',
-    description: 'File storage and CDN with usage-based pricing',
-    price: '$0.001/MB',
-    gradient: 'from-orange-500 to-red-500',
-  },
-  {
-    icon: FileText,
-    title: 'Premium Content',
-    description: 'Articles, reports, research papers with instant access',
-    price: '$1.00/article',
-    gradient: 'from-yellow-500 to-orange-500',
-  },
-  {
-    icon: Zap,
-    title: 'Compute Functions',
-    description: 'Serverless compute for data processing and analytics',
-    price: '$0.03/execution',
-    gradient: 'from-indigo-500 to-purple-500',
-  },
+// These are the endpoints actually wired up in this repo — prices come from
+// ENDPOINT_PRICING in lib/x402/config.ts. Every one is callable in the playground.
+const endpoints = [
+  { path: '/api/ai/chat', price: '0.05', blurb: 'Proxy a model, charge per completion' },
+  { path: '/api/ai/image', price: '0.10', blurb: 'Pay-per-image generation' },
+  { path: '/api/ai/translate', price: '0.03', blurb: 'Per-call translation' },
+  { path: '/api/data/stock', price: '0.02', blurb: 'Quotes, priced per query' },
+  { path: '/api/tools/qrcode', price: '0.005', blurb: 'Half a cent a QR code' },
+  { path: '/api/premium/content', price: '1.00', blurb: 'One article, one payment' },
 ];
 
 export default function UseCases() {
   return (
-    <section className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Endless Possibilities
+    <section id="endpoints" className="py-24 bg-payless-dark-bg border-t border-white/5">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Six priced endpoints, already running
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Build any pay-per-use service you can imagine
+          <p className="text-lg text-gray-400">
+            Not a roadmap — these are live in this repo and callable from the playground.
+            Prices are whatever you pass as the second argument.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {useCases.map((useCase, index) => (
+        <div className="rounded-xl border border-white/10 overflow-hidden">
+          {endpoints.map((e, i) => (
             <div
-              key={index}
-              className="group relative overflow-hidden rounded-2xl bg-white border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-300"
+              key={e.path}
+              className={`flex flex-wrap items-baseline gap-x-6 gap-y-1 px-5 py-4 hover:bg-white/[0.03] transition-colors ${
+                i > 0 ? 'border-t border-white/10' : ''
+              }`}
             >
-              <div className="relative p-6">
-                <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${useCase.gradient} mb-4`}>
-                  <useCase.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {useCase.title}
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  {useCase.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className={`text-sm font-semibold bg-gradient-to-r ${useCase.gradient} bg-clip-text text-transparent`}>
-                    {useCase.price}
-                  </span>
-                  <span className="text-xs text-gray-500">instant settlement</span>
-                </div>
-              </div>
+              <code className="font-mono text-sm text-payless-cyan min-w-[15rem]">
+                {e.path}
+              </code>
+              <span className="font-mono text-sm text-white tabular-nums">
+                ${e.price}
+                <span className="text-gray-500"> USDG</span>
+              </span>
+              <span className="text-sm text-gray-400">{e.blurb}</span>
             </div>
           ))}
         </div>
+
+        <Link
+          href="/playground"
+          className="mt-8 inline-flex items-center gap-2 text-payless-cyan hover:gap-3 transition-all font-medium"
+        >
+          Call them in the playground
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
     </section>
   );
 }
-

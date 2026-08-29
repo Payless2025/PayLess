@@ -176,5 +176,5 @@ async function handler(req: NextRequest) {
 export const POST = withX402Payment(handler, "0.05");
 ```
 
-For more information, visit our [Documentation](https://payless.gitbook.io/payless-documentation).
+For more information, visit our [Documentation](https://github.com/Payless2025/PayLess/tree/master/docs).
 

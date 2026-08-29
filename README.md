@@ -347,7 +347,7 @@ The simplest, most developer-friendly way to monetize APIs with crypto. Zero fee
 
 **Built with ❤️ by the Payless Team**
 
-🌟 **[GitHub](https://github.com/Payless2025/PayLess)** | 🐦 **[X/Twitter](https://x.com/paylessnetwork)** | 📚 **[Documentation](https://payless.gitbook.io/payless-documentation)**
+🌟 **[GitHub](https://github.com/Payless2025/PayLess)** | 🐦 **[X/Twitter](https://x.com/paylessnetwork)** | 📚 **[Documentation](https://github.com/Payless2025/PayLess/tree/master/docs)**
 
 ⭐ Star this repo if you find it useful!
 

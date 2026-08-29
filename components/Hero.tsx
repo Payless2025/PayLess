@@ -61,10 +61,10 @@ export default function Hero() {
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link 
-            href="#features"
+            href="#how-it-works"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-all border border-payless-cyan/30 backdrop-blur-sm"
           >
-            Learn More
+            How it works
           </Link>
         </div>
 
@@ -73,12 +73,12 @@ export default function Hero() {
           <div className="p-6 rounded-2xl bg-white/5 border border-payless-cyan/20 shadow-sm hover:shadow-lg hover:border-payless-cyan/50 transition-all backdrop-blur-sm">
             <Zap className="w-12 h-12 text-payless-cyan mb-4 mx-auto" />
             <h3 className="text-xl font-semibold text-white mb-2">Instant Settlement</h3>
-            <p className="text-gray-300">Money in your wallet in 2 seconds, not T+2. Real-time blockchain payments.</p>
+            <p className="text-gray-300">Settlement lands in your own wallet. No processor sits in between.</p>
           </div>
           <div className="p-6 rounded-2xl bg-white/5 border border-payless-blue/20 shadow-sm hover:shadow-lg hover:border-payless-blue/50 transition-all backdrop-blur-sm">
             <Shield className="w-12 h-12 text-payless-blue mb-4 mx-auto" />
             <h3 className="text-xl font-semibold text-white mb-2">Zero Protocol Fees</h3>
-            <p className="text-gray-300">No hidden fees. Keep 100% of your revenue. Open-source and transparent.</p>
+            <p className="text-gray-300">Payless takes nothing. You pay Robinhood Chain gas, that&apos;s all.</p>
           </div>
           <div className="p-6 rounded-2xl bg-white/5 border border-payless-purple/20 shadow-sm hover:shadow-lg hover:border-payless-purple/50 transition-all backdrop-blur-sm">
             <Globe className="w-12 h-12 text-payless-purple mb-4 mx-auto" />

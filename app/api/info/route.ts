@@ -30,6 +30,6 @@ export async function GET(req: NextRequest) {
       price: `$${price} ${PAYMENT_CONFIG.currency}`,
       method: 'GET/POST',
     })),
-    documentation: 'https://payless.gitbook.io/payless-documentation',
+    documentation: 'https://github.com/Payless2025/PayLess/tree/master/docs',
   });
 }

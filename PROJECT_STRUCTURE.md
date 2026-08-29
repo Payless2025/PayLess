@@ -79,7 +79,7 @@ Payless/
 ## 📚 Documentation
 
 All documentation is now in GitBook:
-- **Live Docs:** https://payless.gitbook.io/payless-documentation
+- **Live Docs:** https://github.com/Payless2025/PayLess/tree/master/docs
 - **Source:** `/docs` folder (syncs with GitBook)
 
 ## 🚀 Quick Start
@@ -105,7 +105,7 @@ vercel
 ## 🔗 Links
 
 - **GitHub:** https://github.com/Payless2025/PayLess
-- **Docs:** https://payless.gitbook.io/payless-documentation
+- **Docs:** https://github.com/Payless2025/PayLess/tree/master/docs
 - **X/Twitter:** https://x.com/paylessnetwork
 - **x402 Protocol:** https://x402.org
 

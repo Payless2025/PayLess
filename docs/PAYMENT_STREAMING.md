@@ -530,7 +530,7 @@ video.on('play', () => resumeStream(stream.id));
 
 ## Support
 
-- 📖 [Full Documentation](https://payless.gitbook.io/payless-documentation)
+- 📖 [Full Documentation](https://github.com/Payless2025/PayLess/tree/master/docs)
 - 💬 [Discord Community](https://discord.gg/payless)
 - 🐦 [Twitter](https://twitter.com/paylessnetwork)
 - 🐛 [Report Issues](https://github.com/Payless2025/PayLess/issues)

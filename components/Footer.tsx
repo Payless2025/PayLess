@@ -93,8 +93,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="#features" className="hover:text-payless-cyan transition-colors">
-                  Features
+                <Link href="#how-it-works" className="hover:text-payless-cyan transition-colors">
+                  How it works
                 </Link>
               </li>
               <li>
@@ -122,7 +122,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://payless.gitbook.io/payless-documentation"
+                  href="https://github.com/Payless2025/PayLess/tree/master/docs"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-payless-cyan transition-colors inline-flex items-center gap-1"
@@ -160,7 +160,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="pt-8 border-t border-payless-cyan/20 text-center text-gray-400 text-sm">
           <p>
-            © {new Date().getFullYear()} Payless. Built with ❤️ using{' '}
+            © {new Date().getFullYear()} Payless. Built on{' '}
             <a
               href="https://x402.org"
               target="_blank"

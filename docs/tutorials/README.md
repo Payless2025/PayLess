@@ -242,7 +242,7 @@ Use the playground or connect a real wallet in development.
 
 ## Getting Help
 
-- **Documentation:** [docs.payless.com](https://payless.gitbook.io/payless-documentation)
+- **Documentation:** [GitHub docs](https://github.com/Payless2025/PayLess/tree/master/docs)
 - **GitHub Issues:** [github.com/Payless2025/PayLess/issues](https://github.com/Payless2025/PayLess/issues)
 - **Examples:** [github.com/Payless2025/PayLess](https://github.com/Payless2025/PayLess)
 
