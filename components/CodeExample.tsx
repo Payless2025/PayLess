@@ -33,49 +33,49 @@ export default function CodeExample() {
   };
 
   return (
-    <section id="code" className="py-24 bg-payless-dark border-t border-white/5">
+    <section id="code" className="py-24 bg-surface border-t border-line">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-text mb-4">
             One wrapper on the handler you already wrote
           </h2>
-          <p className="text-lg text-gray-400">
+          <p className="text-lg text-text-muted">
             Your route keeps its signature. The price is the second argument.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Server-side code */}
-          <div className="rounded-xl bg-black/40 border border-white/10 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-              <span className="font-mono text-xs tracking-wide text-gray-500">
+          <div className="rounded border border-line bg-bg overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-line">
+              <span className="font-mono text-xs tracking-wide text-text-faint">
                 app/api/your-endpoint/route.ts
               </span>
               <button
                 onClick={copyToClipboard}
-                className="p-1.5 rounded hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded hover:bg-surface-raised transition-colors"
                 aria-label="Copy server example"
               >
                 {copied ? (
-                  <Check className="w-4 h-4 text-payless-cyan" />
+                  <Check className="w-4 h-4 text-accent" />
                 ) : (
-                  <Copy className="w-4 h-4 text-gray-500" />
+                  <Copy className="w-4 h-4 text-text-faint" />
                 )}
               </button>
             </div>
-            <pre className="p-5 text-sm leading-relaxed text-gray-300 overflow-x-auto">
+            <pre className="p-5 text-sm leading-relaxed text-text-muted overflow-x-auto">
               <code>{codeExample}</code>
             </pre>
           </div>
 
           {/* Client-side code */}
-          <div className="rounded-xl bg-black/40 border border-white/10 overflow-hidden">
-            <div className="flex items-center px-5 py-3 border-b border-white/10">
-              <span className="font-mono text-xs tracking-wide text-gray-500">
+          <div className="rounded border border-line bg-bg overflow-hidden">
+            <div className="flex items-center px-5 py-3 border-b border-line">
+              <span className="font-mono text-xs tracking-wide text-text-faint">
                 caller side
               </span>
             </div>
-            <pre className="p-5 text-sm leading-relaxed text-gray-300 overflow-x-auto">
+            <pre className="p-5 text-sm leading-relaxed text-text-muted overflow-x-auto">
               <code>{clientExample}</code>
             </pre>
           </div>

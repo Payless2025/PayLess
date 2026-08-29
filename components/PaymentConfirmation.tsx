@@ -108,15 +108,15 @@ export function PaymentConfirmation({
   const getStatusColor = () => {
     switch (status) {
       case 'confirmed':
-        return 'bg-green-100 border-green-500 text-green-800';
+        return 'bg-ok/10 border-green-500 text-ok';
       case 'checking':
-        return 'bg-blue-100 border-blue-500 text-blue-800';
+        return 'bg-accent-wash border-accent/30 text-accent';
       case 'not_found':
-        return 'bg-yellow-100 border-yellow-500 text-yellow-800';
+        return 'bg-warn/10 border-yellow-500 text-warn';
       case 'error':
-        return 'bg-red-100 border-red-500 text-red-800';
+        return 'bg-err/10 border-red-500 text-err';
       default:
-        return 'bg-gray-100 border-gray-500 text-gray-800';
+        return 'bg-surface-raised border-gray-500 text-text';
     }
   };
 
@@ -136,7 +136,7 @@ export function PaymentConfirmation({
   };
 
   return (
-    <div className={`p-6 rounded-lg border-2 ${getStatusColor()} transition-all duration-300`}>
+    <div className={`p-6 rounded border-2 ${getStatusColor()} transition-all duration-300`}>
       <div className="flex items-start gap-4">
         <div className="text-4xl">{getStatusIcon()}</div>
         <div className="flex-1">
@@ -150,7 +150,7 @@ export function PaymentConfirmation({
           )}
 
           {confirmation && (
-            <div className="mt-4 p-4 bg-white bg-opacity-50 rounded border">
+            <div className="mt-4 p-4 bg-surface bg-opacity-50 rounded border">
               <h4 className="font-semibold mb-2">Confirmation Details:</h4>
               <div className="space-y-1 text-sm font-mono">
                 <div>
@@ -184,7 +184,7 @@ export function PaymentConfirmation({
           {status !== 'checking' && (signature || nonce) && (
             <button
               onClick={autoMonitor ? handleMonitorPayment : handleCheckPayment}
-              className="mt-4 px-4 py-2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded border transition-colors"
+              className="mt-4 px-4 py-2 bg-surface bg-opacity-50 hover:bg-opacity-75 rounded border transition-colors"
             >
               Check Again
             </button>
@@ -237,7 +237,7 @@ export function PaymentHistory({ walletAddress, limit = 10 }: PaymentHistoryProp
 
   if (loading) {
     return (
-      <div className="p-6 bg-blue-100 rounded-lg border-2 border-blue-500">
+      <div className="p-6 rounded border border-accent/30 bg-accent-wash">
         <div className="flex items-center gap-2">
           <div className="animate-spin">🔄</div>
           <span>Loading payment history...</span>
@@ -248,7 +248,7 @@ export function PaymentHistory({ walletAddress, limit = 10 }: PaymentHistoryProp
 
   if (error) {
     return (
-      <div className="p-6 bg-red-100 rounded-lg border-2 border-red-500">
+      <div className="p-6 bg-err/10 rounded border-2 border-red-500">
         <div className="flex items-center gap-2">
           <span>❌</span>
           <span>{error}</span>
@@ -259,20 +259,20 @@ export function PaymentHistory({ walletAddress, limit = 10 }: PaymentHistoryProp
 
   if (history.length === 0) {
     return (
-      <div className="p-6 bg-gray-100 rounded-lg border-2 border-gray-300">
-        <p className="text-gray-600">No payment history found for this wallet.</p>
+      <div className="p-6 bg-surface-raised rounded border-2 border-line">
+        <p className="text-text-muted">No payment history found for this wallet.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg border-2 border-gray-300">
+    <div className="p-6 bg-surface rounded border-2 border-line">
       <h3 className="text-lg font-semibold mb-4">Payment History</h3>
       <div className="space-y-3">
         {history.map((confirmation) => (
           <div
             key={confirmation.id}
-            className="p-4 bg-gray-50 rounded border hover:bg-gray-100 transition-colors"
+            className="p-4 bg-surface-raised rounded border hover:bg-surface-raised transition-colors"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="font-semibold">
@@ -281,16 +281,16 @@ export function PaymentHistory({ walletAddress, limit = 10 }: PaymentHistoryProp
               <span
                 className={`px-2 py-1 rounded text-xs font-semibold ${
                   confirmation.status === 'confirmed'
-                    ? 'bg-green-200 text-green-800'
+                    ? 'bg-green-200 text-ok'
                     : confirmation.status === 'pending'
-                    ? 'bg-yellow-200 text-yellow-800'
-                    : 'bg-red-200 text-red-800'
+                    ? 'bg-yellow-200 text-warn'
+                    : 'bg-red-200 text-err'
                 }`}
               >
                 {confirmation.status}
               </span>
             </div>
-            <div className="text-sm text-gray-600 space-y-1">
+            <div className="text-sm text-text-muted space-y-1">
               <div>
                 <span className="font-semibold">Endpoint:</span> {confirmation.endpoint}
               </div>

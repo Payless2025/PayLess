@@ -39,15 +39,15 @@ x-payment-chain: robinhood
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 bg-payless-dark-bg border-t border-white/5">
+    <section id="how-it-works" className="py-24 bg-bg border-t border-line">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-text mb-4">
             How a paid request works
           </h2>
-          <p className="text-lg text-gray-400">
+          <p className="text-lg text-text-muted">
             Four steps, all of them in{' '}
-            <code className="text-payless-cyan text-base">lib/x402/middleware.ts</code>. No
+            <code className="text-accent text-base">lib/x402/middleware.ts</code>. No
             facilitator required, no account anywhere in the loop.
           </p>
         </div>
@@ -56,26 +56,26 @@ export default function HowItWorks() {
           {steps.map((step) => (
             <li
               key={step.n}
-              className="grid md:grid-cols-[auto_1fr_1.1fr] gap-x-8 gap-y-4 items-start border-t border-white/10 py-8"
+              className="grid md:grid-cols-[auto_1fr_1.1fr] gap-x-8 gap-y-4 items-start border-t border-line py-8"
             >
-              <span className="font-mono text-sm text-payless-cyan/60 pt-1">{step.n}</span>
+              <span className="font-mono text-sm text-accent/60 pt-1">{step.n}</span>
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{step.body}</p>
+                <h3 className="text-lg font-semibold text-text mb-2">{step.title}</h3>
+                <p className="text-text-muted leading-relaxed">{step.body}</p>
               </div>
-              <pre className="overflow-x-auto rounded-lg bg-black/40 border border-white/10 p-4 text-xs leading-relaxed text-gray-300">
+              <pre className="overflow-x-auto rounded-lg bg-surface border border-line p-4 text-xs leading-relaxed text-text-muted">
                 <code>{step.code}</code>
               </pre>
             </li>
           ))}
         </ol>
 
-        <p className="border-t border-white/10 pt-8 text-sm text-gray-500 max-w-2xl">
+        <p className="border-t border-line pt-8 text-sm text-text-faint max-w-2xl">
           The signature proves the caller authorized the amount. Verifying that the transfer
           settled on-chain, and rejecting a reused nonce, are still on the roadmap — see{' '}
           <a
             href="https://github.com/Payless2025/PayLess/blob/master/docs/ROBINHOOD_CHAIN.md"
-            className="text-payless-cyan hover:underline"
+            className="text-accent hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >

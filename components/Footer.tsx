@@ -2,177 +2,130 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Github, Twitter, ExternalLink } from 'lucide-react';
+import { Github, Twitter, Copy } from 'lucide-react';
 
 // Set NEXT_PUBLIC_PAYLESS_TOKEN_ADDRESS once $PAYLESS is deployed on Robinhood Chain
 const PAYLESS_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_PAYLESS_TOKEN_ADDRESS || '';
 
+const DOCS = 'https://github.com/Payless2025/PayLess/tree/master/docs';
+
+const columns = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Playground', href: '/playground' },
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Payment links', href: '/payment-links' },
+      { label: 'How it works', href: '/#how-it-works' },
+    ],
+  },
+  {
+    title: 'Reference',
+    links: [
+      { label: 'Docs', href: DOCS, external: true },
+      { label: 'Robinhood Chain', href: `${DOCS}/ROBINHOOD_CHAIN.md`, external: true },
+      { label: 'x402 protocol', href: 'https://www.x402.org/', external: true },
+      { label: 'GitHub', href: 'https://github.com/Payless2025/PayLess', external: true },
+    ],
+  },
+];
+
 export default function Footer() {
   return (
-    <footer className="bg-payless-dark-bg border-t border-payless-cyan/20 text-gray-300 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
-              <Image 
-                src="/logo.png" 
-                alt="Payless" 
-                width={40}
-                height={40}
-              />
-              <span className="text-2xl font-bold bg-gradient-to-r from-payless-cyan via-payless-blue to-payless-purple bg-clip-text text-transparent">
-                Payless
-              </span>
+    <footer className="border-t border-line bg-bg">
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr]">
+          <div>
+            <div className="flex items-center gap-2">
+              <Image src="/logo.png" alt="" width={20} height={20} />
+              <span className="font-mono text-sm text-text">payless</span>
             </div>
-            <p className="text-gray-400 mb-4 max-w-md">
-              Serverless payment platform powered by x402 protocol. Accept crypto payments without accounts, subscriptions, or complexity.
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-text-muted">
+              Pay-per-call APIs over HTTP 402. Settles on Robinhood Chain in USDG, with no
+              account on either side.
             </p>
-            
-            {/* Contract Address — rendered only once the $PAYLESS token
-                is deployed on Robinhood Chain and its address is configured. */}
+
             {PAYLESS_TOKEN_ADDRESS && (
-              <div className="mb-4">
-                <h4 className="text-sm font-semibold text-white mb-2">
-                  $PAYLESS Contract Address (Robinhood Chain)
-                </h4>
-                <div className="flex items-center gap-2 p-3 bg-payless-cyan/10 border border-payless-cyan/30 rounded-lg max-w-md backdrop-blur-sm">
-                  <code className="text-xs text-payless-cyan font-mono break-all flex-1">
+              <div className="mt-5">
+                <div className="font-mono text-xs uppercase tracking-widest text-text-faint">
+                  $PAYLESS
+                </div>
+                <div className="mt-2 flex items-center gap-2 rounded border border-line bg-surface px-3 py-2">
+                  <code className="flex-1 truncate font-mono text-xs text-text-muted">
                     {PAYLESS_TOKEN_ADDRESS}
                   </code>
                   <button
-                    onClick={(e) => {
-                      navigator.clipboard.writeText(PAYLESS_TOKEN_ADDRESS);
-                      const button = e.currentTarget as HTMLButtonElement;
-                      const originalHTML = button.innerHTML;
-                      button.innerHTML = '<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-                      setTimeout(() => {
-                        button.innerHTML = originalHTML;
-                      }, 2000);
-                    }}
-                    className="p-1.5 rounded bg-payless-cyan/20 hover:bg-payless-cyan/30 transition-colors flex-shrink-0"
-                    title="Copy Contract Address"
+                    onClick={() => navigator.clipboard.writeText(PAYLESS_TOKEN_ADDRESS)}
+                    className="text-text-faint transition-colors hover:text-accent"
+                    title="Copy address"
                   >
-                    <svg className="w-4 h-4 text-payless-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                    <Copy className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-4">
+            <div className="mt-5 flex items-center gap-4">
               <a
                 href="https://github.com/Payless2025/PayLess"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-lg bg-payless-cyan/10 hover:bg-payless-cyan/20 transition-colors"
+                className="text-text-faint transition-colors hover:text-text"
                 aria-label="GitHub"
               >
-                <Github className="w-5 h-5 text-payless-cyan" />
+                <Github className="h-4 w-4" />
               </a>
               <a
                 href="https://x.com/paylessnetwork"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-lg bg-payless-cyan/10 hover:bg-payless-cyan/20 transition-colors"
-                aria-label="X (Twitter)"
+                className="text-text-faint transition-colors hover:text-text"
+                aria-label="X"
               >
-                <Twitter className="w-5 h-5 text-payless-cyan" />
+                <Twitter className="h-4 w-4" />
               </a>
             </div>
           </div>
 
-          {/* Links */}
-          <div>
-            <h4 className="font-semibold mb-4 text-white">Product</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li>
-                <Link href="/playground" className="hover:text-payless-cyan transition-colors">
-                  Playground
-                </Link>
-              </li>
-              <li>
-                <Link href="#how-it-works" className="hover:text-payless-cyan transition-colors">
-                  How it works
-                </Link>
-              </li>
-              <li>
-                <Link href="/api/info" className="hover:text-payless-cyan transition-colors">
-                  API Documentation
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <h4 className="font-semibold mb-4 text-white">Resources</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li>
-                <a
-                  href="https://x402.org"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-payless-cyan transition-colors inline-flex items-center gap-1"
-                >
-                  x402 Protocol
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/Payless2025/PayLess/tree/master/docs"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-payless-cyan transition-colors inline-flex items-center gap-1"
-                >
-                  Documentation
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/Payless2025/PayLess"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-payless-cyan transition-colors inline-flex items-center gap-1"
-                >
-                  GitHub
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://docs.robinhood.com/chain/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-payless-cyan transition-colors inline-flex items-center gap-1"
-                >
-                  Robinhood Chain
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-            </ul>
-          </div>
+          {columns.map((col) => (
+            <div key={col.title}>
+              <h3 className="font-mono text-xs uppercase tracking-widest text-text-faint">
+                {col.title}
+              </h3>
+              <ul className="mt-4 space-y-2.5">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    {'external' in link && link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-text-muted transition-colors hover:text-accent"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-sm text-text-muted transition-colors hover:text-accent"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Bottom */}
-        <div className="pt-8 border-t border-payless-cyan/20 text-center text-gray-400 text-sm">
-          <p>
-            © {new Date().getFullYear()} Payless. Built on{' '}
-            <a
-              href="https://x402.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-payless-cyan hover:text-payless-blue transition-colors"
-            >
-              x402 protocol
-            </a>
-          </p>
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6">
+          <span className="font-mono text-xs text-text-faint">
+            © {new Date().getFullYear()} Payless · MIT
+          </span>
+          <span className="font-mono text-xs text-text-faint">chain 4663 · USDG</span>
         </div>
       </div>
     </footer>
   );
 }
-

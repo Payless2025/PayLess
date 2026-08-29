@@ -34,6 +34,8 @@ import {
   Area,
   AreaChart
 } from 'recharts';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 interface AnalyticsMetrics {
   totalTransactions: number;
@@ -124,28 +126,30 @@ export default function AnalyticsPage() {
   })) || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <header className="bg-slate-900/50 backdrop-blur-md border-b border-white/10">
+    <div className="min-h-screen bg-bg">
+      <Header />
+      <div className="pt-14" />
+      {/* Page header */}
+      <header className="border-b border-line bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="flex items-center gap-2 text-white hover:text-purple-400 transition-colors"
+                className="flex items-center gap-2 text-text hover:text-accent transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
                 <span>Back to Home</span>
               </Link>
-              <h1 className="text-2xl font-bold text-white">Analytics Dashboard</h1>
+              <h1 className="text-2xl font-bold text-text">Analytics Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded transition-colors ${
                   autoRefresh 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-white/10 hover:bg-white/20 text-white'
+                    ? 'bg-green-600 hover:bg-green-700 text-text' 
+                    : 'bg-surface-raised hover:bg-white/20 text-text'
                 }`}
               >
                 <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
@@ -159,7 +163,7 @@ export default function AnalyticsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading && !metrics ? (
           <div className="flex items-center justify-center py-20">
-            <RefreshCw className="w-8 h-8 text-purple-400 animate-spin" />
+            <RefreshCw className="w-8 h-8 text-accent animate-spin" />
           </div>
         ) : metrics ? (
           <>
@@ -196,10 +200,10 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Charts Row 1: Revenue Timeline */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 mb-8">
+            <div className="rounded border border-line bg-surface p-6 mb-8">
               <div className="flex items-center gap-2 mb-6">
                 <TrendingUp className="w-5 h-5 text-green-400" />
-                <h2 className="text-xl font-semibold text-white">Revenue Timeline (Last 7 Days)</h2>
+                <h2 className="text-xl font-semibold text-text">Revenue Timeline (Last 7 Days)</h2>
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={revenueData}>
@@ -235,10 +239,10 @@ export default function AnalyticsPage() {
             {/* Charts Row 2: Distribution Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* Chain Distribution */}
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+              <div className="rounded border border-line bg-surface p-6">
                 <div className="flex items-center gap-2 mb-6">
-                  <PieChartIcon className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-xl font-semibold text-white">Transactions by Chain</h2>
+                  <PieChartIcon className="w-5 h-5 text-accent" />
+                  <h2 className="text-xl font-semibold text-text">Transactions by Chain</h2>
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -269,10 +273,10 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Status Distribution */}
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+              <div className="rounded border border-line bg-surface p-6">
                 <div className="flex items-center gap-2 mb-6">
                   <BarChart3 className="w-5 h-5 text-blue-400" />
-                  <h2 className="text-xl font-semibold text-white">Transaction Status</h2>
+                  <h2 className="text-xl font-semibold text-text">Transaction Status</h2>
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={statusDistributionData}>
@@ -298,13 +302,13 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Recent Transactions */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-              <h2 className="text-xl font-semibold text-white mb-4">Recent Transactions</h2>
+            <div className="rounded border border-line bg-surface p-6">
+              <h2 className="text-xl font-semibold text-text mb-4">Recent Transactions</h2>
               <div className="space-y-2">
                 {metrics.recentTransactions.slice(0, 10).map((tx) => (
                   <div
                     key={tx.id}
-                    className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-4 p-4 rounded bg-surface hover:bg-surface-raised transition-colors"
                   >
                     <div className="flex-shrink-0">
                       {tx.status === 'completed' ? (
@@ -317,7 +321,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-sm text-purple-400">${tx.amount}</span>
+                        <span className="font-mono text-sm text-accent">${tx.amount}</span>
                         <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">
                           {tx.chain}
                         </span>
@@ -331,7 +335,7 @@ export default function AnalyticsPage() {
                           {tx.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                      <div className="flex items-center gap-4 text-xs text-text-muted">
                         <span>{new Date(tx.timestamp).toLocaleString()}</span>
                         <span className="font-mono truncate max-w-[150px]">
                           From: {tx.fromAddress}
@@ -344,11 +348,12 @@ export default function AnalyticsPage() {
             </div>
           </>
         ) : (
-          <div className="text-center py-20 text-gray-400">
+          <div className="text-center py-20 text-text-muted">
             No analytics data available
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }
@@ -363,20 +368,20 @@ interface MetricCardProps {
 
 function MetricCard({ icon, label, value, subtitle, color }: MetricCardProps) {
   const colorClasses = {
-    blue: 'bg-blue-500/20 text-blue-400',
-    green: 'bg-green-500/20 text-green-400',
-    purple: 'bg-purple-500/20 text-purple-400',
-    orange: 'bg-orange-500/20 text-orange-400',
+    blue: 'bg-surface-raised text-text-faint',
+    green: 'bg-surface-raised text-text-faint',
+    purple: 'bg-purple-500/20 text-accent',
+    orange: 'bg-surface-raised text-text-faint',
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-      <div className={`w-12 h-12 rounded-lg ${colorClasses[color]} flex items-center justify-center mb-4`}>
+    <div className="rounded border border-line bg-surface p-6">
+      <div className={`w-12 h-12 rounded ${colorClasses[color]} flex items-center justify-center mb-4`}>
         {icon}
       </div>
-      <div className="text-sm text-gray-400 mb-1">{label}</div>
-      <div className="text-3xl font-bold text-white mb-1">{value}</div>
-      <div className="text-xs text-gray-500">{subtitle}</div>
+      <div className="text-sm text-text-muted mb-1">{label}</div>
+      <div className="font-mono text-2xl tnum text-text mb-1">{value}</div>
+      <div className="text-xs text-text-faint">{subtitle}</div>
     </div>
   );
 }

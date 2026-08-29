@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Square, Activity, DollarSign, Clock, Zap } from 'lucide-react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 interface Stream {
   streamId: string;
@@ -169,15 +171,17 @@ export default function PaymentStreamingPage() {
   const formatSOL = (lamports: number) => (lamports / 1e9).toFixed(6);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-bg">
+      <Header />
+      <div className="pt-14">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
+      <header className="border-b border-line bg-surface">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Zap className="w-8 h-8 text-purple-600" />
+            <Zap className="w-8 h-8 text-accent" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Payment Streaming</h1>
-              <p className="text-sm text-gray-600">Pay-per-second for real-time services</p>
+              <h1 className="text-2xl font-bold text-text">Payment Streaming</h1>
+              <p className="text-sm text-text-muted">Pay-per-second for real-time services</p>
             </div>
           </div>
         </div>
@@ -189,11 +193,11 @@ export default function PaymentStreamingPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Wallet Input */}
             {!activeStream && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Start a Payment Stream</h2>
+              <div className="bg-surface border border-line rounded p-6">
+                <h2 className="text-lg font-bold text-text mb-4">Start a Payment Stream</h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-muted mb-2">
                       Your Wallet Address (Robinhood Chain)
                     </label>
                     <input
@@ -201,12 +205,12 @@ export default function PaymentStreamingPage() {
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
                       placeholder="9aXHxhNtiAjbysGFmm4RG4hVDMtvhMMQfKpT2xQ7GLg1"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                      className="w-full px-4 py-3 border border-line rounded focus:outline-none focus:ring-2 focus:ring-purple-600"
                     />
                   </div>
                   <button
                     onClick={startStream}
-                    className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                    className="w-full bg-accent text-text px-6 py-3 rounded font-semibold hover:opacity-90 transition-colors flex items-center justify-center gap-2"
                   >
                     <Play className="w-5 h-5" />
                     Start Stream (0.001 SOL/sec)
@@ -218,7 +222,7 @@ export default function PaymentStreamingPage() {
             {/* Chat Interface */}
             {activeStream && (
               <>
-                <div className="bg-white border border-gray-200 rounded-lg p-6 min-h-[400px] max-h-[500px] overflow-y-auto">
+                <div className="bg-surface border border-line rounded p-6 min-h-[400px] max-h-[500px] overflow-y-auto">
                   <div className="space-y-4">
                     {messages.map((msg, idx) => (
                       <div
@@ -226,10 +230,10 @@ export default function PaymentStreamingPage() {
                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] px-4 py-3 rounded-lg ${
+                          className={`max-w-[80%] px-4 py-3 rounded ${
                             msg.role === 'user'
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-gray-100 text-gray-900'
+                              ? 'bg-accent text-text'
+                              : 'bg-surface-raised text-text'
                           }`}
                         >
                           {msg.content}
@@ -240,7 +244,7 @@ export default function PaymentStreamingPage() {
                 </div>
 
                 {/* Message Input */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="bg-surface border border-line rounded p-4">
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -249,12 +253,12 @@ export default function PaymentStreamingPage() {
                       onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                       placeholder="Type a message..."
                       disabled={loading || activeStream.status !== 'active'}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 disabled:bg-gray-100"
+                      className="flex-1 px-4 py-2 border border-line rounded focus:outline-none focus:ring-2 focus:ring-purple-600 disabled:bg-surface-raised"
                     />
                     <button
                       onClick={sendMessage}
                       disabled={loading || activeStream.status !== 'active'}
-                      className="bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:bg-gray-400"
+                      className="bg-accent text-text px-6 py-2 rounded font-semibold hover:opacity-90 transition-colors disabled:bg-gray-400"
                     >
                       Send
                     </button>
@@ -269,7 +273,7 @@ export default function PaymentStreamingPage() {
             {activeStream && (
               <>
                 {/* Real-time Stats */}
-                <div className="bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-lg p-6">
+                <div className="rounded border border-accent/30 bg-accent-wash p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Activity className="w-5 h-5" />
                     <h3 className="font-bold">Stream Active</h3>
@@ -296,13 +300,13 @@ export default function PaymentStreamingPage() {
                 </div>
 
                 {/* Stream Controls */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="font-bold text-gray-900 mb-4">Controls</h3>
+                <div className="bg-surface border border-line rounded p-6">
+                  <h3 className="font-bold text-text mb-4">Controls</h3>
                   <div className="space-y-2">
                     {activeStream.status === 'active' && (
                       <button
                         onClick={pauseStream}
-                        className="w-full bg-yellow-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-yellow-500 text-text px-4 py-2 rounded font-semibold hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
                       >
                         <Pause className="w-4 h-4" />
                         Pause Stream
@@ -312,7 +316,7 @@ export default function PaymentStreamingPage() {
                     {activeStream.status === 'paused' && (
                       <button
                         onClick={resumeStream}
-                        className="w-full bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-green-500 text-text px-4 py-2 rounded font-semibold hover:bg-ok transition-colors flex items-center justify-center gap-2"
                       >
                         <Play className="w-4 h-4" />
                         Resume Stream
@@ -321,7 +325,7 @@ export default function PaymentStreamingPage() {
                     
                     <button
                       onClick={stopStream}
-                      className="w-full bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                      className="w-full bg-red-500 text-text px-4 py-2 rounded font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
                     >
                       <Square className="w-4 h-4" />
                       Stop Stream
@@ -330,25 +334,25 @@ export default function PaymentStreamingPage() {
                 </div>
 
                 {/* Stream Info */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="font-bold text-gray-900 mb-4">Stream Info</h3>
+                <div className="bg-surface border border-line rounded p-6">
+                  <h3 className="font-bold text-text mb-4">Stream Info</h3>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="text-gray-600">ID:</span>
+                      <span className="text-text-muted">ID:</span>
                       <div className="font-mono text-xs mt-1 break-all">{activeStream.streamId}</div>
                     </div>
                     <div>
-                      <span className="text-gray-600">Status:</span>
+                      <span className="text-text-muted">Status:</span>
                       <span className={`ml-2 font-semibold ${
-                        activeStream.status === 'active' ? 'text-green-600' :
+                        activeStream.status === 'active' ? 'text-ok' :
                         activeStream.status === 'paused' ? 'text-yellow-600' :
-                        'text-gray-600'
+                        'text-text-muted'
                       }`}>
                         {activeStream.status.toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Chain:</span>
+                      <span className="text-text-muted">Chain:</span>
                       <span className="ml-2 font-semibold">{activeStream.chain.toUpperCase()}</span>
                     </div>
                   </div>
@@ -357,8 +361,8 @@ export default function PaymentStreamingPage() {
             )}
 
             {/* Info Card */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="font-bold text-blue-900 mb-2">💡 How It Works</h3>
+            <div className="bg-blue-50 border border-blue-200 rounded p-6">
+              <h3 className="font-mono text-xs uppercase tracking-widest text-text-faint mb-3">How it works</h3>
               <ul className="text-sm text-blue-800 space-y-2">
                 <li>• Pay per second of usage</li>
                 <li>• Start/pause/stop anytime</li>
@@ -369,6 +373,8 @@ export default function PaymentStreamingPage() {
           </div>
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

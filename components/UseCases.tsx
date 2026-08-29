@@ -14,41 +14,41 @@ const endpoints = [
 
 export default function UseCases() {
   return (
-    <section id="endpoints" className="py-24 bg-payless-dark-bg border-t border-white/5">
+    <section id="endpoints" className="py-24 bg-bg border-t border-line">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-text mb-4">
             Six priced endpoints, already running
           </h2>
-          <p className="text-lg text-gray-400">
+          <p className="text-lg text-text-muted">
             Not a roadmap — these are live in this repo and callable from the playground.
             Prices are whatever you pass as the second argument.
           </p>
         </div>
 
-        <div className="rounded-xl border border-white/10 overflow-hidden">
+        <div className="rounded border border-line overflow-hidden">
           {endpoints.map((e, i) => (
             <div
               key={e.path}
-              className={`flex flex-wrap items-baseline gap-x-6 gap-y-1 px-5 py-4 hover:bg-white/[0.03] transition-colors ${
-                i > 0 ? 'border-t border-white/10' : ''
+              className={`flex flex-wrap items-baseline gap-x-6 gap-y-1 px-5 py-4 hover:bg-surface transition-colors ${
+                i > 0 ? 'border-t border-line' : ''
               }`}
             >
-              <code className="font-mono text-sm text-payless-cyan min-w-[15rem]">
+              <code className="font-mono text-sm text-accent min-w-[15rem]">
                 {e.path}
               </code>
-              <span className="font-mono text-sm text-white tabular-nums">
+              <span className="font-mono text-sm text-text tnum">
                 ${e.price}
-                <span className="text-gray-500"> USDG</span>
+                <span className="text-text-faint"> USDG</span>
               </span>
-              <span className="text-sm text-gray-400">{e.blurb}</span>
+              <span className="text-sm text-text-muted">{e.blurb}</span>
             </div>
           ))}
         </div>
 
         <Link
           href="/playground"
-          className="mt-8 inline-flex items-center gap-2 text-payless-cyan hover:gap-3 transition-all font-medium"
+          className="mt-8 inline-flex items-center gap-2 text-accent hover:gap-3 transition-all font-medium"
         >
           Call them in the playground
           <ArrowRight className="w-4 h-4" />

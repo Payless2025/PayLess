@@ -113,20 +113,20 @@ export default function PaymentLinksPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-white pt-20">
+      <div className="min-h-screen bg-bg pt-20">
         <div className="container mx-auto px-4 py-16 max-w-6xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <Link2 className="w-10 h-10 text-purple-600" />
-                <h1 className="text-4xl font-bold text-gray-900">Payment Links</h1>
+                <Link2 className="w-10 h-10 text-accent" />
+                <h1 className="text-4xl font-bold text-text">Payment Links</h1>
               </div>
-              <p className="text-gray-600">Create shareable crypto payment URLs</p>
+              <p className="text-text-muted">Create shareable crypto payment URLs</p>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
+              className="flex items-center gap-2 px-6 py-3 bg-accent hover:opacity-90 text-text rounded font-semibold transition-all  hover:"
             >
               <Plus className="w-5 h-5" />
               Create Link
@@ -136,16 +136,16 @@ export default function PaymentLinksPage() {
           {/* Payment Links List */}
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent mx-auto"></div>
             </div>
           ) : links.length === 0 ? (
-            <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-              <Link2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No payment links yet</h3>
-              <p className="text-gray-600 mb-6">Create your first payment link to get started</p>
+            <div className="bg-surface-raised border-2 border-dashed border-line rounded p-12 text-center">
+              <Link2 className="w-16 h-16 text-text-faint mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-text mb-2">No payment links yet</h3>
+              <p className="text-text-muted mb-6">Create your first payment link to get started</p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all shadow-md"
+                className="px-6 py-3 bg-accent hover:opacity-90 text-text rounded font-semibold transition-all "
               >
                 Create Link
               </button>
@@ -155,26 +155,26 @@ export default function PaymentLinksPage() {
               {links.map((link) => (
                 <div
                   key={link.id}
-                  className="bg-white border border-gray-200 rounded-lg p-6 hover:border-purple-500 hover:shadow-lg transition-all"
+                  className="bg-surface border border-line rounded p-6 hover:border-accent hover: transition-all"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-gray-900">${link.amount}</h3>
+                        <h3 className="text-xl font-bold text-text">${link.amount}</h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          link.status === 'active' ? 'bg-green-100 text-green-700' :
-                          link.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                          'bg-gray-100 text-gray-700'
+                          link.status === 'active' ? 'bg-ok/10 text-ok' :
+                          link.status === 'completed' ? 'bg-ok/10 text-ok' :
+                          'bg-surface-raised text-text-muted'
                         }`}>
                           {link.status}
                         </span>
                       </div>
                       {link.description && (
-                        <p className="text-gray-600 text-sm mb-3">{link.description}</p>
+                        <p className="text-text-muted text-sm mb-3">{link.description}</p>
                       )}
                       <div className="flex items-center gap-2 flex-wrap">
                         {link.chains.map((chain) => (
-                          <span key={chain} className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs flex items-center gap-1 border border-purple-200">
+                          <span key={chain} className="px-2 py-1 bg-accent-wash text-accent rounded text-xs flex items-center gap-1 border border-accent/30">
                             <img src="/assets/robinhood-logo.svg" alt={chain} className="w-3 h-3" />
                             Robinhood Chain
                           </span>
@@ -183,28 +183,28 @@ export default function PaymentLinksPage() {
                     </div>
                     <button
                       onClick={() => deleteLink(link.id)}
-                      className="p-2 text-gray-500 hover:text-red-600 transition-colors"
+                      className="p-2 text-text-faint hover:text-err transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
 
                   {/* Link URL */}
-                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 rounded-lg p-3">
+                  <div className="flex items-center gap-2 bg-surface-raised border border-line rounded p-3">
                     <input
                       type="text"
                       value={link.url}
                       readOnly
-                      className="flex-1 bg-transparent text-gray-700 text-sm outline-none"
+                      className="flex-1 bg-transparent text-text-muted text-sm outline-none"
                     />
                     <button
                       onClick={() => copyLink(link.url, link.id)}
                       className="p-2 hover:bg-gray-200 rounded transition-all"
                     >
                       {copiedId === link.id ? (
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <CheckCircle2 className="w-5 h-5 text-ok" />
                       ) : (
-                        <Copy className="w-5 h-5 text-gray-500" />
+                        <Copy className="w-5 h-5 text-text-faint" />
                       )}
                     </button>
                     <a
@@ -213,7 +213,7 @@ export default function PaymentLinksPage() {
                       rel="noopener noreferrer"
                       className="p-2 hover:bg-gray-200 rounded transition-all"
                     >
-                      <ExternalLink className="w-5 h-5 text-gray-500" />
+                      <ExternalLink className="w-5 h-5 text-text-faint" />
                     </a>
                   </div>
                 </div>
@@ -223,14 +223,14 @@ export default function PaymentLinksPage() {
 
           {/* Create Modal */}
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-md w-full shadow-2xl">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Create Payment Link</h2>
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+              <div className="bg-surface border border-line rounded p-6 max-w-md w-full shadow-2xl">
+                <h2 className="text-2xl font-bold text-text mb-4">Create Payment Link</h2>
                 
                 <div className="space-y-4">
                   {/* Amount */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-text-muted text-sm font-medium mb-2">
                       Amount (USD) *
                     </label>
                     <input
@@ -239,13 +239,13 @@ export default function PaymentLinksPage() {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="5.00"
-                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full bg-surface border border-line rounded px-4 py-2 text-text focus:outline-none focus:ring-2 focus:border-accent focus:border-accent"
                     />
                   </div>
 
                   {/* Description */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-text-muted text-sm font-medium mb-2">
                       Description (optional)
                     </label>
                     <input
@@ -253,13 +253,13 @@ export default function PaymentLinksPage() {
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Payment for..."
-                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full bg-surface border border-line rounded px-4 py-2 text-text focus:outline-none focus:ring-2 focus:border-accent focus:border-accent"
                     />
                   </div>
 
                   {/* Recipient Address */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-text-muted text-sm font-medium mb-2">
                       Recipient Address *
                     </label>
                     <input
@@ -267,13 +267,13 @@ export default function PaymentLinksPage() {
                       value={recipientAddress}
                       onChange={(e) => setRecipientAddress(e.target.value)}
                       placeholder="Your wallet address"
-                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full bg-surface border border-line rounded px-4 py-2 text-text font-mono text-sm focus:outline-none focus:ring-2 focus:border-accent focus:border-accent"
                     />
                   </div>
 
                   {/* Chains */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-text-muted text-sm font-medium mb-2">
                       Supported Chains
                     </label>
                     <div className="flex gap-2">
@@ -281,10 +281,10 @@ export default function PaymentLinksPage() {
                         <button
                           key={chain}
                           onClick={() => toggleChain(chain)}
-                          className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                          className={`px-4 py-2 rounded border-2 transition-all ${
                             selectedChains.includes(chain)
-                              ? 'border-purple-600 bg-purple-50 text-purple-700 font-semibold'
-                              : 'border-gray-300 bg-white text-gray-600'
+                              ? 'border-accent bg-accent-wash text-accent font-semibold'
+                              : 'border-line bg-surface text-text-muted'
                           }`}
                         >
                           Robinhood Chain
@@ -298,13 +298,13 @@ export default function PaymentLinksPage() {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all"
+                    className="flex-1 px-4 py-2 bg-surface-raised hover:bg-gray-200 text-text-muted rounded transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={createLink}
-                    className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all shadow-md"
+                    className="flex-1 px-4 py-2 bg-accent hover:opacity-90 text-text rounded font-semibold transition-all "
                   >
                     Create Link
                   </button>
