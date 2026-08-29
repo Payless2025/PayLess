@@ -11,6 +11,7 @@ import { useAccount, useSignMessage } from 'wagmi';
 import { WalletConnectButton } from '@/components/WalletConnectButton';
 import { createMockPayment, createRealPayment } from '@/lib/x402/client';
 import { USDG_ADDRESS } from '@/lib/chains/config';
+import { Page, Panel, Button } from '@/components/ui';
 
 interface ApiEndpoint {
   path: string;
@@ -319,293 +320,316 @@ function MyComponent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <header className="bg-slate-900/50 backdrop-blur-md border-b border-white/10 relative z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-white hover:text-purple-400 transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-              <span>Back to Home</span>
+    <Page>
+      {/* Top bar — thin, bordered, no glass */}
+      <header className="sticky top-0 z-50 border-b border-line bg-bg/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 text-sm text-text-muted transition-colors hover:text-text"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Payless
             </Link>
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-white">API Playground</h1>
-              <WalletConnectButton />
-            </div>
+            <span className="text-line-strong">/</span>
+            <span className="font-mono text-sm text-text">playground</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden font-mono text-xs text-text-faint sm:inline">
+              chain 4663 · USDG
+            </span>
+            <WalletConnectButton />
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 sticky top-4">
-              {/* Categories */}
-              <h2 className="text-xl font-semibold text-white mb-4">Categories</h2>
-              <div className="grid grid-cols-2 gap-2 mb-6">
+      <div className="mx-auto grid max-w-7xl gap-px bg-line lg:grid-cols-[280px_1fr]">
+        {/* Rail */}
+        <aside className="bg-bg">
+          <div className="sticky top-[57px]">
+            <div className="border-b border-line px-4 py-3">
+              <div className="grid grid-cols-2 gap-1">
                 {Object.entries(categoryIcons).map(([cat, Icon]) => (
                   <button
                     key={cat}
                     onClick={() => {
                       setSelectedCategory(cat);
-                      const firstEndpoint = endpoints.find(e => e.category === cat);
+                      const firstEndpoint = endpoints.find((e) => e.category === cat);
                       if (firstEndpoint) handleEndpointChange(firstEndpoint);
                     }}
-                    className={`flex items-center gap-2 p-3 rounded-lg transition-all ${
+                    className={`flex items-center gap-1.5 rounded px-2 py-1.5 text-xs transition-colors ${
                       selectedCategory === cat
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        ? 'bg-accent-wash text-accent'
+                        : 'text-text-muted hover:text-text'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{cat}</span>
+                    <Icon className="h-3.5 w-3.5" />
+                    {cat}
                   </button>
                 ))}
               </div>
+            </div>
 
-              {/* Endpoints */}
-              <h3 className="text-lg font-semibold text-white mb-3">Endpoints</h3>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredEndpoints.map((endpoint) => (
+            <nav className="max-h-[calc(100vh-14rem)] overflow-y-auto">
+              {filteredEndpoints.map((endpoint) => {
+                const active = selectedEndpoint.path === endpoint.path;
+                return (
                   <button
                     key={endpoint.path}
                     onClick={() => handleEndpointChange(endpoint)}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${
-                      selectedEndpoint.path === endpoint.path
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                    className={`flex w-full items-baseline gap-2 border-l-2 px-4 py-2.5 text-left transition-colors ${
+                      active
+                        ? 'border-accent bg-accent-wash'
+                        : 'border-transparent hover:bg-surface'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-mono">{endpoint.method}</span>
-                      <span className="text-xs font-semibold">{endpoint.price}</span>
-                    </div>
-                    <div className="text-sm font-medium truncate">{endpoint.path}</div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Wallet Status */}
-              <div className="mt-6 space-y-3">
-                {connected && (
-                  <div className="p-3 rounded-lg bg-green-500/20 border border-green-500/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Wallet className="w-4 h-4 text-green-400" />
-                      <p className="text-sm font-semibold text-green-200">Connected</p>
-                    </div>
-                    <p className="text-xs text-green-300 font-mono truncate">
-                      {address}
-                    </p>
-                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={useRealWallet}
-                        onChange={(e) => setUseRealWallet(e.target.checked)}
-                        className="w-4 h-4 rounded"
-                      />
-                      <span className="text-xs text-green-200">Use real wallet</span>
-                    </label>
-                  </div>
-                )}
-                
-                <div className="p-3 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
-                  <p className="text-xs text-yellow-200">
-                    <strong>Demo Mode:</strong> {useRealWallet && connected 
-                      ? 'Real wallet enabled' 
-                      : 'Simulated payments'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Tabs */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex gap-2">
-                  {(['request', 'response', 'code'] as TabType[]).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-4 py-2 rounded-lg transition-all capitalize ${
-                        activeTab === tab
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                    <span
+                      className={`font-mono text-[10px] uppercase ${
+                        active ? 'text-accent' : 'text-text-faint'
                       }`}
                     >
-                      {tab === 'request' && <Terminal className="w-4 h-4 inline mr-2" />}
-                      {tab === 'response' && <FileJson className="w-4 h-4 inline mr-2" />}
-                      {tab === 'code' && <Code2 className="w-4 h-4 inline mr-2" />}
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={sharePlayground}
-                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                  title="Share Playground"
-                >
-                  {copied === 'share' ? (
-                    <Check className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <Share2 className="w-5 h-5 text-gray-400" />
-                  )}
-                </button>
-              </div>
-
-              {/* Request Tab */}
-              {activeTab === 'request' && (
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">{selectedEndpoint.path}</h2>
-                  <p className="text-gray-300 mb-4">{selectedEndpoint.description}</p>
-                  
-                  <div className="flex items-center gap-4 mb-6">
-                    <span className="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm font-semibold">
-                      {selectedEndpoint.method}
+                      {endpoint.method}
                     </span>
-                    <span className="px-3 py-1 rounded-lg bg-green-600 text-white text-sm font-semibold">
-                      {selectedEndpoint.price} USDG
+                    <span
+                      className={`flex-1 truncate font-mono text-xs ${
+                        active ? 'text-text' : 'text-text-muted'
+                      }`}
+                    >
+                      {endpoint.path}
                     </span>
-                  </div>
+                    <span className="font-mono text-[11px] tnum text-text-faint">
+                      {endpoint.price}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
 
-                  {selectedEndpoint.params && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-white mb-3">Parameters</h3>
-                      <div className="space-y-2">
-                        {selectedEndpoint.params.map((param) => (
-                          <div key={param.name} className="p-3 rounded-lg bg-white/5">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-mono text-purple-400">{param.name}</span>
-                              <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-gray-300">
-                                {param.type}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-400">{param.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedEndpoint.method === 'POST' && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-white mb-3">Request Body</h3>
-                      <textarea
-                        value={requestBody}
-                        onChange={(e) => setRequestBody(e.target.value)}
-                        className="w-full h-32 p-4 rounded-lg bg-slate-900 text-gray-300 font-mono text-sm border border-white/10 focus:border-purple-500 focus:outline-none"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => makeRequest(false)}
-                      disabled={loading}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold transition-all disabled:opacity-50"
-                    >
-                      {loading && !paymentRequired ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
-                      Try Without Payment
-                    </button>
-                    <button
-                      onClick={() => makeRequest(true)}
-                      disabled={loading}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50"
-                    >
-                      {loading && !response ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
-                      Try with Payment
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Response Tab */}
-              {activeTab === 'response' && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white">Response</h3>
-                    {response && (
-                      <button
-                        onClick={() => copyToClipboard(JSON.stringify(response, null, 2), 'response')}
-                        className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        {copied === 'response' ? (
-                          <Check className="w-5 h-5 text-green-400" />
-                        ) : (
-                          <Copy className="w-5 h-5 text-gray-400" />
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {error && (
-                    <div className={`mb-4 p-4 rounded-lg ${paymentRequired ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
-                      <p className={`text-sm ${paymentRequired ? 'text-yellow-200' : 'text-red-200'}`}>{error}</p>
-                    </div>
-                  )}
-
-                  {response ? (
-                    <pre className="p-4 rounded-lg bg-slate-900 text-gray-300 font-mono text-sm overflow-x-auto max-h-96">
-                      {JSON.stringify(response, null, 2)}
-                    </pre>
-                  ) : (
-                    <div className="p-12 text-center text-gray-400">
-                      <FileJson className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <p>No response yet. Make a request to see results.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Code Tab */}
-              {activeTab === 'code' && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex gap-2">
-                      {(['curl', 'nodejs', 'python', 'react-native'] as SdkType[]).map((sdk) => (
-                        <button
-                          key={sdk}
-                          onClick={() => setSelectedSdk(sdk)}
-                          className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                            selectedSdk === sdk
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-white/5 text-gray-300 hover:bg-white/10'
-                          }`}
-                        >
-                          {sdk === 'curl' ? 'cURL' : sdk === 'nodejs' ? 'Node.js' : sdk === 'python' ? 'Python' : 'React Native'}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => copyToClipboard(generateCode(), 'code')}
-                      className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                    >
-                      {copied === 'code' ? (
-                        <Check className="w-5 h-5 text-green-400" />
-                      ) : (
-                        <Copy className="w-5 h-5 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-
-                  <pre className="p-4 rounded-lg bg-slate-900 text-gray-300 font-mono text-sm overflow-x-auto">
-                    {generateCode()}
-                  </pre>
-
-                  <div className="mt-4 p-4 rounded-lg bg-blue-500/20 border border-blue-500/30">
-                    <p className="text-sm text-blue-200">
-                      💡 <strong>Tip:</strong> Replace YOUR_WALLET_ADDRESS with your actual wallet address to receive payments.
-                    </p>
-                  </div>
-                </div>
+            <div className="border-t border-line px-4 py-3 text-xs">
+              {connected ? (
+                <label className="flex cursor-pointer items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={useRealWallet}
+                    onChange={(e) => setUseRealWallet(e.target.checked)}
+                    className="mt-0.5 h-3.5 w-3.5 accent-[color:var(--accent)]"
+                  />
+                  <span>
+                    <span className="text-text">Sign with connected wallet</span>
+                    <span className="mt-0.5 block truncate font-mono text-[11px] text-text-faint">
+                      {address}
+                    </span>
+                  </span>
+                </label>
+              ) : (
+                <p className="text-text-faint">
+                  No wallet connected — requests use a simulated signature.
+                </p>
               )}
             </div>
           </div>
-        </div>
+        </aside>
+
+        {/* Main */}
+        <main className="bg-bg">
+          {/* Endpoint header */}
+          <div className="border-b border-line px-6 py-5">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded border border-line-strong px-1.5 py-0.5 font-mono text-[11px] uppercase text-text-muted">
+                {selectedEndpoint.method}
+              </span>
+              <h1 className="font-mono text-lg text-text">{selectedEndpoint.path}</h1>
+              <span className="font-mono text-sm tnum text-accent">
+                {selectedEndpoint.price} USDG
+              </span>
+              <button
+                onClick={sharePlayground}
+                className="ml-auto text-text-faint transition-colors hover:text-text"
+                title="Copy link to this endpoint"
+              >
+                {copied === 'share' ? (
+                  <Check className="h-4 w-4 text-accent" />
+                ) : (
+                  <Share2 className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-text-muted">{selectedEndpoint.description}</p>
+          </div>
+
+          {/* Tabs — underlined, not pills */}
+          <div className="flex gap-6 border-b border-line px-6">
+            {(['request', 'response', 'code'] as TabType[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`-mb-px border-b-2 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${
+                  activeTab === tab
+                    ? 'border-accent text-accent'
+                    : 'border-transparent text-text-faint hover:text-text-muted'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="px-6 py-6">
+            {/* Request */}
+            {activeTab === 'request' && (
+              <div className="space-y-6">
+                {selectedEndpoint.params && (
+                  <div>
+                    <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-text-faint">
+                      Parameters
+                    </h2>
+                    <div className="rounded border border-line">
+                      {selectedEndpoint.params.map((param, i) => (
+                        <div
+                          key={param.name}
+                          className={`flex flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3 ${
+                            i > 0 ? 'border-t border-line' : ''
+                          }`}
+                        >
+                          <span className="min-w-[8rem] font-mono text-sm text-accent">
+                            {param.name}
+                          </span>
+                          <span className="font-mono text-xs text-text-faint">
+                            {param.type}
+                          </span>
+                          <span className="text-sm text-text-muted">
+                            {param.description}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedEndpoint.method === 'POST' && (
+                  <div>
+                    <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-text-faint">
+                      Request body
+                    </h2>
+                    <textarea
+                      value={requestBody}
+                      onChange={(e) => setRequestBody(e.target.value)}
+                      spellCheck={false}
+                      className="h-40 w-full rounded border border-line bg-surface p-4 font-mono text-sm text-text focus:border-accent focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => makeRequest(true)} disabled={loading} variant="primary">
+                    {loading && !response ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                    Send with payment
+                  </Button>
+                  <Button onClick={() => makeRequest(false)} disabled={loading}>
+                    Send without payment
+                  </Button>
+                </div>
+                <p className="text-xs text-text-faint">
+                  Without payment the endpoint answers <span className="font-mono">402</span>.
+                  That is the protocol working, not an error.
+                </p>
+              </div>
+            )}
+
+            {/* Response */}
+            {activeTab === 'response' && (
+              <div className="space-y-4">
+                {error && (
+                  <div
+                    className={`rounded border px-4 py-3 text-sm ${
+                      paymentRequired
+                        ? 'border-warn/30 bg-warn/10 text-warn'
+                        : 'border-err/30 bg-err/10 text-err'
+                    }`}
+                  >
+                    <span className="font-mono">{error}</span>
+                  </div>
+                )}
+
+                {response ? (
+                  <Panel
+                    title="response"
+                    aside={
+                      <button
+                        onClick={() =>
+                          copyToClipboard(JSON.stringify(response, null, 2), 'response')
+                        }
+                        className="text-text-faint transition-colors hover:text-text"
+                      >
+                        {copied === 'response' ? (
+                          <Check className="h-4 w-4 text-accent" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </button>
+                    }
+                  >
+                    <pre className="max-h-[28rem] overflow-auto p-4 font-mono text-sm leading-relaxed text-text-muted">
+                      {JSON.stringify(response, null, 2)}
+                    </pre>
+                  </Panel>
+                ) : (
+                  !error && (
+                    <div className="rounded border border-dashed border-line px-4 py-16 text-center font-mono text-sm text-text-faint">
+                      awaiting request
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
+            {/* Code */}
+            {activeTab === 'code' && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-1">
+                  {(['curl', 'nodejs', 'python', 'react-native'] as SdkType[]).map((sdk) => (
+                    <button
+                      key={sdk}
+                      onClick={() => setSelectedSdk(sdk)}
+                      className={`rounded px-2.5 py-1 font-mono text-xs transition-colors ${
+                        selectedSdk === sdk
+                          ? 'bg-accent-wash text-accent'
+                          : 'text-text-faint hover:text-text'
+                      }`}
+                    >
+                      {sdk}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => copyToClipboard(generateCode(), 'code')}
+                    className="ml-auto text-text-faint transition-colors hover:text-text"
+                  >
+                    {copied === 'code' ? (
+                      <Check className="h-4 w-4 text-accent" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+
+                <pre className="overflow-x-auto rounded border border-line bg-surface p-4 font-mono text-sm leading-relaxed text-text-muted">
+                  {generateCode()}
+                </pre>
+
+                <p className="text-xs text-text-faint">
+                  Swap <span className="font-mono text-text-muted">YOUR_WALLET_ADDRESS</span>{' '}
+                  for the address that should receive the payment.
+                </p>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
-    </div>
+    </Page>
   );
 }

@@ -28,11 +28,11 @@ export function WalletConnectButton({ className = '' }: { className?: string }) 
   useEffect(() => setMounted(true), []);
 
   const base =
-    'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors disabled:opacity-60';
+    'inline-flex items-center gap-2 rounded border px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40';
 
   if (!mounted) {
     return (
-      <button className={`${base} bg-purple-600 text-white ${className}`} disabled>
+      <button className={`${base} border-line-strong bg-surface-raised text-text-muted ${className}`} disabled>
         <Wallet className="w-4 h-4" />
         Connect Wallet
       </button>
@@ -43,7 +43,7 @@ export function WalletConnectButton({ className = '' }: { className?: string }) 
     return (
       <button
         onClick={() => switchNetwork?.(EXPECTED_CHAIN_ID)}
-        className={`${base} bg-amber-500 hover:bg-amber-600 text-white ${className}`}
+        className={`${base} border-warn/40 bg-warn/10 text-warn hover:bg-warn/20 ${className}`}
       >
         <AlertTriangle className="w-4 h-4" />
         Switch to Robinhood Chain
@@ -56,7 +56,7 @@ export function WalletConnectButton({ className = '' }: { className?: string }) 
       <button
         onClick={() => disconnect()}
         title="Disconnect"
-        className={`${base} bg-purple-600 hover:bg-purple-700 text-white ${className}`}
+        className={`${base} border-line-strong bg-surface-raised text-text hover:border-text-faint ${className}`}
       >
         <Wallet className="w-4 h-4" />
         <span className="font-mono">{formatAddress(address)}</span>
@@ -71,7 +71,7 @@ export function WalletConnectButton({ className = '' }: { className?: string }) 
     <button
       onClick={() => connector && connect({ connector })}
       disabled={isLoading || !connector?.ready}
-      className={`${base} bg-purple-600 hover:bg-purple-700 text-white ${className}`}
+      className={`${base} border-accent bg-accent text-bg hover:bg-transparent hover:text-accent ${className}`}
       title={
         connector?.ready
           ? 'Connect a browser wallet on Robinhood Chain'
