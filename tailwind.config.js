@@ -8,26 +8,38 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#14b8a6',
-          600: '#0d9488',
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a',
-        },
+        // Bound to the CSS custom properties in globals.css so there is one
+        // source of truth for the palette.
+        bg: 'var(--bg)',
+        surface: 'var(--surface)',
+        'surface-raised': 'var(--surface-raised)',
+        line: 'var(--line)',
+        'line-strong': 'var(--line-strong)',
+        text: 'var(--text)',
+        'text-muted': 'var(--text-muted)',
+        'text-faint': 'var(--text-faint)',
+        accent: 'var(--accent)',
+        'accent-dim': 'var(--accent-dim)',
+        'accent-wash': 'var(--accent-wash)',
+        ok: 'var(--ok)',
+        warn: 'var(--warn)',
+        err: 'var(--err)',
+        // Kept so existing brand marks (logo gradient) keep resolving
         payless: {
           cyan: '#00FFD0',
           blue: '#00B8D4',
           purple: '#7B3FF2',
-          'purple-dark': '#6366F1',
-          dark: '#1E293B',
-          'dark-bg': '#0F172A',
+          dark: '#11161d',
+          'dark-bg': '#0b0f14',
         },
+      },
+      borderRadius: {
+        DEFAULT: 'var(--radius)',
+        lg: 'var(--radius-lg)',
+      },
+      fontFamily: {
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       animation: {
         'gradient': 'gradient 8s linear infinite',

@@ -1,9 +1,21 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import { ClientProviders } from '@/components/ClientProviders'
 
-const inter = Inter({ subsets: ['latin'] })
+const sans = IBM_Plex_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans',
+  display: 'swap',
+})
+
+const mono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Payless - Accept Crypto Payments Without Accounts | x402 on Robinhood Chain',
@@ -17,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <body className="font-sans bg-bg text-text antialiased">
         <ClientProviders>
           {children}
         </ClientProviders>
@@ -26,4 +38,3 @@ export default function RootLayout({
     </html>
   )
 }
-
