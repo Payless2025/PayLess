@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-payless-dark-bg">
+      <main className="min-h-screen bg-bg">
         <Hero />
         <HowItWorks />
         <CodeExample />

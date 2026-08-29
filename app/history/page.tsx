@@ -246,7 +246,7 @@ export default function PaymentHistoryPage() {
                   <Filter className="w-5 h-5" />
                   Filters
                   {activeFiltersCount > 0 && (
-                    <span className="px-2 py-0.5 bg-payless-cyan text-payless-dark text-xs rounded-full">
+                    <span className="px-2 py-0.5 bg-accent text-bg font-mono text-xs rounded">
                       {activeFiltersCount}
                     </span>
                   )}
@@ -400,7 +400,7 @@ export default function PaymentHistoryPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="p-2 bg-payless-cyan/10 border border-accent/30 rounded text-accent hover:bg-payless-cyan/20 transition-all"
+                          className="p-2 bg-accent-wash border border-accent/30 rounded text-accent hover:border-accent transition-colors"
                         >
                           <ExternalLink className="w-5 h-5" />
                         </a>
