@@ -4,7 +4,7 @@
  */
 
 import { createPublicClient, http, formatUnits, isAddress, getAddress } from 'viem';
-import { ROBINHOOD_RPC_URL } from '../chains/config';
+import { ROBINHOOD_RPC_URL, PAYLESS_TOKEN } from '../chains/config';
 
 // Minimal ERC-20 surface needed for holder checks
 const ERC20_ABI = [
@@ -25,15 +25,11 @@ const ERC20_ABI = [
 ] as const;
 
 // Token Configuration
+// Single source of truth: the same constant the footer renders.
 export const PAYLESS_TOKEN_CONFIG = {
-  TOTAL_SUPPLY: 1_000_000_000, // 1 billion tokens
-  // $PAYLESS ERC-20 contract on Robinhood Chain.
-  // Set PAYLESS_TOKEN_ADDRESS once the token is deployed; until then every
-  // wallet resolves to the free tier instead of silently granting access.
-  TOKEN_ADDRESS: process.env.PAYLESS_TOKEN_ADDRESS || '',
-  TOKEN_DECIMALS: process.env.PAYLESS_TOKEN_DECIMALS
-    ? Number(process.env.PAYLESS_TOKEN_DECIMALS)
-    : undefined,
+  TOTAL_SUPPLY: PAYLESS_TOKEN.totalSupply,
+  TOKEN_ADDRESS: PAYLESS_TOKEN.address,
+  TOKEN_DECIMALS: PAYLESS_TOKEN.decimals,
   RPC_URL: ROBINHOOD_RPC_URL,
 };
 

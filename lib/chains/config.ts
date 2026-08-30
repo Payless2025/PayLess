@@ -48,6 +48,27 @@ export interface PaymentToken {
 export const USDG_ADDRESS = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
 export const WETH_ADDRESS = '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
 
+/**
+ * $PAYLESS — the project's own token on Robinhood Chain.
+ *
+ * A contract address is public by definition, so it lives in code rather than
+ * in an environment variable: one source of truth for both the footer and token
+ * gating, and nothing to forget to set on a new deploy. When the token is
+ * redeployed, change it here. `PAYLESS_TOKEN_ADDRESS` still overrides it for
+ * testing against another deployment.
+ */
+export const PAYLESS_TOKEN = {
+  address:
+    process.env.PAYLESS_TOKEN_ADDRESS ||
+    process.env.NEXT_PUBLIC_PAYLESS_TOKEN_ADDRESS ||
+    '0xB8A30979F583a8c5340dC1B58203De7569AAe806',
+  symbol: 'PAYLESS',
+  decimals: process.env.PAYLESS_TOKEN_DECIMALS
+    ? Number(process.env.PAYLESS_TOKEN_DECIMALS)
+    : 18,
+  totalSupply: 1_000_000_000,
+};
+
 export const ROBINHOOD_CHAIN_ID =
   process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID || process.env.ROBINHOOD_CHAIN_ID || '4663';
 
