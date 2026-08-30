@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Github, Twitter, Copy } from 'lucide-react';
+import { useState } from 'react';
+import { Github, Twitter, Copy, Check } from 'lucide-react';
 
-// Set NEXT_PUBLIC_PAYLESS_TOKEN_ADDRESS once $PAYLESS is deployed on Robinhood Chain
-const PAYLESS_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_PAYLESS_TOKEN_ADDRESS || '';
+import { PAYLESS_TOKEN, ROBINHOOD_EXPLORER_URL } from '@/lib/chains/config';
+
+const PAYLESS_TOKEN_ADDRESS = PAYLESS_TOKEN.address;
 
 const DOCS = 'https://github.com/Payless2025/PayLess/tree/master/docs';
 
@@ -31,6 +33,8 @@ const columns = [
 ];
 
 export default function Footer() {
+  const [copied, setCopied] = useState(false);
+
   return (
     <footer className="border-t border-line bg-bg">
       <div className="mx-auto max-w-6xl px-6 py-12">
@@ -45,25 +49,42 @@ export default function Footer() {
               account on either side.
             </p>
 
-            {PAYLESS_TOKEN_ADDRESS && (
-              <div className="mt-5">
-                <div className="font-mono text-xs uppercase tracking-widest text-text-faint">
-                  $PAYLESS
-                </div>
-                <div className="mt-2 flex items-center gap-2 rounded border border-line bg-surface px-3 py-2">
-                  <code className="flex-1 truncate font-mono text-xs text-text-muted">
-                    {PAYLESS_TOKEN_ADDRESS}
-                  </code>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(PAYLESS_TOKEN_ADDRESS)}
-                    className="text-text-faint transition-colors hover:text-accent"
-                    title="Copy address"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+            <div className="mt-5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-mono text-xs uppercase tracking-widest text-text-faint">
+                  $PAYLESS · Robinhood Chain
+                </span>
+                <a
+                  href={`${ROBINHOOD_EXPLORER_URL}/token/${PAYLESS_TOKEN_ADDRESS}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-text-faint transition-colors hover:text-accent"
+                >
+                  verify
+                </a>
               </div>
-            )}
+              <div className="mt-2 flex items-center gap-2 rounded border border-line bg-surface px-3 py-2">
+                <code className="flex-1 truncate font-mono text-xs text-text-muted">
+                  {PAYLESS_TOKEN_ADDRESS}
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(PAYLESS_TOKEN_ADDRESS);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  }}
+                  className="shrink-0 text-text-faint transition-colors hover:text-accent"
+                  title="Copy address"
+                  aria-label="Copy contract address"
+                >
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5 text-accent" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
+            </div>
 
             <div className="mt-5 flex items-center gap-4">
               <a
