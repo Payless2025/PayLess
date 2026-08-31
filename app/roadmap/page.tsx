@@ -68,6 +68,10 @@ const shipped: Group[] = [
 
 const inProgress: Item[] = [
   {
+    title: 'Recurring payments',
+    note: 'The commitment is an ERC-20 allowance rather than a card on file. The payer approves a spend limit, we may collect the plan amount once per period and never more than was approved, and cancelling is approve(0) from their own wallet — immediate, and not something we can block.',
+  },
+  {
     title: 'Shared spent-transaction store',
     note: 'Replay protection currently lives in a per-instance Map. That is correct on one long-lived server and wrong the moment a serverless deployment scales out, so it moves behind Redis or KV before anyone runs real volume.',
   },
@@ -82,10 +86,6 @@ const planned: Group[] = [
   {
     heading: 'Payments',
     items: [
-      {
-        title: 'Recurring payments',
-        note: 'x402 settles one request at a time. Subscriptions need a payer that can commit to the next one with no card on file.',
-      },
       {
         title: 'Payment splits',
         note: 'One transfer, several recipients, settled together — so an API can pay its upstream out of the same payment that paid it.',
