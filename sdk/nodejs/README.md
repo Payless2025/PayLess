@@ -1,5 +1,16 @@
 # Payless SDK for Node.js
 
+> **Superseded.** This SDK was written for the Solana build of Payless and still
+> describes that chain. Payless now settles on Robinhood Chain — use the
+> published package instead:
+>
+> ```bash
+> npm i payless viem
+> ```
+>
+> Docs: https://www.npmjs.com/package/payless
+
+
 Official Node.js/TypeScript SDK for integrating Payless x402 payments into your applications.
 
 ## Installation

@@ -1,0 +1,62 @@
+{
+  "name": "payless",
+  "version": "0.1.0",
+  "description": "Price an HTTP endpoint in one line. x402 payments settled on Robinhood Chain in USDG — no accounts, no processor, no protocol fee.",
+  "keywords": [
+    "x402",
+    "http-402",
+    "payments",
+    "micropayments",
+    "robinhood-chain",
+    "usdg",
+    "erc20",
+    "api-monetization",
+    "ai-agents",
+    "pay-per-call"
+  ],
+  "license": "MIT",
+  "author": "Payless",
+  "homepage": "https://payless.network",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Payless2025/PayLess.git",
+    "directory": "packages/payless"
+  },
+  "bugs": {
+    "url": "https://github.com/Payless2025/PayLess/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "viem": "^1.0.0 || ^2.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.3",
+    "viem": "^1.21.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
