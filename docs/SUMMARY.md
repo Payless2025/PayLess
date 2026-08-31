@@ -21,6 +21,7 @@
 * [API Configuration](API_CONFIGURATION.md)
 * [Payment Links](PAYMENT_LINKS.md)
 * [Payment Streaming](PAYMENT_STREAMING.md)
+* [Recurring Payments](RECURRING.md)
 * [Webhooks](WEBHOOKS.md)
 * [Token-Gated Content](TOKEN_GATING.md)
 * [Configuration](configuration.md)

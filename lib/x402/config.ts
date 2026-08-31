@@ -76,5 +76,7 @@ export const FREE_ENDPOINTS = [
   '/api/health',
   '/api/info',
   '/api/analytics',
+  // Checking what you owe, and how to stop owing it, is never itself billable
+  '/api/subscriptions',
   ...DEMO_ENDPOINTS,
 ];

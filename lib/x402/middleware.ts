@@ -6,6 +6,7 @@ import { verifyRobinhoodPayment } from '../chains/robinhood';
 import { verifySettlement } from '../chains/settlement';
 import { claimSettlement } from './spent-store';
 import { ROBINHOOD_CONFIG } from '../chains/config';
+import { checkSubscription, subscriptionHeaders, offersFor } from './subscription-middleware';
 
 /**
  * Verify a Robinhood Chain payment
@@ -131,7 +132,8 @@ export async function verifyPayment(
 /**
  * Create 402 Payment Required response
  */
-export function create402Response(amount: string): NextResponse<X402Response> {
+export function create402Response(amount: string, pathname?: string): NextResponse<X402Response> {
+  const subscribe = pathname ? offersFor(pathname) : [];
   const response: X402Response = {
     status: 402,
     message: 'Payment Required',
@@ -150,6 +152,9 @@ export function create402Response(amount: string): NextResponse<X402Response> {
           tokens: ROBINHOOD_CONFIG.paymentTokens.map((token) => token.symbol),
         },
       ],
+      // One request, one payment is not the only shape. Where a plan covers this
+      // endpoint, the caller can commit once and stop paying per call.
+      ...(subscribe.length ? { subscribe } : {}),
     },
   };
 
@@ -220,6 +225,49 @@ export function withX402Payment(
 
       paymentAmount = endpointPrice;
 
+      // A standing subscription is checked first: a caller who already committed
+      // should not be asked to pay again per request.
+      const subHeader = req.headers.get('x-subscription');
+      if (subHeader) {
+        const check = await checkSubscription(subHeader, pathname);
+
+        if (!check.ok && check.status) {
+          trackApiRequest({
+            endpoint: pathname,
+            method,
+            status: check.status,
+            paymentRequired: true,
+            paymentProvided: true,
+            paymentValid: false,
+            amount: paymentAmount,
+            responseTime: Date.now() - startTime,
+            userAgent,
+            error: String(check.body?.error || 'Subscription rejected'),
+          });
+          return NextResponse.json(check.body || {}, { status: check.status });
+        }
+
+        if (check.ok) {
+          const response = await handler(req);
+          for (const [k, v] of Object.entries(subscriptionHeaders(check))) {
+            response.headers.set(k, v);
+          }
+          trackApiRequest({
+            endpoint: pathname,
+            method,
+            status: response.status,
+            paymentRequired: true,
+            paymentProvided: true,
+            paymentValid: true,
+            amount: paymentAmount,
+            walletAddress: check.sub?.payer,
+            responseTime: Date.now() - startTime,
+            userAgent,
+          });
+          return response;
+        }
+      }
+
       // Check for payment header
       const paymentHeader = req.headers.get('x-payment');
 
@@ -238,7 +286,7 @@ export function withX402Payment(
           userAgent,
         });
 
-        return create402Response(endpointPrice);
+        return create402Response(endpointPrice, pathname);
       }
 
       paymentProvided = true;
