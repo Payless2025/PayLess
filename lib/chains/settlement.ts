@@ -23,6 +23,11 @@ import {
 } from 'viem';
 import { ROBINHOOD_RPC_URL, ROBINHOOD_CONFIG, getPaymentToken } from './config';
 
+const ERC20_META_ABI = [
+  { name: 'decimals', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint8' }] },
+  { name: 'symbol', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'string' }] },
+] as const;
+
 const TRANSFER_EVENT = {
   name: 'Transfer',
   type: 'event',
@@ -159,7 +164,26 @@ export async function verifySettlement(params: {
     const token = ROBINHOOD_CONFIG.paymentTokens.find(
       (t) => getAddress(t.address) === tokenAddress
     );
-    const decimals = token?.decimals ?? 18;
+
+    // A caller may name any token, not just the ones Payless accepts. Assuming
+    // 18 decimals for those would misread the amount — read the contract.
+    let decimals = token?.decimals;
+    let symbol = token?.symbol;
+    if (decimals === undefined || symbol === undefined) {
+      try {
+        const [d, sym] = await Promise.all([
+          rpc.readContract({ address: tokenAddress, abi: ERC20_META_ABI, functionName: 'decimals' }),
+          rpc.readContract({ address: tokenAddress, abi: ERC20_META_ABI, functionName: 'symbol' }),
+        ]);
+        decimals = Number(d);
+        symbol = sym as string;
+      } catch {
+        return {
+          valid: false,
+          error: `Could not read decimals for token ${tokenAddress}; refusing to guess the amount`,
+        };
+      }
+    }
 
     let required: bigint;
     try {
@@ -171,9 +195,7 @@ export async function verifySettlement(params: {
     if (args.value < required) {
       return {
         valid: false,
-        error: `Underpaid: sent ${formatUnits(args.value, decimals)} ${
-          token?.symbol ?? ''
-        }, needed ${expectedAmount}`,
+        error: `Underpaid: sent ${formatUnits(args.value, decimals)} ${symbol}, needed ${expectedAmount}`,
       };
     }
 
@@ -184,17 +206,20 @@ export async function verifySettlement(params: {
         from: getAddress(args.from),
         to: recipient,
         token: tokenAddress,
-        tokenSymbol: token?.symbol ?? 'UNKNOWN',
+        tokenSymbol: symbol,
         amount: formatUnits(args.value, decimals),
         blockNumber: receipt.blockNumber.toString(),
       },
     };
   }
 
-  const symbols = ROBINHOOD_CONFIG.paymentTokens.map((t) => t.symbol).join(' or ');
+  // Name what was actually looked for, not the default accept-list
+  const looked = expectedToken
+    ? getAddress(expectedToken)
+    : ROBINHOOD_CONFIG.paymentTokens.map((t) => t.symbol).join(' or ');
   return {
     valid: false,
-    error: `No ${symbols} transfer to ${recipient} found in that transaction`,
+    error: `No ${looked} transfer to ${recipient} found in that transaction`,
   };
 }
 
