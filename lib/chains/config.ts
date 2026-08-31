@@ -56,12 +56,16 @@ export const WETH_ADDRESS = '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
  * gating, and nothing to forget to set on a new deploy. When the token is
  * redeployed, change it here. `PAYLESS_TOKEN_ADDRESS` still overrides it for
  * testing against another deployment.
+ *
+ * Redeployed 2026-08-31. The previous contract at
+ * 0xB8A30979F583a8c5340dC1B58203De7569AAe806 is superseded — same name and
+ * symbol, so always check the address.
  */
 export const PAYLESS_TOKEN = {
   address:
     process.env.PAYLESS_TOKEN_ADDRESS ||
     process.env.NEXT_PUBLIC_PAYLESS_TOKEN_ADDRESS ||
-    '0xB8A30979F583a8c5340dC1B58203De7569AAe806',
+    '0x18644D2828C9FD107e8fAEB1F2f978957eA5BD74',
   symbol: 'PAYLESS',
   decimals: process.env.PAYLESS_TOKEN_DECIMALS
     ? Number(process.env.PAYLESS_TOKEN_DECIMALS)

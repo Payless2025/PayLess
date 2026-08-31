@@ -5,7 +5,7 @@
 Payless offers **token-gated API access** for $PAYLESS holders. Instead of traditional subscriptions, simply hold tokens to unlock premium features and higher rate limits.
 
 **Total Supply:** 1,000,000,000 $PAYLESS tokens  
-**$PAYLESS Contract Address (Robinhood Chain):** `0xB8A30979F583a8c5340dC1B58203De7569AAe806`  
+**$PAYLESS Contract Address (Robinhood Chain):** `0x18644D2828C9FD107e8fAEB1F2f978957eA5BD74`  
 **Chain:** Robinhood Chain
 
 ## Why Token-Gating?
@@ -246,7 +246,7 @@ Rate limits reset every hour. If you exceed your limit:
 
 Add to your `.env.local`:
 ```env
-PAYLESS_TOKEN_ADDRESS=0xB8A30979F583a8c5340dC1B58203De7569AAe806
+PAYLESS_TOKEN_ADDRESS=0x18644D2828C9FD107e8fAEB1F2f978957eA5BD74
 ROBINHOOD_RPC_URL=https://rpc.mainnet.chain.robinhood.com
 ```
 
