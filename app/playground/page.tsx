@@ -7,10 +7,27 @@ import {
   Code2, FileJson, Terminal, Share2, Download,
   Sparkles, Database, Wrench, Crown
 } from 'lucide-react';
-import { useAccount, useSignMessage } from 'wagmi';
+import { useAccount, useNetwork, useWalletClient, usePublicClient } from 'wagmi';
+import { parseUnits } from 'viem';
 import { WalletConnectButton } from '@/components/WalletConnectButton';
-import { createMockPayment, createRealPayment } from '@/lib/x402/client';
-import { USDG_ADDRESS } from '@/lib/chains/config';
+import { USDG_ADDRESS, ROBINHOOD_CHAIN_ID } from '@/lib/chains/config';
+
+const ERC20_TRANSFER_ABI = [
+  {
+    name: 'transfer',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'value', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const;
+
+const EXPECTED_CHAIN = Number(ROBINHOOD_CHAIN_ID);
+
+type PayStep = null | 'challenge' | 'transfer' | 'confirm' | 'call';
 import { Page, Panel, Button } from '@/components/ui';
 
 interface ApiEndpoint {
@@ -135,7 +152,10 @@ const categoryIcons = {
 
 export default function Playground() {
   const { address, isConnected: connected } = useAccount();
-  const { signMessageAsync } = useSignMessage();
+  const { chain } = useNetwork();
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
+  const onRightChain = chain?.id === EXPECTED_CHAIN;
   const [selectedCategory, setSelectedCategory] = useState<string>('AI');
   const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint>(endpoints[0]);
   const [activeTab, setActiveTab] = useState<TabType>('request');
@@ -146,16 +166,14 @@ export default function Playground() {
   const [paymentRequired, setPaymentRequired] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [requestBody, setRequestBody] = useState(JSON.stringify(endpoints[0].bodyExample || {}, null, 2));
-  const [useRealWallet, setUseRealWallet] = useState(false);
+  const [payStep, setPayStep] = useState<PayStep>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
-  // Demo payer used when "Use real wallet" is off
-  const mockWalletAddress = '0x1111111111111111111111111111111111111111';
-  // The recipient the server actually expects; loaded from /api/info so the
-  // demo keeps working whatever WALLET_ADDRESS is configured.
-  const [recipientAddress, setRecipientAddress] = useState(
-    '0x0000000000000000000000000000000000000000'
-  );
+  // Loaded from /api/info so the playground always pays whatever the server
+  // actually expects.
+  const [recipientAddress, setRecipientAddress] = useState('');
   const [tokenAddress, setTokenAddress] = useState(USDG_ADDRESS);
+  const [tokenDecimals, setTokenDecimals] = useState(6);
 
   useEffect(() => {
     fetch('/api/info')
@@ -163,6 +181,8 @@ export default function Playground() {
       .then((info) => {
         if (info?.payment?.wallet) setRecipientAddress(info.payment.wallet);
         if (info?.payment?.tokenAddress) setTokenAddress(info.payment.tokenAddress);
+        if (typeof info?.payment?.tokenDecimals === 'number')
+          setTokenDecimals(info.payment.tokenDecimals);
       })
       .catch(() => {
         /* keep the defaults */
@@ -180,67 +200,134 @@ export default function Playground() {
     setActiveTab('request');
   };
 
+  /**
+   * Runs the real x402 handshake:
+   *   1. call with no payment  -> read the 402 challenge
+   *   2. send the USDG transfer on Robinhood Chain
+   *   3. wait for the receipt
+   *   4. call again with the transaction hash
+   *
+   * Nothing is simulated. Without a connected wallet we stop after step 1 and
+   * show the challenge, rather than sending a payment that cannot settle.
+   */
   const makeRequest = async (withPayment: boolean = false) => {
     setLoading(true);
     setError(null);
     setResponse(null);
+    setPaymentRequired(false);
+    setTxHash(null);
+
+    const url = selectedEndpoint.path;
+    const baseOptions: RequestInit = {
+      method: selectedEndpoint.method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (selectedEndpoint.method === 'POST' && requestBody.trim()) {
+      baseOptions.body = requestBody;
+    }
 
     try {
-      const url = selectedEndpoint.path;
-      const options: RequestInit = {
-        method: selectedEndpoint.method,
-        headers: { 'Content-Type': 'application/json' },
-      };
+      // Step 1 — always ask first. This is the part of the protocol worth seeing.
+      setPayStep(withPayment ? 'challenge' : null);
+      const first = await fetch(url, baseOptions);
+      const firstData = await first.json();
 
-      if (withPayment) {
-        const priceAmount = selectedEndpoint.price.replace('$', '');
-
-        let payment: string;
-
-        if (useRealWallet && connected && address) {
-          try {
-            payment = await createRealPayment(
-              address,
-              recipientAddress,
-              priceAmount,
-              tokenAddress,
-              (message) => signMessageAsync({ message })
-            );
-          } catch (walletError) {
-            setError(`Wallet error: ${walletError instanceof Error ? walletError.message : 'Failed'}`);
-            setLoading(false);
-            return;
-          }
-        } else {
-          payment = createMockPayment(mockWalletAddress, recipientAddress, priceAmount, tokenAddress);
-        }
-        
-        options.headers = { ...options.headers, 'X-Payment': payment };
+      if (first.status !== 402) {
+        setResponse(firstData);
+        if (!first.ok) setError(firstData.error || 'Request failed');
+        return;
       }
 
-      if (selectedEndpoint.method === 'POST' && requestBody.trim()) {
-        options.body = requestBody;
-      }
+      setPaymentRequired(true);
 
-      const res = await fetch(url, options);
-      const data = await res.json();
-
-      if (res.status === 402) {
-        setPaymentRequired(true);
-        setError('Payment required! Click "Try with Payment" to complete.');
-        setResponse(data);
-      } else if (!res.ok) {
-        setError(data.error || 'Request failed');
-        setResponse(data);
-      } else {
-        setResponse(data);
-        setPaymentRequired(false);
+      if (!withPayment) {
+        setResponse(firstData);
+        setError('402 Payment Required — this is the protocol working, not an error.');
         setActiveTab('response');
+        return;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Request failed');
+
+      // Step 2 — pay for real, or explain why we cannot
+      if (!connected || !address || !walletClient) {
+        setResponse(firstData);
+        setError('Connect a wallet to pay this 402. Nothing is simulated here.');
+        setActiveTab('response');
+        return;
+      }
+      if (!onRightChain) {
+        setResponse(firstData);
+        setError(`Wrong network. Switch to Robinhood Chain (${EXPECTED_CHAIN}) to pay.`);
+        setActiveTab('response');
+        return;
+      }
+
+      const pay = firstData?.payment || {};
+      const to = (pay.recipient || recipientAddress) as `0x${string}`;
+      const token = (pay.tokenAddress || tokenAddress) as `0x${string}`;
+      const amount = String(pay.amount ?? selectedEndpoint.price.replace('$', ''));
+
+      if (!to || !/^0x[0-9a-fA-F]{40}$/.test(to)) {
+        setError('The server did not advertise a recipient address, so it cannot be paid.');
+        setResponse(firstData);
+        setActiveTab('response');
+        return;
+      }
+
+      setPayStep('transfer');
+      const hash = await walletClient.writeContract({
+        address: token,
+        abi: ERC20_TRANSFER_ABI,
+        functionName: 'transfer',
+        args: [to, parseUnits(amount as `${number}`, tokenDecimals)],
+        account: address,
+        chain: undefined,
+      });
+      setTxHash(hash);
+
+      // Step 3 — the server will not accept an unmined transfer
+      setPayStep('confirm');
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // Step 4 — retry with proof of payment
+      setPayStep('call');
+      const paid = await fetch(url, {
+        ...baseOptions,
+        headers: {
+          ...baseOptions.headers,
+          'X-Payment': JSON.stringify({
+            from: address,
+            to,
+            amount,
+            token: pay.currency || 'USDG',
+            tokenAddress: token,
+            chainId: String(EXPECTED_CHAIN),
+            transactionHash: hash,
+            nonce: hash,
+            signature: '',
+            timestamp: Date.now(),
+            message: '',
+          }),
+        },
+      });
+      const paidData = await paid.json();
+      setResponse(paidData);
+      setActiveTab('response');
+
+      if (paid.ok) {
+        setPaymentRequired(false);
+        setError(null);
+      } else {
+        setError(paidData.error || 'Payment was rejected');
+      }
+    } catch (err: any) {
+      const msg = err?.shortMessage || err?.message || 'Request failed';
+      setError(
+        /user rejected|denied/i.test(msg) ? 'Payment cancelled in the wallet.' : msg
+      );
+      setActiveTab('response');
     } finally {
       setLoading(false);
+      setPayStep(null);
     }
   };
 
@@ -406,27 +493,30 @@ function MyComponent() {
               })}
             </nav>
 
-            <div className="border-t border-line px-4 py-3 text-xs">
+            <div className="space-y-3 border-t border-line px-4 py-3 text-xs">
               {connected ? (
-                <label className="flex cursor-pointer items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={useRealWallet}
-                    onChange={(e) => setUseRealWallet(e.target.checked)}
-                    className="mt-0.5 h-3.5 w-3.5 accent-[color:var(--accent)]"
-                  />
-                  <span>
-                    <span className="text-text">Sign with connected wallet</span>
-                    <span className="mt-0.5 block truncate font-mono text-[11px] text-text-faint">
+                onRightChain ? (
+                  <div>
+                    <div className="text-text">Paying from</div>
+                    <div className="mt-0.5 truncate font-mono text-[11px] text-text-faint">
                       {address}
-                    </span>
-                  </span>
-                </label>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-warn">
+                    Wrong network — switch to Robinhood Chain ({EXPECTED_CHAIN}) to pay.
+                  </p>
+                )
               ) : (
                 <p className="text-text-faint">
-                  No wallet connected — requests use a simulated signature.
+                  No wallet connected. You can still send the request and read the 402
+                  challenge — paying it needs a wallet.
                 </p>
               )}
+
+              <p className="text-text-faint">
+                Payments here are real: sending one transfers USDG on Robinhood Chain.
+              </p>
             </div>
           </div>
         </aside>
@@ -521,22 +611,57 @@ function MyComponent() {
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => makeRequest(true)} disabled={loading} variant="primary">
-                    {loading && !response ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    onClick={() => makeRequest(true)}
+                    disabled={loading || !connected || !onRightChain}
+                    variant="primary"
+                    title={
+                      !connected
+                        ? 'Connect a wallet to pay'
+                        : !onRightChain
+                        ? `Switch to Robinhood Chain (${EXPECTED_CHAIN})`
+                        : `Transfers ${selectedEndpoint.price} USDG on Robinhood Chain`
+                    }
+                  >
+                    {payStep ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Play className="h-4 w-4" />
                     )}
-                    Send with payment
+                    {payStep === 'challenge'
+                      ? 'Reading 402…'
+                      : payStep === 'transfer'
+                      ? 'Confirm in wallet…'
+                      : payStep === 'confirm'
+                      ? 'Waiting for the block…'
+                      : payStep === 'call'
+                      ? 'Calling with receipt…'
+                      : `Pay ${selectedEndpoint.price} and call`}
                   </Button>
                   <Button onClick={() => makeRequest(false)} disabled={loading}>
-                    Send without payment
+                    Send without paying
                   </Button>
                 </div>
+
+                {txHash && (
+                  <p className="font-mono text-xs text-text-faint">
+                    tx{' '}
+                    <a
+                      href={`https://robinhoodchain.blockscout.com/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline"
+                    >
+                      {txHash.slice(0, 10)}…{txHash.slice(-8)}
+                    </a>
+                  </p>
+                )}
+
                 <p className="text-xs text-text-faint">
-                  Without payment the endpoint answers <span className="font-mono">402</span>.
-                  That is the protocol working, not an error.
+                  Without paying, the endpoint answers <span className="font-mono">402</span> —
+                  that is the protocol working, not an error. Paying moves real USDG on
+                  Robinhood Chain; nothing here is simulated.
                 </p>
               </div>
             )}
