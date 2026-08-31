@@ -150,6 +150,48 @@ const categoryIcons = {
   Premium: Crown,
 };
 
+
+/**
+ * Last-resort network switch, straight to the wallet over EIP-1193.
+ *
+ * wagmi cannot always do this: on a network it has no config for, the connector
+ * may not expose a switcher at all. Asking the provider directly still works,
+ * and if the chain is simply unknown to the wallet (error 4902) we offer to add
+ * it rather than telling the user to type RPC details by hand.
+ */
+async function switchOrAddRobinhoodChain(): Promise<{ ok: boolean; error?: string }> {
+  const eth = (globalThis as any).ethereum;
+  if (!eth?.request) return { ok: false, error: 'No injected wallet found in this browser.' };
+
+  const hexId = '0x' + EXPECTED_CHAIN.toString(16);
+  try {
+    await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hexId }] });
+    return { ok: true };
+  } catch (err: any) {
+    // 4902 = the wallet does not know this chain yet
+    if (err?.code === 4902 || /Unrecognized chain/i.test(err?.message || '')) {
+      try {
+        await eth.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              chainId: hexId,
+              chainName: 'Robinhood Chain',
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
+              blockExplorerUrls: ['https://robinhoodchain.blockscout.com'],
+            },
+          ],
+        });
+        return { ok: true };
+      } catch (addErr: any) {
+        return { ok: false, error: addErr?.message || 'Wallet refused to add Robinhood Chain.' };
+      }
+    }
+    return { ok: false, error: err?.message || 'Wallet refused to switch networks.' };
+  }
+}
+
 export default function Playground() {
   const { address, isConnected: connected } = useAccount();
   const { chain } = useNetwork();
@@ -249,9 +291,17 @@ export default function Playground() {
       }
 
       // Step 2 — pay for real, or explain why we cannot
-      if (!connected || !address || !walletClient) {
+      if (!connected || !address) {
         setResponse(firstData);
         setError('Connect a wallet to pay this 402. Nothing is simulated here.');
+        setActiveTab('response');
+        return;
+      }
+      if (!walletClient) {
+        setResponse(firstData);
+        setError(
+          'The wallet is connected but did not expose a signer. Reload the page, or reconnect the account in your wallet, and try again.'
+        );
         setActiveTab('response');
         return;
       }
@@ -518,6 +568,21 @@ function MyComponent() {
               <p className="text-text-faint">
                 Payments here are real: sending one transfers USDG on Robinhood Chain.
               </p>
+
+              {/* Visible state beats guessing when a click appears to do nothing. */}
+              <div className="space-y-0.5 border-t border-line pt-3 font-mono text-[11px] text-text-faint">
+                <div>wallet {connected ? 'connected' : 'not connected'}</div>
+                <div className={onRightChain ? '' : 'text-warn'}>
+                  chain {chain?.id ?? 'unknown'}
+                  {onRightChain ? ' ✓' : ` (need ${EXPECTED_CHAIN})`}
+                </div>
+                <div className={walletClient ? '' : 'text-warn'}>
+                  signer {walletClient ? 'ready' : 'not ready'}
+                </div>
+                <div className={switchNetworkAsync ? '' : 'text-text-faint'}>
+                  auto network switch {switchNetworkAsync ? 'available' : 'unavailable'}
+                </div>
+              </div>
             </div>
           </div>
         </aside>
@@ -639,13 +704,26 @@ function MyComponent() {
                         return;
                       }
                       if (!onRightChain) {
-                        try {
-                          await switchNetworkAsync?.(EXPECTED_CHAIN);
-                        } catch {
-                          setError(
-                            `Could not switch networks. Add Robinhood Chain (id ${EXPECTED_CHAIN}, rpc.mainnet.chain.robinhood.com) to your wallet and try again.`
-                          );
-                          setActiveTab('response');
+                        // Try wagmi, then ask the wallet directly. One of the two
+                        // works in every wallet we have seen, and neither is
+                        // allowed to fail silently.
+                        let switched = false;
+                        if (switchNetworkAsync) {
+                          try {
+                            await switchNetworkAsync(EXPECTED_CHAIN);
+                            switched = true;
+                          } catch {
+                            /* fall through to the direct request */
+                          }
+                        }
+                        if (!switched) {
+                          const res = await switchOrAddRobinhoodChain();
+                          if (!res.ok) {
+                            setError(
+                              `Could not switch to Robinhood Chain: ${res.error} — add it manually with chain ID ${EXPECTED_CHAIN} and RPC https://rpc.mainnet.chain.robinhood.com, then press pay again.`
+                            );
+                            setActiveTab('response');
+                          }
                         }
                         return;
                       }
