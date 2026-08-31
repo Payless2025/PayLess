@@ -1,24 +1,26 @@
 /**
- * Runs once when the server starts.
+ * Boot-time visibility only.
  *
- * Replay protection and subscription accounting default to per-instance maps.
- * That is correct on one long-lived server and wrong on serverless, so this
- * swaps in the shared Redis-backed stores when they are configured — and says
- * so plainly in the logs when they are not.
+ * The stores install themselves lazily in whichever process serves a request —
+ * see lib/x402/spent-store.ts. This hook does not install anything; it exists so
+ * a deployment without a shared ledger says so in the logs instead of running
+ * quietly unprotected.
  */
 
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
-  const { installSharedStores } = await import('./lib/x402/stores/redis');
-  const status = await installSharedStores();
+  const shared =
+    (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) &&
+    (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN);
 
-  if (status.configured && !status.reachable) {
-    // Configured but unreachable means someone intended protection and is not
-    // getting it. Loud is the right volume.
-    console.error(
-      '[payless] Falling back to per-instance stores. Replay protection is NOT ' +
-        'shared across instances until Upstash is reachable.'
+  if (shared) {
+    console.log('[payless] Shared ledger configured — replay protection survives scale-out.');
+  } else {
+    console.warn(
+      '[payless] No UPSTASH_REDIS_REST_URL/TOKEN. Replay protection and subscription ' +
+        'periods are per-instance: correct on one server, wrong on serverless, where a ' +
+        'payment could be spent once per warm instance. Check /api/info → integrity.'
     );
   }
 }

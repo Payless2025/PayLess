@@ -15,6 +15,8 @@
  * backend (Vercel KV, Upstash Redis, Postgres — anything atomic).
  */
 
+import { UpstashSpentStore } from 'payless';
+
 export interface SpentRecord {
   txHash: string;
   endpoint: string;
@@ -70,24 +72,88 @@ class MemorySpentStore implements SpentStore {
   }
 }
 
-let store: SpentStore = new MemorySpentStore();
+/**
+ * The ledger lives on globalThis, not in module scope.
+ *
+ * Next.js compiles instrumentation.ts into its own bundle, so a module-level
+ * singleton exists twice: once where startup installs it and once where request
+ * handlers read it. Installing the shared store then had no effect on real
+ * traffic while still logging success — the worst kind of failure, because it
+ * looked fixed.
+ *
+ * A global key is shared across bundles in the same process, so both halves see
+ * the same object.
+ */
+interface LedgerGlobal {
+  store: SpentStore;
+  shared: boolean;
+}
 
-/** Swap in a shared store. Call once at startup, before serving traffic. */
-export function setSpentStore(next: SpentStore) {
-  store = next;
+const KEY = Symbol.for('payless.spentLedger');
+const g = globalThis as unknown as Record<symbol, LedgerGlobal | undefined>;
+
+/**
+ * Build the ledger from the environment, in whichever process is asking.
+ *
+ * Installing it from instrumentation.ts does not work: `next start` forks a
+ * worker for requests, so startup ran in pid A while every request ran in pid
+ * B. Neither module scope nor globalThis crosses that boundary — and the log
+ * still said "installed", which made it look solved when it was not.
+ *
+ * Building lazily on first use puts the shared store in the process that
+ * actually needs it, with no startup hook required.
+ */
+function build(): LedgerGlobal {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+
+  if (url && token) {
+    try {
+      return { store: new UpstashSpentStore({ url, token }) as unknown as SpentStore, shared: true };
+    } catch (error) {
+      console.error('[payless] Upstash store could not be created:', error);
+    }
+  }
+  return { store: new MemorySpentStore(), shared: false };
+}
+
+function ledger(): LedgerGlobal {
+  if (!g[KEY]) g[KEY] = build();
+  return g[KEY]!;
+}
+
+/** Swap in a shared store explicitly. Overrides whatever the environment gave. */
+export function setSpentStore(next: SpentStore, isShared = true) {
+  g[KEY] = { store: next, shared: isShared };
+}
+
+/** True when replay protection survives a scale-out. */
+export function isSpentStoreShared() {
+  return ledger().shared;
 }
 
 export function getSpentStore(): SpentStore {
-  return store;
+  return ledger().store;
 }
 
 /** True when the hash was already used; the payment must be rejected. */
 export async function claimSettlement(
   txHash: string,
   record: Omit<SpentRecord, 'txHash'>
-): Promise<{ ok: boolean; previous?: SpentRecord }> {
-  const previous = await store.claim(txHash, record);
-  return previous ? { ok: false, previous } : { ok: true };
+): Promise<{ ok: boolean; previous?: SpentRecord; error?: string }> {
+  try {
+    const previous = await getSpentStore().claim(txHash, record);
+    return previous ? { ok: false, previous } : { ok: true };
+  } catch (error) {
+    // Fail closed. If the ledger is unreachable we cannot tell a first use from
+    // a replay, and serving anyway would hand out free responses to whoever
+    // noticed. Refusing is the smaller harm.
+    console.error('[payless] Spent ledger unavailable:', error);
+    return {
+      ok: false,
+      error: 'Payment ledger is temporarily unavailable, so this payment cannot be checked for reuse. Nothing was consumed — retry shortly.',
+    };
+  }
 }
 
 /** Exposed for tests. */

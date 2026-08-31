@@ -373,8 +373,10 @@ export function withX402Payment(
           spentAt: Date.now(),
         });
         if (!claim.ok) {
-          responseStatus = 402;
-          errorMessage = `Payment ${verification.settlement.txHash} was already spent on ${claim.previous?.endpoint}`;
+          responseStatus = claim.error ? 503 : 402;
+          errorMessage = claim.error
+            ? claim.error
+            : `Payment ${verification.settlement.txHash} was already spent on ${claim.previous?.endpoint}`;
           console.log('[x402] Replay rejected:', errorMessage);
 
           trackApiRequest({
@@ -391,7 +393,10 @@ export function withX402Payment(
             error: errorMessage,
           });
 
-          return NextResponse.json({ error: errorMessage }, { status: 402 });
+          return NextResponse.json(
+            { error: errorMessage, ...(claim.error ? { retry: true } : {}) },
+            { status: responseStatus }
+          );
         }
       }
 

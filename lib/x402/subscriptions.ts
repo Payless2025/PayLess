@@ -165,13 +165,18 @@ class MemorySubscriptionStore implements SubscriptionStore {
   }
 }
 
-let store: SubscriptionStore = new MemorySubscriptionStore();
+// Same cross-bundle problem as the spent ledger — see spent-store.ts.
+const SUB_KEY = Symbol.for('payless.subscriptionStore');
+const sg = globalThis as unknown as Record<symbol, SubscriptionStore | undefined>;
 
 export function setSubscriptionStore(next: SubscriptionStore) {
-  store = next;
+  sg[SUB_KEY] = next;
 }
-export function getSubscriptionStore() {
-  return store;
+export function getSubscriptionStore(): SubscriptionStore {
+  // Built lazily in the requesting process — see spent-store.ts for why a
+  // startup hook cannot install this.
+  if (!sg[SUB_KEY]) sg[SUB_KEY] = new MemorySubscriptionStore();
+  return sg[SUB_KEY]!;
 }
 
 export { MemorySubscriptionStore };
