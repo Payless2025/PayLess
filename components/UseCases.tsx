@@ -1,13 +1,15 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
-// Every endpoint listed here is priced and does real work — live chain reads,
-// a real third-party feed, or output generated on the spot. Prices come from
-// ENDPOINT_PRICING in lib/x402/config.ts.
+// Every endpoint here is priced and does real work. The /api/rwa/* family
+// reads the tokenised equities Robinhood Chain was built to carry.
 const endpoints = [
-  { path: '/api/chain/token', price: '0.01', blurb: 'ERC-20 metadata, read live from chain 4663' },
-  { path: '/api/chain/balance', price: '0.01', blurb: 'ETH and token balances for any address' },
+  { path: '/api/rwa/tokens', price: '0.02', blurb: 'Every Robinhood stock token, supply read live' },
+  { path: '/api/rwa/token', price: '0.01', blurb: 'One tokenised equity, by ticker' },
+  { path: '/api/rwa/holdings', price: '0.02', blurb: 'An address\u2019s tokenised equity position' },
   { path: '/api/chain/receipt', price: '0.02', blurb: 'Did this transaction actually pay me?' },
+  { path: '/api/chain/balance', price: '0.01', blurb: 'ETH and token balances for any address' },
+  { path: '/api/chain/token', price: '0.01', blurb: 'ERC-20 metadata, read live from chain 4663' },
   { path: '/api/data/crypto', price: '0.015', blurb: 'Spot prices, no API key on your side' },
   { path: '/api/tools/qrcode', price: '0.005', blurb: 'Half a cent a QR code' },
 ];
@@ -18,12 +20,12 @@ export default function UseCases() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-text mb-4">
-Five priced endpoints, and they all do real work
+Selling data about the assets the chain carries
           </h2>
           <p className="text-lg text-text-muted">
-            Nothing here returns placeholder data. Three read Robinhood Chain directly,
-            so there is no upstream key to hold and nothing to take on trust — check any
-            answer against the explorer. Prices are the second argument to the wrapper.
+            Reading a tokenised equity on Robinhood Chain is permissionless. Moving one is
+            not. So these endpoints sell data about them and settle in USDG — no securities
+            held, no upstream key, and every answer checkable against the explorer.
           </p>
         </div>
 

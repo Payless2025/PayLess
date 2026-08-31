@@ -50,6 +50,14 @@ export const ENDPOINT_PRICING: EndpointConfig = {
   '/api/chain/balance': '0.01',
   '/api/chain/receipt': '0.02',
 
+  // Tokenised equities on Robinhood Chain — the assets the chain was built to
+  // carry. Reading them is permissionless; transferring them is not, which is
+  // why they are the product and not a payment option.
+  '/api/rwa/tokens': '0.02',
+  '/api/rwa/token': '0.01',
+  '/api/rwa/holdings': '0.02',
+  '/api/data/stock': '0.01',
+
   // Real third-party data, no key required
   '/api/data/crypto': '0.015',
 
@@ -67,7 +75,6 @@ export const DEMO_ENDPOINTS = [
   '/api/ai/translate',
   '/api/ai/tts',
   '/api/data/weather',
-  '/api/data/stock',
   '/api/data/news',
   '/api/premium/content',
 ];
