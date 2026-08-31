@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ENDPOINT_PRICING, PAYMENT_CONFIG } from '@/lib/x402/config';
 import { ROBINHOOD_CONFIG } from '@/lib/chains/config';
+import { getSpentStore } from '@/lib/x402/spent-store';
 
 export async function GET(req: NextRequest) {
   return NextResponse.json({
@@ -30,6 +31,13 @@ export async function GET(req: NextRequest) {
       price: `$${price} ${PAYMENT_CONFIG.currency}`,
       method: 'GET/POST',
     })),
+    // Operational truth, not a secret: whether replay protection survives a
+    // scale-out. Per-instance means one payment can be spent once per warm
+    // instance, so this needs to be visible without reading deploy logs.
+    integrity: {
+      replayProtection:
+        getSpentStore().constructor.name === 'MemorySpentStore' ? 'per-instance' : 'shared',
+    },
     documentation: 'https://github.com/Payless2025/PayLess/tree/master/docs',
   });
 }
