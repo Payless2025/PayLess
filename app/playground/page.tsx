@@ -7,7 +7,7 @@ import {
   Code2, FileJson, Terminal, Share2, Download,
   Sparkles, Database, Wrench, Crown
 } from 'lucide-react';
-import { useAccount, useNetwork, useWalletClient, usePublicClient } from 'wagmi';
+import { useAccount, useNetwork, useSwitchNetwork, useWalletClient, usePublicClient } from 'wagmi';
 import { parseUnits } from 'viem';
 import { WalletConnectButton } from '@/components/WalletConnectButton';
 import { USDG_ADDRESS, ROBINHOOD_CHAIN_ID } from '@/lib/chains/config';
@@ -153,6 +153,7 @@ const categoryIcons = {
 export default function Playground() {
   const { address, isConnected: connected } = useAccount();
   const { chain } = useNetwork();
+  const { switchNetworkAsync, isLoading: switching } = useSwitchNetwork();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
   const onRightChain = chain?.id === EXPECTED_CHAIN;
@@ -611,10 +612,46 @@ function MyComponent() {
                   </div>
                 )}
 
+                {/* Say the blocker out loud. A tooltip is not feedback. */}
+                {connected && !onRightChain && (
+                  <div className="rounded border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+                    Your wallet is on another network. Payment needs Robinhood Chain
+                    (id <span className="font-mono">{EXPECTED_CHAIN}</span>) — the button
+                    below will switch it.
+                  </div>
+                )}
+                {!connected && (
+                  <div className="rounded border border-line bg-surface px-4 py-3 text-sm text-text-muted">
+                    No wallet connected. You can still send the request and read the 402
+                    challenge; paying it needs a wallet with USDG on Robinhood Chain.
+                  </div>
+                )}
+
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
-                    onClick={() => makeRequest(true)}
-                    disabled={loading || !connected || !onRightChain}
+                    onClick={async () => {
+                      // A disabled button is a dead end: it gives no reason and
+                      // nothing happens on click. Stay clickable and do the next
+                      // useful thing instead.
+                      if (!connected) {
+                        setError('Connect a wallet first — the button in the top right.');
+                        setActiveTab('response');
+                        return;
+                      }
+                      if (!onRightChain) {
+                        try {
+                          await switchNetworkAsync?.(EXPECTED_CHAIN);
+                        } catch {
+                          setError(
+                            `Could not switch networks. Add Robinhood Chain (id ${EXPECTED_CHAIN}, rpc.mainnet.chain.robinhood.com) to your wallet and try again.`
+                          );
+                          setActiveTab('response');
+                        }
+                        return;
+                      }
+                      makeRequest(true);
+                    }}
+                    disabled={loading || switching}
                     variant="primary"
                     title={
                       !connected
@@ -629,7 +666,13 @@ function MyComponent() {
                     ) : (
                       <Play className="h-4 w-4" />
                     )}
-                    {payStep === 'challenge'
+                    {switching
+                      ? 'Switching network…'
+                      : !connected
+                      ? 'Connect a wallet to pay'
+                      : !onRightChain
+                      ? `Switch to Robinhood Chain`
+                      : payStep === 'challenge'
                       ? 'Reading 402…'
                       : payStep === 'transfer'
                       ? 'Confirm in wallet…'
