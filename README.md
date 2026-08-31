@@ -9,7 +9,7 @@ The simplest way to monetize your APIs using the x402 protocol on Robinhood Chai
 [![Robinhood Chain](https://img.shields.io/badge/Blockchain-Robinhood%20Chain-00C805)](https://docs.robinhood.com/chain/)
 [![x402](https://img.shields.io/badge/Protocol-x402-orange)](https://x402.org)
 
-**$PAYLESS Contract Address (Robinhood Chain):** `0xB8A30979F583a8c5340dC1B58203De7569AAe806`
+**$PAYLESS Contract Address (Robinhood Chain):** `0x18644D2828C9FD107e8fAEB1F2f978957eA5BD74`
 
 ---
 

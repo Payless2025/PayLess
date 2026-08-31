@@ -2,7 +2,7 @@
 
 Welcome to Payless - the simplest way to monetize your APIs with crypto payments.
 
-**$PAYLESS Contract Address (Robinhood Chain):** `0xB8A30979F583a8c5340dC1B58203De7569AAe806`
+**$PAYLESS Contract Address (Robinhood Chain):** `0x18644D2828C9FD107e8fAEB1F2f978957eA5BD74`
 
 ## What is Payless?
 
