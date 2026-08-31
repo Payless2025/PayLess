@@ -197,38 +197,9 @@ if (!response.success) {
 
 ## Roadmap
 
-### Upcoming Features
-
-#### Q1 2025
-- [ ] Polygon network support
-- [ ] Layer 2 solutions (Arbitrum, Optimism)
-- [ ] Payment streaming
-- [ ] Subscription management
-- [ ] Advanced analytics dashboard
-
-#### Q2 2025
-- [ ] Mobile SDKs (React Native, Flutter)
-- [ ] WordPress plugin
-- [ ] Shopify integration
-- [ ] Payment splits
-- [ ] Multi-recipient payments
-
-#### Q3 2025
-- [ ] NFT-gated content
-- [ ] Token-gated APIs
-- [ ] Staking rewards
-- [ ] Governance features
-- [ ] DAO integration
-
-#### Q4 2025
-- [ ] Cross-chain swaps
-- [ ] Fiat on-ramps
-- [ ] Payment links
-- [ ] Invoice generation
-- [ ] Recurring payments
-
-### Community Requests
-See our [GitHub Issues](https://github.com/Payless2025/PayLess/issues) for community-requested features.
+This file records what has already shipped. Planned and in-progress work lives
+on the [roadmap](https://payless.network/roadmap), and community requests are in
+[GitHub Issues](https://github.com/Payless2025/PayLess/issues).
 
 ## Contributing
 
@@ -239,14 +210,11 @@ We welcome contributions! If you'd like to contribute to Payless:
 3. Make your changes
 4. Submit a pull request
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for more details.
-
 ## Support
 
 - **Documentation**: https://github.com/Payless2025/PayLess/tree/master/docs
 - **GitHub**: https://github.com/Payless2025/PayLess
-- **Discord**: [Join our community]
-- **X/Twitter**: [@PaylessNetwork]
+- **X**: [@paylessnetwork](https://x.com/paylessnetwork)
 
 ---
 
