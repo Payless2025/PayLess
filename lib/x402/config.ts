@@ -36,21 +36,45 @@ export const PAYMENT_CONFIG = {
   tokenDecimals: DEFAULT_PAYMENT_TOKEN.decimals,
 };
 
+/**
+ * Only endpoints that do real work are priced.
+ *
+ * Settlement is enforced, so a priced endpoint takes real USDG. Charging for a
+ * `Math.random()` response would be taking money for nothing — so anything that
+ * currently returns placeholder data is free until it is wired to a real
+ * source, and says so in its response.
+ */
 export const ENDPOINT_PRICING: EndpointConfig = {
-  '/api/ai/chat': '0.05',
-  '/api/ai/image': '0.10',
-  '/api/ai/translate': '0.03',
-  '/api/ai/tts': '0.08',
-  '/api/data/weather': '0.01',
-  '/api/data/stock': '0.02',
+  // Live reads from Robinhood Chain — no third-party key, nothing simulated
+  '/api/chain/token': '0.01',
+  '/api/chain/balance': '0.01',
+  '/api/chain/receipt': '0.02',
+
+  // Real third-party data, no key required
   '/api/data/crypto': '0.015',
-  '/api/data/news': '0.025',
+
+  // Generated locally, genuinely real output
   '/api/tools/qrcode': '0.005',
-  '/api/premium/content': '1.00',
 };
+
+/**
+ * Free while they return placeholder data. Wire the upstream source (and its
+ * API key where one is needed), then move the entry into ENDPOINT_PRICING.
+ */
+export const DEMO_ENDPOINTS = [
+  '/api/ai/chat',
+  '/api/ai/image',
+  '/api/ai/translate',
+  '/api/ai/tts',
+  '/api/data/weather',
+  '/api/data/stock',
+  '/api/data/news',
+  '/api/premium/content',
+];
 
 export const FREE_ENDPOINTS = [
   '/api/health',
   '/api/info',
   '/api/analytics',
+  ...DEMO_ENDPOINTS,
 ];

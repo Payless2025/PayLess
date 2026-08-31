@@ -1,15 +1,15 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
-// These are the endpoints actually wired up in this repo — prices come from
-// ENDPOINT_PRICING in lib/x402/config.ts. Every one is callable in the playground.
+// Every endpoint listed here is priced and does real work — live chain reads,
+// a real third-party feed, or output generated on the spot. Prices come from
+// ENDPOINT_PRICING in lib/x402/config.ts.
 const endpoints = [
-  { path: '/api/ai/chat', price: '0.05', blurb: 'Proxy a model, charge per completion' },
-  { path: '/api/ai/image', price: '0.10', blurb: 'Pay-per-image generation' },
-  { path: '/api/ai/translate', price: '0.03', blurb: 'Per-call translation' },
-  { path: '/api/data/stock', price: '0.02', blurb: 'Quotes, priced per query' },
+  { path: '/api/chain/token', price: '0.01', blurb: 'ERC-20 metadata, read live from chain 4663' },
+  { path: '/api/chain/balance', price: '0.01', blurb: 'ETH and token balances for any address' },
+  { path: '/api/chain/receipt', price: '0.02', blurb: 'Did this transaction actually pay me?' },
+  { path: '/api/data/crypto', price: '0.015', blurb: 'Spot prices, no API key on your side' },
   { path: '/api/tools/qrcode', price: '0.005', blurb: 'Half a cent a QR code' },
-  { path: '/api/premium/content', price: '1.00', blurb: 'One article, one payment' },
 ];
 
 export default function UseCases() {
@@ -18,11 +18,12 @@ export default function UseCases() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-text mb-4">
-            Six priced endpoints, already running
+Five priced endpoints, and they all do real work
           </h2>
           <p className="text-lg text-text-muted">
-            Not a roadmap — these are live in this repo and callable from the playground.
-            Prices are whatever you pass as the second argument.
+            Nothing here returns placeholder data. Three read Robinhood Chain directly,
+            so there is no upstream key to hold and nothing to take on trust — check any
+            answer against the explorer. Prices are the second argument to the wrapper.
           </p>
         </div>
 
