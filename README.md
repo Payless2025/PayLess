@@ -39,6 +39,22 @@ Perfect for:
 - **🔔 Webhook Support** - Real-time payment notifications
 - **🔐 Token-Gated Content** - Holder-only API access for $PAYLESS holders
 
+## 📦 Use it in your own project
+
+```bash
+npm i payless viem
+```
+
+```ts
+import { createPayless } from 'payless';
+
+const payless = createPayless({ recipient: '0xYourAddress' });
+export const GET = payless.protect(handler, '0.01');
+```
+
+That is the whole integration. [Package docs](https://www.npmjs.com/package/payless) ·
+[source](./packages/payless)
+
 ## 🚀 Quick Start
 
 ### Prerequisites

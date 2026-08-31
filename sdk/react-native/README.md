@@ -1,5 +1,16 @@
 # Payless React Native SDK
 
+> **Superseded.** This SDK was written for the Solana build of Payless and still
+> describes that chain. Payless now settles on Robinhood Chain — use the
+> published package instead:
+>
+> ```bash
+> npm i payless viem
+> ```
+>
+> Docs: https://www.npmjs.com/package/payless
+
+
 Official React Native SDK for Payless - Accept crypto payments in your mobile apps with the x402 protocol.
 
 [![npm version](https://badge.fury.io/js/@payless%2Freact-native.svg)](https://www.npmjs.com/package/@payless/react-native)

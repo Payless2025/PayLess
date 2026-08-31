@@ -37,3 +37,8 @@ next-env.d.ts
 
 # local agent/editor config (contains local paths)
 .claude/
+
+# npm auth
+.npmrc
+packages/**/node_modules
+packages/**/dist

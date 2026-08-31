@@ -57,9 +57,12 @@ const shipped: Group[] = [
         title: 'Playground',
         note: 'Fire real 402s at live endpoints and copy the generated client code.',
       },
-      { title: 'SDKs for Node.js, Python and React Native' },
       {
-        title: 'Five paid endpoints that return real output',
+        title: 'Published SDK on npm',
+        note: 'npm i payless — one wrapper prices any fetch-style route handler, with settlement verification and replay protection built in.',
+      },
+      {
+        title: 'Nine paid endpoints that return real output',
         note: 'Live reads from Robinhood Chain — token metadata, balances and receipts — plus market data and QR generation. Anything that would return placeholder data is free and labelled demo until a real provider sits behind it.',
       },
     ],
