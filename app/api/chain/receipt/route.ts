@@ -100,4 +100,11 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = withX402Payment(handler);
+export const GET = withX402Payment(handler, undefined, {
+  validate: (req) => {
+    const h = new URL(req.url).searchParams.get('hash');
+    if (!h) return 'Missing "hash" parameter — nothing was charged.';
+    if (!/^0x[0-9a-fA-F]{64}$/.test(h)) return '"hash" is not a valid transaction hash — nothing was charged.';
+    return null;
+  },
+});

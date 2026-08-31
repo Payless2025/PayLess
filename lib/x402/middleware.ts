@@ -164,9 +164,22 @@ export function create402Response(amount: string, pathname?: string): NextRespon
 /**
  * x402 Middleware wrapper for API routes
  */
+export interface X402Options {
+  /**
+   * Runs before any payment is required. Return a message to reject the request
+   * with 400 and charge nothing.
+   *
+   * Without this the order is wrong: the caller pays, then the handler discovers
+   * a missing parameter and returns 400 — money taken for a request that was
+   * never going to succeed.
+   */
+  validate?: (req: NextRequest) => string | null | undefined;
+}
+
 export function withX402Payment(
   handler: (req: NextRequest) => Promise<NextResponse>,
-  price?: string
+  price?: string,
+  options: X402Options = {}
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
     const startTime = Date.now();
@@ -224,6 +237,25 @@ export function withX402Payment(
       }
 
       paymentAmount = endpointPrice;
+
+      // Reject a malformed request before asking for money. Charging first and
+      // failing second would mean taking payment for an impossible request.
+      const invalid = options.validate?.(req);
+      if (invalid) {
+        responseStatus = 400;
+        trackApiRequest({
+          endpoint: pathname,
+          method,
+          status: responseStatus,
+          paymentRequired: true,
+          paymentProvided: false,
+          paymentValid: false,
+          responseTime: Date.now() - startTime,
+          userAgent,
+          error: invalid,
+        });
+        return NextResponse.json({ error: invalid, charged: false }, { status: 400 });
+      }
 
       // A standing subscription is checked first: a caller who already committed
       // should not be asked to pay again per request.
