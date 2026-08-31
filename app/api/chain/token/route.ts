@@ -35,4 +35,9 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = withX402Payment(handler);
+export const GET = withX402Payment(handler, undefined, {
+  validate: (req) =>
+    new URL(req.url).searchParams.get('token')
+      ? null
+      : 'Missing "token" parameter — nothing was charged.',
+});

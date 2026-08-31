@@ -57,4 +57,9 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = withX402Payment(handler);
+export const GET = withX402Payment(handler, undefined, {
+  validate: (req) => {
+    const sym = new URL(req.url).searchParams.get('symbol') || 'NVDA';
+    return findStockToken(sym) ? null : `No Robinhood stock token for "${sym}" — nothing was charged.`;
+  },
+});

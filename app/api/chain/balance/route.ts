@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withX402Payment } from '@/lib/x402/middleware';
 import { readBalances, requireAddress, resolveToken, KNOWN_TOKENS, BadRequest } from '@/lib/chains/reader';
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_EXPLORER_URL } from '@/lib/chains/config';
-import { getAddress } from 'viem';
+import { getAddress, isAddress } from 'viem';
 
 /**
  * ETH plus token balances for an address on Robinhood Chain.
@@ -40,4 +40,11 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = withX402Payment(handler);
+export const GET = withX402Payment(handler, undefined, {
+  validate: (req) => {
+    const a = new URL(req.url).searchParams.get('address');
+    if (!a) return 'Missing "address" parameter — nothing was charged.';
+    if (!isAddress(a)) return '"address" is not a valid address — nothing was charged.';
+    return null;
+  },
+});

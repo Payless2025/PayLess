@@ -49,4 +49,12 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = withX402Payment(handler);
+export const GET = withX402Payment(handler, undefined, {
+  validate: (req) => {
+    const q = new URL(req.url).searchParams;
+    const v = q.get('symbol') || q.get('token');
+    if (!v) return 'Missing "symbol" parameter — nothing was charged.';
+    if (!findStockToken(v)) return `Unknown stock token "${v}" — nothing was charged.`;
+    return null;
+  },
+});

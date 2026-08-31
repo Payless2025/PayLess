@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAddress } from 'viem';
 import { withX402Payment } from '@/lib/x402/middleware';
 import { STOCK_TOKENS, findStockToken, readStockHoldings } from '@/lib/chains/rwa';
 import { requireAddress, BadRequest } from '@/lib/chains/reader';
@@ -50,4 +51,11 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = withX402Payment(handler);
+export const GET = withX402Payment(handler, undefined, {
+  validate: (req) => {
+    const a = new URL(req.url).searchParams.get('address');
+    if (!a) return 'Missing "address" parameter — nothing was charged.';
+    if (!isAddress(a)) return '"address" is not a valid address — nothing was charged.';
+    return null;
+  },
+});

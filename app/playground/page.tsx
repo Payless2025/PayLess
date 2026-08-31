@@ -28,7 +28,7 @@ const ERC20_TRANSFER_ABI = [
 const EXPECTED_CHAIN = Number(ROBINHOOD_CHAIN_ID);
 
 type PayStep = null | 'challenge' | 'transfer' | 'confirm' | 'call';
-import { Page, Panel, Button } from '@/components/ui';
+import { Page, Panel, Button, Input } from '@/components/ui';
 
 interface ApiEndpoint {
   path: string;
@@ -38,7 +38,7 @@ interface ApiEndpoint {
   category: 'Chain' | 'RWA' | 'Data' | 'Tools' | 'Free';
   /** Free endpoints still return placeholder data — they are not billable. */
   free?: boolean;
-  params?: { name: string; type: string; description: string }[];
+  params?: { name: string; type: string; description: string; default?: string; required?: boolean }[];
   bodyExample?: any;
 }
 
@@ -52,7 +52,7 @@ const endpoints: ApiEndpoint[] = [
     price: '$0.01',
     description: 'One tokenised equity on Robinhood Chain, read live from the contract',
     category: 'RWA',
-    params: [{ name: 'symbol', type: 'string', description: 'TSLA, AAPL, NVDA, AMZN, MSFT, GOOGL, META, MSTR, SPY, QCOM' }],
+    params: [{ name: 'symbol', type: 'string', description: 'TSLA, AAPL, NVDA, AMZN, MSFT, GOOGL, META, MSTR, SPY, QCOM', default: 'NVDA', required: true }],
   },
   {
     path: '/api/rwa/tokens',
@@ -67,7 +67,7 @@ const endpoints: ApiEndpoint[] = [
     price: '$0.02',
     description: 'An address\u2019s tokenised equity position',
     category: 'RWA',
-    params: [{ name: 'address', type: 'string', description: 'The 0x address to inspect' }],
+    params: [{ name: 'address', type: 'string', description: 'The 0x address to inspect', default: '0xa35D2389f722EA6e9c161eCeCf65d322a7120b3a', required: true }],
   },
   {
     path: '/api/chain/receipt',
@@ -76,9 +76,9 @@ const endpoints: ApiEndpoint[] = [
     description: 'Did this transaction actually pay me? The check Payless runs on itself',
     category: 'Chain',
     params: [
-      { name: 'hash', type: 'string', description: 'Transaction hash to inspect' },
-      { name: 'to', type: 'string', description: 'Expected recipient (optional)' },
-      { name: 'amount', type: 'string', description: 'Expected amount (optional)' },
+      { name: 'hash', type: 'string', description: 'Transaction hash to inspect', default: '0x13c87e82ba36696f02e1f7a05d1915d04949ac2079bd66e21197b784779cf5c4', required: true },
+      { name: 'to', type: 'string', description: 'Expected recipient (optional)', default: '0x8484eC9D984B16644a19C4E8E4e9ca7AbF2b226b' },
+      { name: 'amount', type: 'string', description: 'Expected amount (optional)', default: '1' },
     ],
   },
   {
@@ -87,7 +87,7 @@ const endpoints: ApiEndpoint[] = [
     price: '$0.01',
     description: 'ETH and token balances for any address on chain 4663',
     category: 'Chain',
-    params: [{ name: 'address', type: 'string', description: 'The 0x address to read' }],
+    params: [{ name: 'address', type: 'string', description: 'The 0x address to read', default: '0x426f8846B5011d5aCf659FE5bFBC5fdA6123f759', required: true }],
   },
   {
     path: '/api/chain/token',
@@ -95,7 +95,7 @@ const endpoints: ApiEndpoint[] = [
     price: '$0.01',
     description: 'ERC-20 metadata read live from Robinhood Chain',
     category: 'Chain',
-    params: [{ name: 'token', type: 'string', description: 'Symbol (USDG, WETH, PAYLESS) or contract address' }],
+    params: [{ name: 'token', type: 'string', description: 'Symbol (USDG, WETH, PAYLESS) or contract address', default: 'USDG', required: true }],
   },
   {
     path: '/api/data/crypto',
@@ -103,7 +103,7 @@ const endpoints: ApiEndpoint[] = [
     price: '$0.015',
     description: 'Spot prices, no API key on your side',
     category: 'Data',
-    params: [{ name: 'symbol', type: 'string', description: 'BTC, ETH, USDG…' }],
+    params: [{ name: 'symbol', type: 'string', description: 'BTC, ETH, USDG…', default: 'ETH' }],
   },
   {
     path: '/api/data/stock',
@@ -111,7 +111,7 @@ const endpoints: ApiEndpoint[] = [
     price: '$0.01',
     description: 'On-chain state of a Robinhood stock token (supply, not a market quote)',
     category: 'Data',
-    params: [{ name: 'symbol', type: 'string', description: 'TSLA, NVDA, AAPL…' }],
+    params: [{ name: 'symbol', type: 'string', description: 'TSLA, NVDA, AAPL…', default: 'TSLA' }],
   },
   {
     path: '/api/tools/qrcode',
@@ -140,7 +140,7 @@ const endpoints: ApiEndpoint[] = [
     free: true,
     description: 'Placeholder until OPENWEATHER_API_KEY is set',
     category: 'Free',
-    params: [{ name: 'city', type: 'string', description: 'City name' }],
+    params: [{ name: 'city', type: 'string', description: 'City name', default: 'Istanbul' }],
   },
 ];
 
@@ -223,6 +223,13 @@ export default function Playground() {
   const [recipientAddress, setRecipientAddress] = useState('');
   const [tokenAddress, setTokenAddress] = useState(USDG_ADDRESS);
   const [tokenDecimals, setTokenDecimals] = useState(6);
+  const [paramValues, setParamValues] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setParamValues(
+      Object.fromEntries((endpoints[0].params || []).map((p) => [p.name, p.default ?? '']))
+    );
+  }, []);
 
   useEffect(() => {
     fetch('/api/info')
@@ -240,8 +247,12 @@ export default function Playground() {
 
   const filteredEndpoints = endpoints.filter(e => e.category === selectedCategory);
 
+  const seedParams = (endpoint: ApiEndpoint) =>
+    Object.fromEntries((endpoint.params || []).map((p) => [p.name, p.default ?? '']));
+
   const handleEndpointChange = (endpoint: ApiEndpoint) => {
     setSelectedEndpoint(endpoint);
+    setParamValues(seedParams(endpoint));
     setRequestBody(JSON.stringify(endpoint.bodyExample || {}, null, 2));
     setResponse(null);
     setError(null);
@@ -266,7 +277,13 @@ export default function Playground() {
     setPaymentRequired(false);
     setTxHash(null);
 
-    const url = selectedEndpoint.path;
+    // Parameters are part of the request, not decoration. Without this the
+    // playground called /api/rwa/token with no symbol — and you would have paid
+    // before finding out.
+    const query = new URLSearchParams(
+      Object.entries(paramValues).filter(([, v]) => v.trim() !== '')
+    ).toString();
+    const url = selectedEndpoint.path + (query ? `?${query}` : '');
     const baseOptions: RequestInit = {
       method: selectedEndpoint.method,
       headers: { 'Content-Type': 'application/json' },
@@ -610,7 +627,15 @@ function MyComponent() {
               <span className="rounded border border-line-strong px-1.5 py-0.5 font-mono text-[11px] uppercase text-text-muted">
                 {selectedEndpoint.method}
               </span>
-              <h1 className="font-mono text-lg text-text">{selectedEndpoint.path}</h1>
+              <h1 className="font-mono text-lg text-text">
+                {selectedEndpoint.path}
+                {(() => {
+                  const q = new URLSearchParams(
+                    Object.entries(paramValues).filter(([, v]) => v.trim() !== '')
+                  ).toString();
+                  return q ? <span className="text-text-faint">?{q}</span> : null;
+                })()}
+              </h1>
               <span className="font-mono text-sm tnum text-accent">
                 {selectedEndpoint.price} USDG
               </span>
@@ -659,19 +684,27 @@ function MyComponent() {
                       {selectedEndpoint.params.map((param, i) => (
                         <div
                           key={param.name}
-                          className={`flex flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3 ${
-                            i > 0 ? 'border-t border-line' : ''
-                          }`}
+                          className={`px-4 py-3 ${i > 0 ? 'border-t border-line' : ''}`}
                         >
-                          <span className="min-w-[8rem] font-mono text-sm text-accent">
-                            {param.name}
-                          </span>
-                          <span className="font-mono text-xs text-text-faint">
-                            {param.type}
-                          </span>
-                          <span className="text-sm text-text-muted">
-                            {param.description}
-                          </span>
+                          <div className="flex flex-wrap items-baseline gap-x-3">
+                            <span className="font-mono text-sm text-accent">{param.name}</span>
+                            <span className="font-mono text-xs text-text-faint">{param.type}</span>
+                            {param.required && (
+                              <span className="font-mono text-[10px] uppercase tracking-wide text-warn">
+                                required
+                              </span>
+                            )}
+                            <span className="text-xs text-text-muted">{param.description}</span>
+                          </div>
+                          <Input
+                            value={paramValues[param.name] ?? ''}
+                            onChange={(e) =>
+                              setParamValues((prev) => ({ ...prev, [param.name]: e.target.value }))
+                            }
+                            placeholder={param.default || param.name}
+                            spellCheck={false}
+                            className="mt-2 font-mono text-sm"
+                          />
                         </div>
                       ))}
                     </div>
