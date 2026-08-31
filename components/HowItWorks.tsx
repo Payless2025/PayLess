@@ -20,16 +20,16 @@ const steps = [
   },
   {
     n: '03',
-    title: 'The caller signs',
-    body: 'The wallet signs the payment message with personal_sign. Nothing is broadcast yet — this is an authorization, not a transaction.',
+    title: 'The caller pays on chain',
+    body: 'A real USDG transfer on Robinhood Chain. The caller retries with its transaction hash — not a promise to pay, but a receipt.',
     code: `X-Payment: {"from":"0x…","amount":"0.01",
   "token":"USDG","chainId":"4663",
-  "signature":"0x…"}`,
+  "transactionHash":"0x13c8…"}`,
   },
   {
     n: '04',
-    title: 'Payless recovers the signer',
-    body: 'Address, amount, token, chain and a five-minute freshness window are all checked before your handler is ever called.',
+    title: 'Payless reads the receipt',
+    body: 'It confirms the transfer landed, paid the right address, cleared the price, and has not been spent before. Only then does your handler run.',
     code: `HTTP/1.1 200 OK
 x-payment-chain: robinhood
 
@@ -71,8 +71,10 @@ export default function HowItWorks() {
         </ol>
 
         <p className="border-t border-line pt-8 text-sm text-text-faint max-w-2xl">
-          The signature proves the caller authorized the amount. Verifying that the transfer
-          settled on-chain, and rejecting a reused nonce, are still on the roadmap — see{' '}
+          The transaction hash is also the replay key: one transfer buys exactly one
+          response. Reuse it and the request is rejected. What is still open is a shared
+          store for that ledger, so replay protection holds across serverless instances —
+          see{' '}
           <a
             href="https://github.com/Payless2025/PayLess/blob/master/docs/ROBINHOOD_CHAIN.md"
             className="text-accent hover:underline"

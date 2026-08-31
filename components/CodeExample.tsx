@@ -14,11 +14,17 @@ async function handler(req: NextRequest) {
 // Add payment requirement - that's it!
 export const POST = withX402Payment(handler, "0.01");`;
 
-const clientExample = `// Client makes request
+const clientExample = `// 1. Pay on Robinhood Chain
+const hash = await usdg.transfer(recipient, amount);
+
+// 2. Call again with the receipt
 const response = await fetch('/api/your-endpoint', {
   method: 'POST',
   headers: {
-    'X-Payment': signedPayment // Auto-handled by x402 SDK
+    'X-Payment': JSON.stringify({
+      transactionHash: hash,   // proof, not a promise
+      amount, token: 'USDG', chainId: '4663'
+    })
   },
   body: JSON.stringify({ data })
 });`;
