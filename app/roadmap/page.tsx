@@ -75,8 +75,8 @@ const inProgress: Item[] = [
     note: 'The commitment is an ERC-20 allowance rather than a card on file. The payer approves a spend limit, we may collect the plan amount once per period and never more than was approved, and cancelling is approve(0) from their own wallet — immediate, and not something we can block.',
   },
   {
-    title: 'Shared spent-transaction store',
-    note: 'Replay protection currently lives in a per-instance Map. That is correct on one long-lived server and wrong the moment a serverless deployment scales out, so it moves behind Redis or KV before anyone runs real volume.',
+    title: 'Shared replay and subscription stores',
+    note: 'Both ledgers now sit behind Upstash Redis, claimed with SET NX so the server decides the winner. Shipped in payless@0.2.0; the app installs them at boot and warns loudly when the credentials are absent.',
   },
   { title: 'Email receipts and payment alerts' },
   {

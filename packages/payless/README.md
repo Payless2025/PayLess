@@ -95,14 +95,31 @@ client-generated nonce to trust. One transfer buys one response.
 
 The default ledger is in-memory. **That is correct for one long-lived server and
 wrong on serverless**, where each instance keeps its own map — so a payment
-could be spent once per warm instance. Pass your own before taking real volume:
+could be spent once per warm instance.
+
+On serverless, use the shared store:
+
+```ts
+import { createPayless, upstashStoreFromEnv } from 'payless';
+
+const payless = createPayless({
+  recipient: '0x…',
+  store: upstashStoreFromEnv() ?? undefined, // reads UPSTASH_REDIS_REST_URL/TOKEN
+});
+```
+
+It talks to Upstash over plain HTTP — no dependency to install, and it works on
+edge runtimes where a TCP Redis client will not. Claims go through
+`SET key value NX`, so the server decides the winner and there is no
+read-then-write gap for two instances to race through.
+
+Any atomic backend works; the interface is two methods:
 
 ```ts
 createPayless({
   recipient: '0x…',
   store: {
-    // Must be atomic — Redis SET NX, or equivalent
-    async claim(hash, record) { /* return existing record, or null */ },
+    async claim(hash, record) { /* return the existing record, or null */ },
     async get(hash) { /* … */ },
   },
 });

@@ -1,13 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  env: {
-    WALLET_ADDRESS: process.env.WALLET_ADDRESS,
-    FACILITATOR_URL: process.env.FACILITATOR_URL,
-    NETWORK: process.env.NETWORK,
-    RPC_URL: process.env.RPC_URL,
-    USDC_MINT: process.env.USDC_MINT,
+
+  // Runs once per server start — installs the shared replay/subscription stores.
+  experimental: {
+    instrumentationHook: true,
   },
+
+  // Note: there is deliberately no `env` block. Inlining values at build time
+  // is what made a changed environment variable look like it had no effect —
+  // the build had already baked the old one in. Server code reads process.env
+  // at request time instead, and anything the browser needs is NEXT_PUBLIC_.
+
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -18,13 +22,11 @@ const nextConfig = {
         crypto: false,
       };
     }
-    
-    // Ignore node-specific modules
+
     config.externals.push('pino-pretty', 'encoding');
-    
+
     return config;
   },
-}
+};
 
-module.exports = nextConfig
-
+module.exports = nextConfig;

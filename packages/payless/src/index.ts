@@ -17,6 +17,12 @@ export { payFor, PaymentRefused, type PayRequest, type PayForOptions } from './c
 export { verifySettlement, DEFAULT_MAX_AGE_MS, type SettlementResult, type SettlementDetails } from './verify.js';
 export { MemorySpentStore, type SpentStore, type SpentRecord } from './store.js';
 export {
+  UpstashSpentStore,
+  createUpstashStore,
+  upstashStoreFromEnv,
+  type UpstashOptions,
+} from './stores/upstash.js';
+export {
   ROBINHOOD_CHAIN_ID,
   ROBINHOOD_RPC_URL,
   ROBINHOOD_EXPLORER_URL,
