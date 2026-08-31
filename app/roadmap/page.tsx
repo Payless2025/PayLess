@@ -1,434 +1,271 @@
-import { CheckCircle2, Circle, Clock, Zap } from 'lucide-react';
-
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { Page, PageHeader, Container } from '@/components/ui';
 
-export default function RoadmapPage() {
+interface Item {
+  title: string;
+  note?: string;
+}
+
+interface Group {
+  heading: string;
+  items: Item[];
+}
+
+const shipped: Group[] = [
+  {
+    heading: 'Payments',
+    items: [
+      {
+        title: 'x402 payment middleware',
+        note: 'One wrapper around a route handler sets its price and enforces it.',
+      },
+      {
+        title: 'USDG settlement on Robinhood Chain',
+        note: 'The receipt is the payment. Every request is paid for by a verified ERC-20 transfer, not by a signature.',
+      },
+      {
+        title: 'Replay protection and a freshness window',
+        note: 'A settled transaction buys exactly one response, and only within 30 minutes of being mined.',
+      },
+      {
+        title: 'Payment links',
+        note: 'Shareable URLs with a QR code, for taking a payment without writing any code.',
+      },
+      {
+        title: 'Payment streaming',
+        note: 'Per-second, per-minute and per-hour billing for metered services.',
+      },
+      {
+        title: 'Token-gated access',
+        note: 'Holder tiers resolved from an on-chain balanceOf. No allowlist to maintain.',
+      },
+    ],
+  },
+  {
+    heading: 'Platform',
+    items: [
+      {
+        title: 'Webhooks',
+        note: 'Signed deliveries with retry and backoff, plus a delivery log.',
+      },
+      {
+        title: 'Analytics and payment history',
+        note: 'Revenue, endpoint and status breakdowns, exportable as CSV or JSON.',
+      },
+      {
+        title: 'Playground',
+        note: 'Fire real 402s at live endpoints and copy the generated client code.',
+      },
+      { title: 'SDKs for Node.js, Python and React Native' },
+      {
+        title: 'Five paid endpoints that return real output',
+        note: 'Live reads from Robinhood Chain — token metadata, balances and receipts — plus market data and QR generation. Anything that would return placeholder data is free and labelled demo until a real provider sits behind it.',
+      },
+    ],
+  },
+];
+
+const inProgress: Item[] = [
+  {
+    title: 'Shared spent-transaction store',
+    note: 'Replay protection currently lives in a per-instance Map. That is correct on one long-lived server and wrong the moment a serverless deployment scales out, so it moves behind Redis or KV before anyone runs real volume.',
+  },
+  { title: 'Email receipts and payment alerts' },
+  {
+    title: 'Deeper merchant dashboard',
+    note: 'Per-endpoint revenue, repeat payers, and why failed payments failed.',
+  },
+];
+
+const planned: Group[] = [
+  {
+    heading: 'Payments',
+    items: [
+      {
+        title: 'Recurring payments',
+        note: 'x402 settles one request at a time. Subscriptions need a payer that can commit to the next one with no card on file.',
+      },
+      {
+        title: 'Payment splits',
+        note: 'One transfer, several recipients, settled together — so an API can pay its upstream out of the same payment that paid it.',
+      },
+      {
+        title: 'Escrow',
+        note: 'Funds held on chain and released on delivery, for the trades instant settlement does not suit.',
+      },
+      {
+        title: 'USD-denominated pricing',
+        note: 'Price in dollars, settle in USDG, conversion handled server-side.',
+      },
+      { title: 'Batch settlement' },
+    ],
+  },
+  {
+    heading: 'Platform',
+    items: [
+      {
+        title: 'Rate limiting and API keys per tier',
+        note: 'Paying for a response and hammering an endpoint are different problems. x402 only solves the first.',
+      },
+      {
+        title: 'Persistent storage for links, streams and webhooks',
+        note: 'The same in-memory caveat as above, applied to everything else that outlives a single request.',
+      },
+      {
+        title: 'Reference AI agent',
+        note: 'An agent that discovers a price, pays it and retries, end to end, as a runnable example.',
+      },
+      {
+        title: 'Real providers behind the demo endpoints',
+        note: 'The AI, weather, stock and news routes stay free while their output is simulated. Each one gets a price the day it is wired to a genuine upstream, and not before.',
+      },
+    ],
+  },
+  {
+    heading: 'Integrations',
+    items: [
+      { title: 'Flutter SDK' },
+      { title: 'WordPress and WooCommerce plugin' },
+      { title: 'Shopify app' },
+    ],
+  },
+];
+
+const notDoing: Item[] = [
+  {
+    title: 'Other chains',
+    note: 'Payless settled on Solana, BSC and Ethereum before this. Four chains meant four signature schemes and four token registries for a product that needs one dollar to work. Robinhood Chain has a native one.',
+  },
+  {
+    title: 'Custody',
+    note: 'Payments go from payer to merchant wallet. Payless never holds funds, so there is no balance to withdraw and nothing to freeze.',
+  },
+  {
+    title: 'Protocol fees',
+    note: 'There is no cut to take. If that ever changes it will be an announcement, not a quiet config edit.',
+  },
+  {
+    title: 'Accounts',
+    note: 'No email, no OAuth, no login standing between you and your revenue. A wallet address is the whole identity.',
+  },
+];
+
+function ItemList({ items, dot }: { items: Item[]; dot: string }) {
   return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-bg pt-20">
-        <div className="container mx-auto px-4 py-16 max-w-6xl">
-          {/* Header */}
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-text mb-4">
-              Payless Roadmap
-            </h1>
-            <p className="text-xl text-text-muted">
-              Building the future of internet-native payments for AI
-            </p>
+    <ul>
+      {items.map((item) => (
+        <li
+          key={item.title}
+          className="flex gap-3 border-b border-line py-3 last:border-0"
+        >
+          <span className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+          <div>
+            <div className="text-sm text-text">{item.title}</div>
+            {item.note && (
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-text-muted">
+                {item.note}
+              </p>
+            )}
           </div>
-
-        {/* Roadmap Timeline */}
-        <div className="space-y-12">
-          
-          {/* ✅ COMPLETED */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <CheckCircle2 className="w-8 h-8 text-ok" />
-              <h2 className="text-3xl font-bold text-text">Completed ✅</h2>
-            </div>
-            
-            <div className="space-y-6 ml-12">
-              {/* Core Platform */}
-              <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Core Platform Launch</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>x402 protocol implementation</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Robinhood Chain payment integration</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>USDG settlement on Robinhood Chain</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Interactive API playground</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Node.js & Python SDKs</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Built-in analytics system</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Major Technical Upgrade */}
-              <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Major Technical Upgrade</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Robinhood Chain support</strong> - Full mainnet integration with USDG</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Webhook system</strong> - Real-time payment notifications</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Enhanced SDKs</strong> - Better error handling & examples</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>x402 payment middleware</strong> - One-line API monetization</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Comprehensive documentation overhaul</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Payment Streaming & Mobile */}
-              <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Payment Streaming & Mobile SDK</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Payment Streaming</strong> - Continuous micropayments with real-time monitoring</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Stream Management API</strong> - Create, pause, resume, and cancel streams</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>React Native SDK</strong> - Full mobile support for iOS & Android</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Mobile Wallet Integration</strong> - Native EVM mobile wallet support</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>React Hooks & Components</strong> - Ready-to-use mobile UI components</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Payment Links & Analytics */}
-              <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Payment Links & Analytics</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Payment Links</strong> - Shareable crypto payment URLs (no code needed)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Analytics Dashboard</strong> - Real-time transaction metrics with export</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>QR Code Generation</strong> - Automatic QR codes for payment links</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>CSV/JSON Export</strong> - Data export functionality</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Auto-refresh analytics & filtering</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Visual Analytics */}
-              <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Visual Analytics & Charts</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Revenue Timeline</strong> - Area chart showing revenue trends over time</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Chain Distribution</strong> - Pie chart for transaction distribution by blockchain</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Status Analytics</strong> - Bar chart for transaction status breakdown</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Responsive Design</strong> - Mobile-friendly chart rendering</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Interactive tooltips & legends with Recharts</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Enhanced Playground */}
-              <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Enhanced API Playground</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Multi-SDK Code Generator</strong> - Generate code for cURL, Node.js, Python, React Native</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Categorized Endpoints</strong> - AI, Data, Tools, and Premium categories</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Tabbed Interface</strong> - Request, Response, and Code tabs</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Copy-to-Clipboard</strong> - One-click code copying</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Share playground state via URL</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Payment History */}
-              <div className="border-l-4 border-green-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-green-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Payment History</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Transaction Tracking</strong> - Complete history of all payments</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Advanced Search & Filters</strong> - Filter by date, chain, status, addresses</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>CSV/JSON Export</strong> - Export transaction data for accounting</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span><strong>Blockchain Receipts</strong> - Detailed transaction proof with explorer links</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-ok flex-shrink-0 mt-0.5" />
-                      <span>Real-time updates with 30-second auto-refresh</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 🔥 IN PROGRESS */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <Zap className="w-8 h-8 text-warn" />
-              <h2 className="text-3xl font-bold text-text">In Progress 🔥</h2>
-            </div>
-            
-            <div className="space-y-6 ml-12">
-              <div className="border-l-4 border-orange-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-orange-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">User Features</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span><strong>Email Notifications</strong> - Payment alerts and receipts</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span><strong>User Dashboard Enhancement</strong> - Advanced statistics and insights</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Clock className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5 animate-pulse" />
-                      <span>Custom receipt templates</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 🚀 PLANNED */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <Circle className="w-8 h-8 text-text-faint" />
-              <h2 className="text-3xl font-bold text-text">Planned</h2>
-            </div>
-            
-            <div className="space-y-6 ml-12">
-              
-              {/* Advanced Features */}
-              <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-blue-500 hover: transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Advanced Features</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Token-Gated Content</strong> - Holder-only API access</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Multi-Currency Pricing</strong> - USD-based pricing with auto-conversion</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Persistent webhook storage (optional)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Rate limiting & API key authentication</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Advanced webhook retry logic & management</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Ecosystem Expansion */}
-              <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-blue-500 transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Ecosystem Expansion</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Shared spent-transaction store</strong> - Replay protection that survives serverless scale-out</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>AI Agent Demo</strong> - Autonomous payment showcase</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Subscription management system</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Advanced analytics with charts & exports</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Enterprise & Integrations */}
-              <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-blue-500 transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Enterprise & Integrations</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Flutter SDK</strong> - Cross-platform mobile development support</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>WordPress Plugin</strong> - Easy website integration</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Shopify Integration</strong> - E-commerce support</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Payment splits & multi-recipient</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Automated invoice generation</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>WooCommerce plugin support</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Payment Enhancements */}
-              <div className="border-l-4 border-blue-500 pl-6">
-                <div className="bg-surface border border-line rounded p-6 hover:border-blue-500 transition-all">
-                  <h3 className="text-xl font-bold text-text mb-4">Payment Enhancements</h3>
-                  <ul className="space-y-2 text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Fiat On-Ramps</strong> - Credit card to crypto payments</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Recurring Payments</strong> - Automated subscription billing</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Escrow Payments</strong> - Secure payment holds</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span><strong>Payment Disputes</strong> - Resolution system</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Circle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Batch payment processing</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-        </div>
-
-        {/* Call to Action */}
-        <div className="mt-16 text-center">
-          <div className="rounded border border-accent/30 bg-accent-wash p-8">
-            <h3 className="text-2xl font-bold text-text mb-4">
-              Building the Future Together
-            </h3>
-            <p className="text-gray-200 mb-6">
-              Join us on this journey to revolutionize internet-native payments
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <a
-                href="/playground"
-                className="px-6 py-3 bg-surface text-accent rounded font-semibold hover:bg-surface-raised transition-all"
-              >
-                Try Playground
-              </a>
-              <a
-                href="https://github.com/Payless2025/PayLess"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3 bg-gray-800 text-text rounded font-semibold hover:bg-gray-700 transition-all border border-gray-600"
-              >
-                View on GitHub
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <Footer />
-    </>
+        </li>
+      ))}
+    </ul>
   );
 }
 
+function Section({
+  label,
+  summary,
+  children,
+}: {
+  label: string;
+  summary: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border-t border-line py-10 first:border-0 first:pt-0">
+      <div className="mb-6">
+        <h2 className="font-mono text-xs uppercase tracking-widest text-text-faint">
+          {label}
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-muted">
+          {summary}
+        </p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function GroupedList({ groups, dot }: { groups: Group[]; dot: string }) {
+  return (
+    <div className="space-y-8">
+      {groups.map((group) => (
+        <div key={group.heading}>
+          <h3 className="mb-1 text-sm font-medium text-text">{group.heading}</h3>
+          <ItemList items={group.items} dot={dot} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function RoadmapPage() {
+  return (
+    <Page>
+      <Header />
+      <div className="pt-14">
+        <PageHeader
+          title="Roadmap"
+          description="What Payless does today, what is being built next, and what it will not do. Dates are deliberately absent — things move here when they ship."
+        />
+      </div>
+
+      <Container>
+        <Section
+          label="Shipped"
+          summary="Live on Robinhood Chain now, settling in USDG. All of it is in the repository under an MIT licence."
+        >
+          <GroupedList groups={shipped} dot="bg-ok" />
+        </Section>
+
+        <Section
+          label="In progress"
+          summary="Being worked on now. The first one is a correctness gap we would rather state plainly than leave in a source comment."
+        >
+          <ItemList items={inProgress} dot="bg-warn" />
+        </Section>
+
+        <Section
+          label="Planned"
+          summary="Agreed on and specified, not yet started. Roughly in the order we expect to build them."
+        >
+          <GroupedList groups={planned} dot="bg-text-faint" />
+        </Section>
+
+        <Section
+          label="Not doing"
+          summary="Decisions already made, so nobody has to ask twice."
+        >
+          <ItemList items={notDoing} dot="bg-line-strong" />
+        </Section>
+
+        <p className="border-t border-line pt-6 text-xs text-text-muted">
+          Last updated 31 August 2026.{' '}
+          <a
+            href="https://github.com/Payless2025/PayLess"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            Open an issue
+          </a>{' '}
+          if something here is wrong or missing.
+        </p>
+      </Container>
+
+      <Footer />
+    </Page>
+  );
+}

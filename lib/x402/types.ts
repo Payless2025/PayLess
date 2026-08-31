@@ -43,6 +43,18 @@ export interface X402Response {
     network?: string; // Chain ID
     tokenAddress?: string;
     chains?: ChainPaymentInfo[];
+    /** Recurring alternatives to paying per call */
+    subscribe?: Array<{
+      planId: string;
+      description: string;
+      amount: string;
+      currency: string;
+      periodSeconds: number;
+      token: string;
+      spender: string;
+      chainId: string;
+      howTo: string;
+    }>;
   };
 }
 

@@ -281,6 +281,7 @@ Never commit these to version control:
 - [API Reference](./docs/api-reference.md) - Endpoints, payloads, and errors
 - [Payment Links](./docs/PAYMENT_LINKS.md) - Shareable payment URLs
 - [Payment Streaming](./docs/PAYMENT_STREAMING.md) - Pay-per-second billing
+- [Recurring Payments](./docs/RECURRING.md) - Subscriptions with no card on file and no account to cancel
 - [Token Gating](./docs/TOKEN_GATING.md) - Holder-only access for $PAYLESS
 - [Webhooks](./docs/WEBHOOKS.md) - Real-time payment notifications
 - [API Configuration](./docs/API_CONFIGURATION.md) - Configure your API
