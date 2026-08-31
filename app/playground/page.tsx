@@ -35,119 +35,125 @@ interface ApiEndpoint {
   method: string;
   price: string;
   description: string;
-  category: 'AI' | 'Data' | 'Tools' | 'Premium';
+  category: 'Chain' | 'RWA' | 'Data' | 'Tools' | 'Free';
+  /** Free endpoints still return placeholder data — they are not billable. */
+  free?: boolean;
   params?: { name: string; type: string; description: string }[];
   bodyExample?: any;
 }
 
+// Kept in step with ENDPOINT_PRICING in lib/x402/config.ts. Anything marked
+// free returns placeholder data and is deliberately not billable — listing it
+// as payable is how the pay button ended up doing nothing.
 const endpoints: ApiEndpoint[] = [
   {
-    path: '/api/ai/chat',
-    method: 'POST',
-    price: '$0.05',
-    category: 'AI',
-    description: 'AI Chat Completion - Get AI-powered responses',
-    params: [
-      { name: 'message', type: 'string', description: 'Your message to the AI' },
-      { name: 'model', type: 'string', description: 'AI model (optional)' },
-    ],
-    bodyExample: { message: 'Hello, tell me about x402 protocol', model: 'gpt-4' },
-  },
-  {
-    path: '/api/ai/image',
-    method: 'POST',
-    price: '$0.10',
-    category: 'AI',
-    description: 'AI Image Generation - Create images from text',
-    params: [
-      { name: 'prompt', type: 'string', description: 'Image description' },
-      { name: 'size', type: 'string', description: 'Image size (optional)' },
-    ],
-    bodyExample: { prompt: 'A futuristic payment terminal', size: '1024x1024' },
-  },
-  {
-    path: '/api/ai/translate',
-    method: 'POST',
-    price: '$0.03',
-    category: 'AI',
-    description: 'Language Translation - Translate text between languages',
-    params: [
-      { name: 'text', type: 'string', description: 'Text to translate' },
-      { name: 'targetLanguage', type: 'string', description: 'Target language code' },
-    ],
-    bodyExample: { text: 'Hello, how are you?', targetLanguage: 'es' },
-  },
-  {
-    path: '/api/ai/tts',
-    method: 'POST',
-    price: '$0.08',
-    category: 'AI',
-    description: 'Text-to-Speech - Convert text to audio',
-    params: [
-      { name: 'text', type: 'string', description: 'Text to convert to speech' },
-      { name: 'voice', type: 'string', description: 'Voice type' },
-    ],
-    bodyExample: { text: 'Welcome to Payless', voice: 'female' },
-  },
-  {
-    path: '/api/data/weather',
+    path: '/api/rwa/token',
     method: 'GET',
     price: '$0.01',
-    category: 'Data',
-    description: 'Weather Data - Get current weather information',
-    params: [{ name: 'city', type: 'string', description: 'City name' }],
+    description: 'One tokenised equity on Robinhood Chain, read live from the contract',
+    category: 'RWA',
+    params: [{ name: 'symbol', type: 'string', description: 'TSLA, AAPL, NVDA, AMZN, MSFT, GOOGL, META, MSTR, SPY, QCOM' }],
   },
   {
-    path: '/api/data/stock',
+    path: '/api/rwa/tokens',
     method: 'GET',
     price: '$0.02',
-    category: 'Data',
-    description: 'Stock Market Data - Get real-time stock quotes',
-    params: [{ name: 'symbol', type: 'string', description: 'Stock symbol' }],
+    description: 'Every tracked Robinhood stock token with live supply',
+    category: 'RWA',
+  },
+  {
+    path: '/api/rwa/holdings',
+    method: 'GET',
+    price: '$0.02',
+    description: 'An address\u2019s tokenised equity position',
+    category: 'RWA',
+    params: [{ name: 'address', type: 'string', description: 'The 0x address to inspect' }],
+  },
+  {
+    path: '/api/chain/receipt',
+    method: 'GET',
+    price: '$0.02',
+    description: 'Did this transaction actually pay me? The check Payless runs on itself',
+    category: 'Chain',
+    params: [
+      { name: 'hash', type: 'string', description: 'Transaction hash to inspect' },
+      { name: 'to', type: 'string', description: 'Expected recipient (optional)' },
+      { name: 'amount', type: 'string', description: 'Expected amount (optional)' },
+    ],
+  },
+  {
+    path: '/api/chain/balance',
+    method: 'GET',
+    price: '$0.01',
+    description: 'ETH and token balances for any address on chain 4663',
+    category: 'Chain',
+    params: [{ name: 'address', type: 'string', description: 'The 0x address to read' }],
+  },
+  {
+    path: '/api/chain/token',
+    method: 'GET',
+    price: '$0.01',
+    description: 'ERC-20 metadata read live from Robinhood Chain',
+    category: 'Chain',
+    params: [{ name: 'token', type: 'string', description: 'Symbol (USDG, WETH, PAYLESS) or contract address' }],
   },
   {
     path: '/api/data/crypto',
     method: 'GET',
     price: '$0.015',
+    description: 'Spot prices, no API key on your side',
     category: 'Data',
-    description: 'Cryptocurrency Prices - Get real-time crypto data',
-    params: [{ name: 'symbol', type: 'string', description: 'Crypto symbol' }],
+    params: [{ name: 'symbol', type: 'string', description: 'BTC, ETH, USDG…' }],
   },
   {
-    path: '/api/data/news',
+    path: '/api/data/stock',
     method: 'GET',
-    price: '$0.025',
+    price: '$0.01',
+    description: 'On-chain state of a Robinhood stock token (supply, not a market quote)',
     category: 'Data',
-    description: 'News Aggregation - Get latest news articles',
-    params: [{ name: 'category', type: 'string', description: 'News category' }],
+    params: [{ name: 'symbol', type: 'string', description: 'TSLA, NVDA, AAPL…' }],
   },
   {
     path: '/api/tools/qrcode',
     method: 'POST',
     price: '$0.005',
+    description: 'Generate a QR code — half a cent',
     category: 'Tools',
-    description: 'QR Code Generator - Create QR codes',
-    params: [{ name: 'data', type: 'string', description: 'Data to encode' }],
-    bodyExample: { data: 'https://payless.example.com', size: '256' },
+    bodyExample: { data: 'https://payless.network', size: 256, format: 'png' },
+  },
+
+  // Free: still placeholder data, so charging for them would be taking money
+  // for nothing. Listed so the playground shows the whole surface.
+  {
+    path: '/api/ai/chat',
+    method: 'POST',
+    price: 'free',
+    free: true,
+    description: 'Placeholder responses until a real model is wired up',
+    category: 'Free',
+    bodyExample: { message: 'Hello, tell me about x402', model: 'gpt-4' },
   },
   {
-    path: '/api/premium/content',
+    path: '/api/data/weather',
     method: 'GET',
-    price: '$1.00',
-    category: 'Premium',
-    description: 'Premium Content - Access exclusive articles',
-    params: [{ name: 'id', type: 'string', description: 'Content ID' }],
+    price: 'free',
+    free: true,
+    description: 'Placeholder until OPENWEATHER_API_KEY is set',
+    category: 'Free',
+    params: [{ name: 'city', type: 'string', description: 'City name' }],
   },
 ];
+
 
 type TabType = 'request' | 'response' | 'code';
 type SdkType = 'curl' | 'nodejs' | 'python' | 'react-native';
 
 const categoryIcons = {
-  AI: Sparkles,
-  Data: Database,
+  Chain: Database,
+  RWA: Crown,
+  Data: Sparkles,
   Tools: Wrench,
-  Premium: Crown,
+  Free: Code2,
 };
 
 
@@ -199,7 +205,7 @@ export default function Playground() {
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
   const onRightChain = chain?.id === EXPECTED_CHAIN;
-  const [selectedCategory, setSelectedCategory] = useState<string>('AI');
+  const [selectedCategory, setSelectedCategory] = useState<string>('RWA');
   const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint>(endpoints[0]);
   const [activeTab, setActiveTab] = useState<TabType>('request');
   const [selectedSdk, setSelectedSdk] = useState<SdkType>('curl');
@@ -277,7 +283,16 @@ export default function Playground() {
 
       if (first.status !== 402) {
         setResponse(firstData);
-        if (!first.ok) setError(firstData.error || 'Request failed');
+        if (!first.ok) {
+          setError(firstData.error || 'Request failed');
+        } else if (withPayment) {
+          // It answered without asking for money, so there is nothing to pay.
+          // Silently "succeeding" here is what made the pay button look broken.
+          setError(
+            `${selectedEndpoint.path} is free — it returned 200 without a 402, so no payment was needed and your wallet was not asked.`
+          );
+        }
+        setActiveTab('response');
         return;
       }
 
