@@ -6,12 +6,25 @@ import {
   DEFAULT_PAYMENT_TOKEN,
 } from '../chains/config';
 
+/**
+ * The address that receives payments.
+ *
+ * This is public by necessity — every 402 response has to tell the caller where
+ * to send the money — so it lives in code with an env override, not in an env
+ * var alone. Keeping it env-only meant it silently went missing on deploys
+ * where the variable was never set, and a 402 with an empty recipient makes
+ * payment impossible.
+ *
+ * Forks: set WALLET_ADDRESS to your own address.
+ */
+export const DEFAULT_WALLET_ADDRESS = '0x426f8846B5011d5aCf659FE5bFBC5fdA6123f759';
+
 export const PAYMENT_CONFIG = {
   walletAddress:
     process.env.ROBINHOOD_WALLET_ADDRESS ||
     process.env.WALLET_ADDRESS ||
     process.env.NEXT_PUBLIC_WALLET_ADDRESS ||
-    '',
+    DEFAULT_WALLET_ADDRESS,
   facilitatorUrl: process.env.FACILITATOR_URL || 'https://facilitator.x402.org',
   chain: 'robinhood',
   chainName: 'Robinhood Chain',
