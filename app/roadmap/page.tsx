@@ -80,7 +80,7 @@ const shipped: Group[] = [
 const inProgress: Item[] = [
   {
     title: 'Recurring payments',
-    note: 'The commitment is an ERC-20 allowance rather than a card on file. The payer approves a spend limit, we may collect the plan amount once per period and never more than was approved, and cancelling is approve(0) from their own wallet — immediate, and not something we can block.',
+    note: 'The commitment is an ERC-20 allowance rather than a card on file. The payer approves a spend limit, we may collect the plan amount once per period and never more than was approved, and cancelling is approve(0) from their own wallet — immediate, and not something we can block. Collection now runs in a separate process holding the only key that can pull funds, each period is claimed atomically before anything is signed, and a transfer whose outcome is unknown is resolved from the chain rather than sent again. Live once that worker is deployed with its key.',
   },
   { title: 'Email receipts and payment alerts' },
   {
