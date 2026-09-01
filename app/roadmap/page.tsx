@@ -58,6 +58,14 @@ const shipped: Group[] = [
         note: 'Fire real 402s at live endpoints and copy the generated client code.',
       },
       {
+        title: 'MCP server for paying agents',
+        note: 'npx payless-mcp gives any MCP client four tools, of which exactly one can move money. The spending limit is checked in the tool before a transaction is signed, so the model cannot see it, raise it, or argue with it. Four agent payments have settled on chain under it.',
+      },
+      {
+        title: 'Shared replay and subscription stores',
+        note: 'Both ledgers sit behind Upstash Redis, claimed with SET NX so the server decides the winner. Without them a receipt could be spent once per warm serverless instance; the app now fails closed if the ledger is unreachable.',
+      },
+      {
         title: 'Published SDK on npm',
         note: 'npm i payless — one wrapper prices any fetch-style route handler, with settlement verification and replay protection built in.',
       },
@@ -73,10 +81,6 @@ const inProgress: Item[] = [
   {
     title: 'Recurring payments',
     note: 'The commitment is an ERC-20 allowance rather than a card on file. The payer approves a spend limit, we may collect the plan amount once per period and never more than was approved, and cancelling is approve(0) from their own wallet — immediate, and not something we can block.',
-  },
-  {
-    title: 'Shared replay and subscription stores',
-    note: 'Both ledgers now sit behind Upstash Redis, claimed with SET NX so the server decides the winner. Shipped in payless@0.2.0; the app installs them at boot and warns loudly when the credentials are absent.',
   },
   { title: 'Email receipts and payment alerts' },
   {
@@ -114,10 +118,6 @@ const planned: Group[] = [
       {
         title: 'Persistent storage for links, streams and webhooks',
         note: 'The same in-memory caveat as above, applied to everything else that outlives a single request.',
-      },
-      {
-        title: 'Reference AI agent',
-        note: 'An agent that discovers a price, pays it and retries, end to end, as a runnable example.',
       },
       {
         title: 'Real providers behind the demo endpoints',
