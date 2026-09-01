@@ -41,6 +41,17 @@ export async function GET(req: NextRequest) {
     // instance, so this needs to be visible without reading deploy logs.
     integrity: {
       replayProtection: isSpentStoreShared() ? 'shared' : 'per-instance',
+      // Which credential names this runtime can see. Names only, never values —
+      // enough to tell "not set" from "set under a name we do not read", which
+      // is otherwise only diagnosable by guessing.
+      ledgerEnv: [
+        'UPSTASH_REDIS_REST_URL',
+        'UPSTASH_REDIS_REST_TOKEN',
+        'KV_REST_API_URL',
+        'KV_REST_API_TOKEN',
+        'REDIS_URL',
+        'KV_URL',
+      ].filter((name) => Boolean(process.env[name])),
     },
     documentation: 'https://github.com/Payless2025/PayLess/tree/master/docs',
   });
