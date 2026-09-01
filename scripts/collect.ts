@@ -38,7 +38,7 @@ import { subscriptionSpender, subscriptionRecipient } from '../lib/x402/config';
 import { decideAccess, periodIndex, amountInBaseUnits } from '../lib/x402/subscriptions';
 import { getSubscriptionStore, isSubscriptionStoreShared } from '../lib/x402/subscription-store';
 import { collectPeriod, setCollector } from '../lib/x402/collector';
-import { collectorFromEnv } from '../lib/x402/collector-key';
+import { collectorFromEnv, ConfigError } from '../lib/x402/collector-key';
 import { readAllowance } from '../lib/chains/allowance';
 
 const execute = process.argv.includes('--execute');
@@ -161,6 +161,11 @@ async function main() {
 }
 
 main().catch((error) => {
+  if (error instanceof ConfigError) {
+    // The operator needs to read this, so it gets no stack trace in front of it.
+    console.error(`\nRefusing to run: ${error.message}`);
+    process.exit(1);
+  }
   console.error('\ncollector failed:', error);
   process.exit(1);
 });
