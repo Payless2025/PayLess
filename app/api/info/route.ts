@@ -4,9 +4,28 @@ import { NextRequest, NextResponse } from 'next/server';
 // prerendered route it was reporting build-time state instead — which made the
 // replay-protection status quietly wrong.
 export const dynamic = 'force-dynamic';
+
 import { ENDPOINT_PRICING, PAYMENT_CONFIG } from '@/lib/x402/config';
 import { ROBINHOOD_CONFIG } from '@/lib/chains/config';
-import { isSpentStoreShared } from '@/lib/x402/spent-store';
+import { isSpentStoreShared, getSpentStore } from '@/lib/x402/spent-store';
+
+/**
+ * One real round trip to the replay ledger.
+ *
+ * Returns null when nothing shared is configured, so "no ledger" and "ledger
+ * down" never look the same in the response.
+ */
+async function pingLedger(): Promise<boolean | null> {
+  if (!isSpentStoreShared()) return null;
+  const store = getSpentStore() as { ping?: () => Promise<boolean> };
+  if (typeof store.ping !== 'function') return null;
+  try {
+    return await store.ping();
+  } catch {
+    return false;
+  }
+}
+
 
 export async function GET(req: NextRequest) {
   return NextResponse.json({
@@ -44,6 +63,10 @@ export async function GET(req: NextRequest) {
       // Which credential names this runtime can see. Names only, never values —
       // enough to tell "not set" from "set under a name we do not read", which
       // is otherwise only diagnosable by guessing.
+      // `shared` only means credentials were present when the store was built —
+      // it says nothing about whether Redis answers. Since every payment fails
+      // closed on an unreachable ledger, that distinction is worth a round trip.
+      ledgerReachable: await pingLedger(),
       ledgerEnv: [
         'UPSTASH_REDIS_REST_URL',
         'UPSTASH_REDIS_REST_TOKEN',
