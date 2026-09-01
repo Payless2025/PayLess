@@ -29,6 +29,12 @@ import { getAddress, isAddress } from 'viem';
 import { verifySettlement, SETTLEMENT_MAX_AGE_MS } from '../chains/settlement';
 import { claimSettlement, getSpentStore } from './spent-store';
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_CONFIG } from '../chains/config';
+import {
+  verifyPermit2Exact,
+  EXACT_PROXY_ADDRESS,
+  PERMIT2_ADDRESS,
+  type Permit2Payload,
+} from './permit2';
 
 /** CAIP-2, the identifier form x402 v2 uses for networks. */
 export const NETWORK = `eip155:${ROBINHOOD_CHAIN_ID}`;
@@ -58,6 +64,13 @@ export interface PaymentPayload {
   /** receipt scheme: the transaction the buyer already sent. */
   transactionHash?: string;
   payer?: string;
+  /** exact scheme: the Permit2 authorisation the buyer signed. */
+  owner?: string;
+  permitted?: { token: string; amount: string };
+  nonce?: string;
+  deadline?: string;
+  witness?: { to: string; validAfter: string };
+  signature?: string;
 }
 
 export interface VerifyResponse {
@@ -107,6 +120,28 @@ export const SUPPORTED_KINDS = [
         decimals: t.decimals,
       })),
       maxAgeMs: SETTLEMENT_MAX_AGE_MS,
+    },
+  },
+  {
+    x402Version: X402_VERSION,
+    scheme: 'exact',
+    network: NETWORK,
+    extra: {
+      assetTransferMethod: 'permit2',
+      /**
+       * Pinned, and not a suggestion. This proxy takes the transfer destination
+       * from the signed witness itself, so a facilitator cannot redirect the
+       * money. Sign for any other spender and that guarantee is gone.
+       */
+      spender: EXACT_PROXY_ADDRESS,
+      permit2: PERMIT2_ADDRESS,
+      witnessTypeString: 'Witness(address to,uint256 validAfter)',
+      description:
+        'The buyer signs a Permit2 authorisation and never sends a transaction. Requires one prior approve(Permit2) on the token. USDG here implements neither EIP-3009 nor EIP-2612, so this is the gasless path on this chain.',
+      settlement: 'pending',
+      assets: ROBINHOOD_CONFIG.paymentTokens.map((t) => ({
+        address: t.address, symbol: t.symbol, decimals: t.decimals,
+      })),
     },
   },
 ] as const;
@@ -170,8 +205,16 @@ function checkShape(
   if (!requirements.amount || !/^\d+(\.\d+)?$/.test(requirements.amount)) {
     return '"amount" must be a decimal string in whole tokens, such as "0.01".';
   }
-  if (!payload.transactionHash) {
+  if (requirements.scheme === 'receipt' && !payload.transactionHash) {
     return 'The receipt scheme needs "transactionHash" in the payload.';
+  }
+  if (requirements.scheme === 'exact') {
+    if (!requirements.asset) {
+      return 'The exact scheme needs "asset" in the requirements, because the signature names a specific token.';
+    }
+    for (const field of ['owner', 'permitted', 'nonce', 'deadline', 'witness', 'signature'] as const) {
+      if (payload[field] === undefined) return `The exact scheme needs "${field}" in the payload.`;
+    }
   }
   return null;
 }
@@ -186,6 +229,8 @@ export async function verify(
 ): Promise<VerifyResponse> {
   const shapeError = checkShape(requirements, payload);
   if (shapeError) return { isValid: false, invalidReason: shapeError };
+
+  if (requirements.scheme === 'exact') return verifyExact(requirements, payload);
 
   // A seller may tighten the freshness window but never widen it, or one
   // careless seller would make every old receipt spendable through us.
@@ -237,6 +282,30 @@ export async function verify(
 }
 
 /**
+ * The exact scheme, verified but not yet settled.
+ *
+ * Everything a settle would need is checked here, against the chain. What is
+ * missing is the broadcasting, which needs a funded key, so this reports
+ * validity honestly and refuses to imply the money has moved.
+ */
+async function verifyExact(
+  requirements: PaymentRequirements,
+  payload: PaymentPayload
+): Promise<VerifyResponse> {
+  const result = await verifyPermit2Exact({
+    payload: payload as unknown as Permit2Payload,
+    requiredAmount: requirements.amount,
+    payTo: requirements.payTo,
+    asset: requirements.asset!,
+  });
+
+  if (!result.ok) {
+    return { isValid: false, invalidReason: result.reason, retryable: result.retryable };
+  }
+  return { isValid: true, payer: result.payer };
+}
+
+/**
  * Consume the payment. Called after the resource has been served.
  *
  * In the receipt scheme the money has already moved, so this broadcasts
@@ -248,6 +317,21 @@ export async function settle(
   requirements: PaymentRequirements,
   payload: PaymentPayload
 ): Promise<SettleResponse> {
+  if (requirements?.scheme === 'exact') {
+    // Verification for this scheme is complete and honest; broadcasting is not
+    // built. Saying so beats returning a success that moved no money.
+    const check = await verify(requirements, payload);
+    return {
+      success: false,
+      errorReason: check.isValid
+        ? 'This authorisation verifies, but exact settlement is not live yet: the facilitator has no signing key to broadcast it. Use the receipt scheme today.'
+        : check.invalidReason,
+      retryable: check.isValid ? true : check.retryable,
+      network: NETWORK,
+      payer: check.payer,
+    };
+  }
+
   const check = await verify(requirements, payload);
   if (!check.isValid) {
     return {

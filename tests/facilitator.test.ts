@@ -67,21 +67,35 @@ async function run() {
 
   await test('rejects a scheme it does not settle', async () => {
     chainSays(good);
-    const r = await verify(req({ scheme: 'exact' }), pay({ scheme: 'exact' }));
+    // 'upto' has a deployed proxy on this chain but we do not speak it yet,
+    // which makes it the honest example of something to refuse.
+    const r = await verify(req({ scheme: 'upto' }), pay({ scheme: 'upto' }));
     assert.equal(r.isValid, false);
     assert.match(r.invalidReason!, /Unsupported scheme/);
   });
 
   await test('rejects an EIP-3009 payload instead of failing later at settle', async () => {
-    // The trap this facilitator exists to avoid: USDG here has no
-    // transferWithAuthorization, so a canonical exact payload must die early.
+    // The trap this facilitator exists to avoid. USDG here has no
+    // transferWithAuthorization, so `exact` means Permit2, and a canonical
+    // 3009-shaped payload is missing everything Permit2 needs. It must die on
+    // shape, before any network call, rather than at settle.
     const calls = chainSays(good);
     const r = await verify(
-      req({ scheme: 'exact' }),
+      req({ scheme: 'exact', asset: USDG }),
       { scheme: 'exact', network: NETWORK, signature: '0xdead', authorization: {} } as any
     );
     assert.equal(r.isValid, false);
+    assert.match(r.invalidReason!, /exact scheme needs/);
     assert.equal(calls.length, 0, 'should not have touched the chain');
+  });
+
+  await test('the exact scheme refuses to claim a settlement it cannot broadcast', async () => {
+    chainSays(good);
+    const r = await settle(
+      req({ scheme: 'exact', asset: USDG }),
+      { scheme: 'exact', network: NETWORK } as any
+    );
+    assert.equal(r.success, false, 'must never report success without moving money');
   });
 
   await test('rejects another network', async () => {
