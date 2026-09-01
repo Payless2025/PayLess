@@ -9,17 +9,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PAYMENT_CONFIG } from './config';
+import { PAYMENT_CONFIG, subscriptionSpender, subscriptionRecipient } from './config';
 import { getPlan, plansForEndpoint } from './plans';
 import {
   decideAccess,
-  getSubscriptionStore,
   periodsRemaining,
   periodWindow,
   type Plan,
   type Subscription,
 } from './subscriptions';
-import { collectPeriod, hasCollector } from './collector';
+import { getSubscriptionStore } from './subscription-store';
+import { collectPeriod, hasCollector, type CollectResult } from './collector';
 import { readAllowance } from '../chains/allowance';
 import { ROBINHOOD_CHAIN_ID } from '../chains/config';
 import { isAddress, getAddress } from 'viem';
@@ -46,9 +46,9 @@ export function offersFor(pathname: string): SubscriptionOffer[] {
     currency: plan.symbol,
     periodSeconds: plan.periodSeconds,
     token: plan.token,
-    spender: PAYMENT_CONFIG.walletAddress,
+    spender: subscriptionSpender(),
     chainId: ROBINHOOD_CHAIN_ID,
-    howTo: `approve(${PAYMENT_CONFIG.walletAddress}, amount) on ${plan.token}, then send X-Subscription: {"planId":"${plan.id}","payer":"<your address>"}. Cancel any time with approve(spender, 0).`,
+    howTo: `approve(${subscriptionSpender()}, amount) on ${plan.token}, then send X-Subscription: {"planId":"${plan.id}","payer":"<your address>"}. Cancel any time with approve(spender, 0).`,
   }));
 }
 
@@ -59,6 +59,7 @@ export interface SubscriptionCheck {
   plan?: Plan;
   sub?: Subscription;
   period?: number;
+  collection?: CollectResult;
 }
 
 /**
@@ -98,7 +99,7 @@ export async function checkSubscription(
   }
 
   const payer = getAddress(parsed.payer);
-  const spender = PAYMENT_CONFIG.walletAddress;
+  const spender = subscriptionSpender();
   if (!isAddress(spender)) {
     return {
       ok: false,
@@ -165,19 +166,21 @@ export async function checkSubscription(
 
   // Access is granted on the verified allowance. Collection is separate, so a
   // collector outage becomes arrears rather than downtime for a paying caller.
-  if (!decision.alreadyCollected) {
-    const result = await collectPeriod({
-      plan,
-      sub,
-      recipient: getAddress(spender),
-      period: decision.period,
-    });
-    if (result.status === 'collected') {
-      await store.put(sub);
-    }
+  //
+  // Called unconditionally: `decision.alreadyCollected` reads the mirror on the
+  // subscription record, and only the period ledger inside collectPeriod is
+  // allowed to decide whether money moves.
+  const collection = await collectPeriod({
+    plan,
+    sub,
+    recipient: getAddress(subscriptionRecipient() as `0x${string}`),
+    period: decision.period,
+  });
+  if (collection.status === 'collected') {
+    await store.put(sub);
   }
 
-  return { ok: true, plan, sub, period: decision.period };
+  return { ok: true, plan, sub, period: decision.period, collection };
 }
 
 /** Headers describing the subscription state, for the caller's own accounting. */
@@ -196,6 +199,12 @@ export function subscriptionHeaders(check: SubscriptionCheck, collectableRaw?: s
   }
   if (collectableRaw) {
     headers['x-subscription-periods-remaining'] = String(periodsRemaining(plan, collectableRaw));
+  }
+  // Say plainly whether this period has been paid for, and if not, why not.
+  // A subscriber served on arrears deserves to know that is what happened.
+  if (check.collection) {
+    headers['x-subscription-collection'] = check.collection.status;
+    if (check.collection.txHash) headers['x-subscription-tx'] = check.collection.txHash;
   }
   if (!hasCollector()) headers['x-subscription-collector'] = 'unconfigured';
   return headers;

@@ -19,6 +19,27 @@ import {
  */
 export const DEFAULT_WALLET_ADDRESS = '0x426f8846B5011d5aCf659FE5bFBC5fdA6123f759';
 
+/**
+ * The address subscribers approve as spender.
+ *
+ * Deliberately separable from the address that receives the money. ERC-20
+ * `transferFrom` spends the allowance of whoever signs it and delivers to
+ * whatever recipient that call names — so the key that pulls from subscribers
+ * and the wallet that holds the proceeds do not have to be the same thing.
+ *
+ * Keeping them apart means the collector key needs gas and nothing else. If it
+ * is ever stolen, the thief inherits the right to move approved funds *to the
+ * treasury address baked into the collection call*, and no balance at all.
+ *
+ * It defaults to the payment wallet so a single-key deployment still works.
+ * Set PAYLESS_COLLECTOR_ADDRESS to split them, and give the worker the matching
+ * key as PAYLESS_COLLECTOR_PRIVATE_KEY.
+ */
+export const COLLECTOR_ADDRESS =
+  process.env.PAYLESS_COLLECTOR_ADDRESS ||
+  process.env.NEXT_PUBLIC_PAYLESS_COLLECTOR_ADDRESS ||
+  '';
+
 export const PAYMENT_CONFIG = {
   walletAddress:
     process.env.ROBINHOOD_WALLET_ADDRESS ||
@@ -35,6 +56,19 @@ export const PAYMENT_CONFIG = {
   tokenAddress: DEFAULT_PAYMENT_TOKEN.address,
   tokenDecimals: DEFAULT_PAYMENT_TOKEN.decimals,
 };
+
+/**
+ * Who subscribers approve. Falls back to the payment wallet, which is correct
+ * for a deployment that has not split the roles yet.
+ */
+export function subscriptionSpender(): string {
+  return COLLECTOR_ADDRESS || PAYMENT_CONFIG.walletAddress;
+}
+
+/** Where collected subscription funds land. Always the treasury, never the signer. */
+export function subscriptionRecipient(): string {
+  return PAYMENT_CONFIG.walletAddress;
+}
 
 /**
  * Only endpoints that do real work are priced.
