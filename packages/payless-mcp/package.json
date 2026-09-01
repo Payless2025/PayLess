@@ -1,0 +1,54 @@
+{
+  "name": "payless-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that lets an agent pay for APIs over x402 on Robinhood Chain \u2014 with a spending cap it cannot exceed.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "x402",
+    "ai-agents",
+    "agent-wallet",
+    "micropayments",
+    "robinhood-chain",
+    "usdg"
+  ],
+  "license": "MIT",
+  "author": "Payless",
+  "homepage": "https://payless.network",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Payless2025/PayLess.git",
+    "directory": "packages/payless-mcp"
+  },
+  "type": "module",
+  "bin": {
+    "payless-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "payless": "^0.2.0",
+    "viem": "^2.21.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
