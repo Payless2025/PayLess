@@ -134,19 +134,67 @@ export function periodsRemaining(plan: Plan, collectableRaw: string): number {
 // ---------------------------------------------------------------------------
 // Storage
 //
-// In-memory, like the spent-transaction ledger, and with the same caveat: each
-// serverless instance keeps its own copy. Swap it before charging real money.
+// Two separate things live here, and the distinction matters.
+//
+// `Subscription` is bookkeeping: when it started, whether it ended. Losing it
+// costs an accurate start date and nothing else.
+//
+// The *period ledger* is money. It records that period N of a subscription has
+// been claimed for collection, and it is the only thing standing between a
+// payer and being charged twice for the same period. It is therefore claimed
+// atomically, exactly like the spent-transaction ledger, and never derived from
+// a read-modify-write of the subscription record.
+//
+// `sub.collected` is a convenience mirror of that ledger for display. It is not
+// the authority, and nothing should decide whether to move money by reading it.
 // ---------------------------------------------------------------------------
+
+export interface CollectionRecord {
+  /** `pending` means a transaction may be in flight — never re-send on this. */
+  status: 'pending' | 'collected' | 'failed';
+  txHash?: string;
+  at: number;
+  error?: string;
+}
+
+export interface PeriodClaim {
+  /** True when this caller won the claim and may send the transfer. */
+  won: boolean;
+  /** Present when somebody else got there first. */
+  existing?: CollectionRecord;
+}
 
 export interface SubscriptionStore {
   get(planId: string, payer: string): Promise<Subscription | null>;
   put(sub: Subscription): Promise<void>;
   listByPayer(payer: string): Promise<Subscription[]>;
   all(): Promise<Subscription[]>;
+
+  /**
+   * Atomically claim a billing period for collection.
+   *
+   * Implementations MUST be atomic (Redis SET NX or equivalent). A check-then-act
+   * version of this charges the payer once per concurrent request, which is the
+   * worst bug this codebase could ship.
+   */
+  claimPeriod(planId: string, payer: string, period: number): Promise<PeriodClaim>;
+  /** Update a claimed period once the outcome is known. */
+  recordPeriod(planId: string, payer: string, period: number, record: CollectionRecord): Promise<void>;
+  getPeriod(planId: string, payer: string, period: number): Promise<CollectionRecord | null>;
+  /**
+   * Give a claim back. Only ever valid when no transaction was broadcast — if
+   * one might be in flight, the claim must stand or a retry double-charges.
+   */
+  releasePeriod(planId: string, payer: string, period: number): Promise<void>;
+}
+
+export function periodKey(planId: string, payer: string, period: number) {
+  return `${planId}:${payer.toLowerCase()}:${period}`;
 }
 
 class MemorySubscriptionStore implements SubscriptionStore {
   private subs = new Map<string, Subscription>();
+  private periods = new Map<string, CollectionRecord>();
   private key = (planId: string, payer: string) => `${planId}:${payer.toLowerCase()}`;
 
   async get(planId: string, payer: string) {
@@ -163,20 +211,28 @@ class MemorySubscriptionStore implements SubscriptionStore {
   async all() {
     return Array.from(this.subs.values());
   }
-}
 
-// Same cross-bundle problem as the spent ledger — see spent-store.ts.
-const SUB_KEY = Symbol.for('payless.subscriptionStore');
-const sg = globalThis as unknown as Record<symbol, SubscriptionStore | undefined>;
+  async claimPeriod(planId: string, payer: string, period: number): Promise<PeriodClaim> {
+    const key = periodKey(planId, payer, period);
+    const existing = this.periods.get(key);
+    if (existing) return { won: false, existing };
+    // Nothing interleaves between the get and the set on a single event loop,
+    // so this is atomic within one instance — and only within one instance.
+    this.periods.set(key, { status: 'pending', at: Date.now() });
+    return { won: true };
+  }
 
-export function setSubscriptionStore(next: SubscriptionStore) {
-  sg[SUB_KEY] = next;
-}
-export function getSubscriptionStore(): SubscriptionStore {
-  // Built lazily in the requesting process — see spent-store.ts for why a
-  // startup hook cannot install this.
-  if (!sg[SUB_KEY]) sg[SUB_KEY] = new MemorySubscriptionStore();
-  return sg[SUB_KEY]!;
+  async recordPeriod(planId: string, payer: string, period: number, record: CollectionRecord) {
+    this.periods.set(periodKey(planId, payer, period), record);
+  }
+
+  async getPeriod(planId: string, payer: string, period: number) {
+    return this.periods.get(periodKey(planId, payer, period)) ?? null;
+  }
+
+  async releasePeriod(planId: string, payer: string, period: number) {
+    this.periods.delete(periodKey(planId, payer, period));
+  }
 }
 
 export { MemorySubscriptionStore };

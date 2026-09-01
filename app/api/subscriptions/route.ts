@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAddress, getAddress } from 'viem';
 import { PLANS } from '@/lib/x402/plans';
 import {
-  getSubscriptionStore,
   periodIndex,
   periodWindow,
   periodsRemaining,
 } from '@/lib/x402/subscriptions';
+import { getSubscriptionStore, isSubscriptionStoreShared } from '@/lib/x402/subscription-store';
 import { hasCollector } from '@/lib/x402/collector';
 import { readAllowance } from '@/lib/chains/allowance';
-import { PAYMENT_CONFIG } from '@/lib/x402/config';
+import { PAYMENT_CONFIG, subscriptionSpender, subscriptionRecipient } from '@/lib/x402/config';
 import { ROBINHOOD_CHAIN_ID } from '@/lib/chains/config';
 
 /**
@@ -25,8 +25,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       chainId: ROBINHOOD_CHAIN_ID,
-      spender: PAYMENT_CONFIG.walletAddress,
+      spender: subscriptionSpender(),
+      recipient: subscriptionRecipient(),
       collector: hasCollector() ? 'configured' : 'unconfigured',
+      // Whether a period can be charged twice is a fact a subscriber is
+      // entitled to, so it is reported rather than left to be discovered.
+      periodLedger: isSubscriptionStoreShared() ? 'shared' : 'in-memory',
+      collectionSafety: isSubscriptionStoreShared()
+        ? 'Each billing period is claimed atomically before any transfer is signed.'
+        : 'No shared ledger configured, so collection is refused entirely rather than risking a double charge.',
       plans: PLANS.map((p) => ({
         id: p.id,
         description: p.description,
@@ -37,7 +44,7 @@ export async function GET(req: NextRequest) {
         endpoints: p.endpoints,
       })),
       howTo:
-        `approve(${PAYMENT_CONFIG.walletAddress}, amount) on the plan token, then send ` +
+        `approve(${subscriptionSpender()}, amount) on the plan token, then send ` +
         `X-Subscription: {"planId":"…","payer":"0x…"}. Revoke with approve(spender, 0) — ` +
         'the approval is yours, so cancelling needs nobody’s permission.',
     });
@@ -48,7 +55,7 @@ export async function GET(req: NextRequest) {
   }
 
   const payer = getAddress(payerParam);
-  const spender = PAYMENT_CONFIG.walletAddress;
+  const spender = subscriptionSpender();
   const store = getSubscriptionStore();
   const now = Date.now();
 
@@ -98,6 +105,7 @@ export async function GET(req: NextRequest) {
     payer,
     spender,
     collector: hasCollector() ? 'configured' : 'unconfigured',
+    periodLedger: isSubscriptionStoreShared() ? 'shared' : 'in-memory',
     subscriptions: rows,
     source: 'Robinhood Chain RPC (live allowance read)',
     retrievedAt: new Date().toISOString(),
