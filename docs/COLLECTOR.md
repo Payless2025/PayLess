@@ -47,12 +47,21 @@ failure mode is charging a subscriber twice.
 
 Deploy this repository as a service, then in Settings:
 
-- **Build command**: `npm ci`
+- **Build command**: `npm install --no-audit --no-fund`
+
+  Not `npm ci`. Nixpacks mounts a cache at `/app/node_modules/.cache`, and
+  `npm ci` starts by deleting `node_modules` outright, which fails on the mount
+  with `EBUSY: resource busy or locked`.
+
 - **Start command**: `npx tsx scripts/collect.ts --execute`
 - **Cron schedule**: match the shortest billing period. The hourly plan wants
   something like `*/15 * * * *`; a daily-only deployment can run hourly.
 - **Restart policy**: never. The script exits when it finishes, and a restarting
   service would run it in a loop.
+
+`tsx` is a runtime dependency rather than a dev one, because the worker runs
+TypeScript directly. Railway sets `NODE_ENV=production`, which makes npm skip
+devDependencies, so a TS runner listed there would simply be absent at start.
 
 Overlapping runs are safe. Each billing period is claimed atomically before any
 transfer is signed, so a second run finds the period taken and moves on.
