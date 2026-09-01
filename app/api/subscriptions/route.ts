@@ -31,6 +31,14 @@ export async function GET(req: NextRequest) {
       // Whether a period can be charged twice is a fact a subscriber is
       // entitled to, so it is reported rather than left to be discovered.
       periodLedger: isSubscriptionStoreShared() ? 'shared' : 'in-memory',
+      // The spender is public by necessity, so reporting what this runtime
+      // actually read separates "not deployed yet" from "set under another
+      // name" without anyone having to read build logs.
+      collectorAddressEnv: process.env.PAYLESS_COLLECTOR_ADDRESS || null,
+      spenderSplit:
+        subscriptionSpender().toLowerCase() === subscriptionRecipient().toLowerCase()
+          ? 'shared with the treasury wallet'
+          : 'separate signing address',
       collectionSafety: isSubscriptionStoreShared()
         ? 'Each billing period is claimed atomically before any transfer is signed.'
         : 'No shared ledger configured, so collection is refused entirely rather than risking a double charge.',
