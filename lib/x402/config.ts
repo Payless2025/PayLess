@@ -46,7 +46,11 @@ export const PAYMENT_CONFIG = {
     process.env.WALLET_ADDRESS ||
     process.env.NEXT_PUBLIC_WALLET_ADDRESS ||
     DEFAULT_WALLET_ADDRESS,
-  facilitatorUrl: process.env.FACILITATOR_URL || 'https://facilitator.x402.org',
+  // Was https://facilitator.x402.org, which does not resolve. Advertising a
+  // dead facilitator is worse than advertising none: a client that follows it
+  // fails with a DNS error rather than a payment error.
+  facilitatorUrl:
+    process.env.FACILITATOR_URL || 'https://www.payless.network/api/facilitator',
   chain: 'robinhood',
   chainName: 'Robinhood Chain',
   network: ROBINHOOD_CHAIN_ID,
