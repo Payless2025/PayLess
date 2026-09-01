@@ -31,6 +31,15 @@ export const ROBINHOOD_VIEM_CHAIN: Chain = {
   },
 } as Chain;
 
+/**
+ * A misconfiguration, as opposed to a runtime fault.
+ *
+ * Worth its own type because these are printed without a stack trace: the
+ * operator needs the sentence, not the call site, and a stack in front of the
+ * message is how a clear error becomes an ignored one.
+ */
+export class ConfigError extends Error {}
+
 export class KeyCollector implements Collector {
   readonly address: `0x${string}`;
   private account;
@@ -40,7 +49,7 @@ export class KeyCollector implements Collector {
   constructor(privateKey: string, rpcUrl: string = ROBINHOOD_RPC_URL) {
     const key = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
     if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
-      throw new Error('PAYLESS_COLLECTOR_PRIVATE_KEY must be a 32-byte hex private key.');
+      throw new ConfigError('PAYLESS_COLLECTOR_PRIVATE_KEY must be a 32-byte hex private key.');
     }
     this.account = privateKeyToAccount(key as `0x${string}`);
     this.address = this.account.address;
@@ -99,7 +108,7 @@ export class KeyCollector implements Collector {
    */
   assertIsSpender(advertised: string) {
     if (getAddress(advertised as `0x${string}`) !== getAddress(this.address)) {
-      throw new Error(
+      throw new ConfigError(
         `This collector signs as ${this.address}, but subscribers are told to approve ${advertised}. ` +
           'transferFrom spends the signer\'s allowance, so the two must match. ' +
           'Set PAYLESS_COLLECTOR_ADDRESS to this key\'s address, or give the worker the key for the advertised one.'
