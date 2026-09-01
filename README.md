@@ -55,6 +55,17 @@ export const GET = payless.protect(handler, '0.01');
 That is the whole integration. [Package docs](https://www.npmjs.com/package/payless) ·
 [source](./packages/payless)
 
+### Let an agent pay for it
+
+```bash
+npx -y payless-mcp
+```
+
+An MCP server so an agent can meet a 402, pay it, and continue — inside a
+spending limit it cannot exceed, because the limit lives in the tool and not in
+the prompt. [Package docs](https://www.npmjs.com/package/payless-mcp) ·
+[source](./packages/payless-mcp)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
