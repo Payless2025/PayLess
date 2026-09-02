@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 import { ENDPOINT_PRICING, PAYMENT_CONFIG } from '@/lib/x402/config';
 import { ROBINHOOD_CONFIG } from '@/lib/chains/config';
 import { isSpentStoreShared, getSpentStore } from '@/lib/x402/spent-store';
+import { demoPaymentsEnabled } from '@/lib/x402/middleware';
 
 /**
  * One real round trip to the replay ledger.
@@ -60,6 +61,9 @@ export async function GET(req: NextRequest) {
     // instance, so this needs to be visible without reading deploy logs.
     integrity: {
       replayProtection: isSpentStoreShared() ? 'shared' : 'per-instance',
+      // Whether payments are actually being verified. If this ever says
+      // 'skipped' on a live deployment, nothing here is being paid for.
+      paymentVerification: demoPaymentsEnabled() ? 'SKIPPED (demo mode)' : 'enforced',
       // Which credential names this runtime can see. Names only, never values —
       // enough to tell "not set" from "set under a name we do not read", which
       // is otherwise only diagnosable by guessing.

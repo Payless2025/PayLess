@@ -235,7 +235,7 @@ export function __setVerifierForTests(next: Verifier | null) {
  * transaction-only key would let whichever seller asked first lock the other
  * one out of money genuinely sent to them.
  */
-function replayKey(txHash: string, payTo: string) {
+export function replayKey(txHash: string, payTo: string) {
   return `${txHash.toLowerCase()}:${payTo.toLowerCase()}`;
 }
 

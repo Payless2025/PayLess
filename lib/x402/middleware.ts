@@ -12,6 +12,7 @@ import {
   verify as facilitatorVerify,
   settle as facilitatorSettle,
   NETWORK as X402_NETWORK,
+  replayKey,
   type PaymentRequirements,
 } from './facilitator';
 
@@ -57,8 +58,7 @@ export async function verifyPayment(
 
     // Test mode short-circuits signature verification so the playground and
     // local development work without a funded wallet.
-    const isTestMode =
-      process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_PAYMENTS === 'true';
+    const isTestMode = demoPaymentsEnabled();
     console.log(
       '[x402] Test mode:',
       isTestMode,
@@ -231,6 +231,21 @@ async function payViaFacilitator(args: {
   response.headers.set('x-payment-chain', 'robinhood');
   if (check.payer) response.headers.set('x-payment-payer', check.payer);
   return response;
+}
+
+/**
+ * Is payment verification being skipped?
+ *
+ * Demo mode does not check the signature or the chain: it compares a recipient
+ * and an amount out of a header the caller wrote. In production that is not a
+ * setting, it is a way to give the whole API away for free, and it does not
+ * even claim the transaction hash, so one header would work forever.
+ *
+ * So production ignores the flag outright. One environment variable should
+ * never be the only thing standing between a paid endpoint and a free one.
+ */
+export function demoPaymentsEnabled(env = process.env): boolean {
+  return env.NODE_ENV !== 'production' && env.ENABLE_DEMO_PAYMENTS === 'true';
 }
 
 /**
@@ -503,11 +518,17 @@ export function withX402Payment(
 
       // One settled transaction buys one response. Claim before doing any work.
       if (verification.settlement) {
-        const claim = await claimSettlement(verification.settlement.txHash, {
-          endpoint: pathname,
-          amount: verification.settlement.amount,
-          spentAt: Date.now(),
-        });
+        // The same key the facilitator uses. Two key spaces over one store
+        // meant a receipt consumed through /api/facilitator/settle was still
+        // spendable here, and the other way round: one payment, two responses.
+        const claim = await claimSettlement(
+          replayKey(verification.settlement.txHash, PAYMENT_CONFIG.walletAddress),
+          {
+            endpoint: pathname,
+            amount: verification.settlement.amount,
+            spentAt: Date.now(),
+          }
+        );
         if (!claim.ok) {
           responseStatus = claim.error ? 503 : 402;
           errorMessage = claim.error
