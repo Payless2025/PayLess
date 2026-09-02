@@ -3,8 +3,11 @@ import {
   createPaymentLink, 
   listPaymentLinks, 
   deletePaymentLink,
+  getPaymentLink,
   generatePaymentLinkUrl 
 } from '@/lib/x402/payment-links';
+import { provenAddress, proofConfigured } from '@/lib/x402/wallet-proof';
+import { getAddress, isAddress } from 'viem';
 
 /**
  * GET /api/payment-links - List all payment links
@@ -99,6 +102,34 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(
         { error: 'Link ID is required' },
         { status: 400 }
+      );
+    }
+
+    // Deleting used to need nothing but the id, so anyone could delete
+    // anyone's link. The wallet that receives the payments is the natural
+    // owner, and destroying the link now requires proving control of it.
+    const link = getPaymentLink(linkId);
+    if (!link) {
+      return NextResponse.json({ error: 'Payment link not found' }, { status: 404 });
+    }
+
+    const proof = provenAddress(req.headers);
+    if (proof.address === null) {
+      return NextResponse.json(
+        {
+          error: 'Deleting a payment link requires proving you control its recipient wallet.',
+          reason: proof.reason,
+          howTo: proofConfigured()
+            ? 'POST {"address":"<recipient>"} to /api/auth/challenge, sign it, POST to /api/auth/verify, then retry with "Authorization: Bearer <token>".'
+            : 'This server has no PAYLESS_AUTH_SECRET configured, so proofs cannot be issued yet.',
+        },
+        { status: 401 }
+      );
+    }
+    if (!isAddress(link.recipientAddress) || getAddress(link.recipientAddress) !== proof.address) {
+      return NextResponse.json(
+        { error: 'This link pays a different wallet than the one you proved.' },
+        { status: 403 }
       );
     }
 

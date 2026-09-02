@@ -9,7 +9,7 @@
     "lint": "next lint",
     "collect": "tsx scripts/collect.ts",
     "collect:execute": "tsx scripts/collect.ts --execute",
-    "test": "tsx tests/security.test.ts && tsx tests/webhook-target.test.ts && tsx tests/collector.test.ts && tsx tests/facilitator.test.ts && tsx tests/permit2.test.ts"
+    "test": "tsx tests/security.test.ts && tsx tests/wallet-proof.test.ts && tsx tests/webhook-target.test.ts && tsx tests/collector.test.ts && tsx tests/facilitator.test.ts && tsx tests/permit2.test.ts"
   },
   "dependencies": {
     "axios": "^1.20.0",
