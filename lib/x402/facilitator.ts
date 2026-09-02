@@ -115,6 +115,9 @@ export const SUPPORTED_KINDS = [
       assetTransferMethod: 'receipt',
       description:
         'The buyer sends the ERC-20 transfer themselves and presents its hash. The facilitator verifies the receipt on chain. Costs the buyer gas and one confirmation, and requires the least trust of any scheme.',
+      // Present on every kind, so a client can read extra.settlement uniformly
+      // instead of treating "absent" as a third state it has to guess about.
+      settlement: 'live',
       assets: ROBINHOOD_CONFIG.paymentTokens.map((t) => ({
         address: t.address,
         symbol: t.symbol,
