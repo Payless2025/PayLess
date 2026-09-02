@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkWebhookTarget, redactSecret } from '@/lib/x402/webhook-target';
 import { registerWebhook, listWebhooks, updateWebhook, deleteWebhook } from '@/lib/x402/webhooks';
 import { WebhookConfig, WebhookEventType } from '@/lib/x402/types';
 
@@ -7,12 +8,18 @@ import { WebhookConfig, WebhookEventType } from '@/lib/x402/types';
  */
 export async function GET(req: NextRequest) {
   try {
-    const webhooks = listWebhooks();
-    
+    // The secret is what makes a webhook signature mean anything. Returning it
+    // from a readable endpoint turned every signed delivery into a formality.
+    const webhooks = listWebhooks().map(({ id, config }) => ({
+      id,
+      config: { ...config, secret: redactSecret((config as { secret?: string }).secret) },
+    }));
+
     return NextResponse.json({
       success: true,
       webhooks,
       total: webhooks.length,
+      note: 'Secrets are shown redacted and are never returned in full.',
     });
   } catch (error) {
     console.error('Error listing webhooks:', error);
@@ -39,14 +46,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate URL
-    try {
-      new URL(url);
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid webhook URL' },
-        { status: 400 }
-      );
+    // Registering a URL and having a server fetch it is a request forgery
+    // primitive. Checked before anything is stored, so a blocked destination
+    // never becomes a delivery.
+    const target = checkWebhookTarget(url);
+    if (!target.ok) {
+      return NextResponse.json({ error: target.reason }, { status: 400 });
     }
 
     // Validate events
