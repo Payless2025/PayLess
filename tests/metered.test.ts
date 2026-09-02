@@ -10,7 +10,7 @@
 
 import assert from 'node:assert/strict';
 import { meteredSettlement } from '../lib/x402/middleware';
-import { meteredCost, BASE_FEE, PER_ROW_FEE, CEILING } from '../app/api/rwa/transfers/route';
+import { meteredTransferCost as meteredCost, TRANSFERS_BASE_FEE as BASE_FEE, TRANSFERS_PER_ROW_FEE as PER_ROW_FEE, TRANSFERS_CEILING as CEILING } from '../lib/x402/metering';
 import { readStockTransfers, findStockToken } from '../lib/chains/rwa';
 import { chainClient, withRpcRetry } from '../lib/chains/reader';
 

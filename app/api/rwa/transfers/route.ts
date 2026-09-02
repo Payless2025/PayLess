@@ -8,6 +8,12 @@ import {
 } from '@/lib/chains/rwa';
 import { chainClient, withRpcRetry } from '@/lib/chains/reader';
 import { ROBINHOOD_CHAIN_ID } from '@/lib/chains/config';
+import {
+  meteredTransferCost,
+  TRANSFERS_BASE_FEE,
+  TRANSFERS_PER_ROW_FEE,
+  TRANSFERS_CEILING,
+} from '@/lib/x402/metering';
 
 /**
  * Transfer history for one tokenised equity.
@@ -21,18 +27,6 @@ import { ROBINHOOD_CHAIN_ID } from '@/lib/chains/config';
  * the advertised maximum, which is the same bargain every other endpoint
  * already makes.
  */
-
-/** The scan itself, paid even when the range turns out to be empty. */
-export const BASE_FEE = 0.002;
-/** Each transfer row that comes back. */
-export const PER_ROW_FEE = 0.001;
-/** The advertised price, which is also the metering cap. */
-export const CEILING = 0.05;
-
-export function meteredCost(rows: number): string {
-  const cost = BASE_FEE + rows * PER_ROW_FEE;
-  return Math.min(cost, CEILING).toFixed(6);
-}
 
 async function handler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -76,10 +70,10 @@ async function handler(req: NextRequest) {
       },
       pricing: {
         model: 'metered',
-        baseFee: BASE_FEE,
-        perRow: PER_ROW_FEE,
-        ceiling: CEILING,
-        charged: meteredCost(transfers.length),
+        baseFee: TRANSFERS_BASE_FEE,
+        perRow: TRANSFERS_PER_ROW_FEE,
+        ceiling: TRANSFERS_CEILING,
+        charged: meteredTransferCost(transfers.length),
         note: 'Under the upto scheme you pay this metered cost. Under receipt or exact you pay the advertised maximum.',
       },
       nextSince: (BigInt(reading.toBlock) + BigInt(1)).toString(),
@@ -90,7 +84,7 @@ async function handler(req: NextRequest) {
     // What this response actually cost, for the payment layer to settle. Rows
     // that were scanned but trimmed by `limit` are not billed: the buyer pays
     // for what they received, not for what the server looked at.
-    response.headers.set('x-payment-cost', meteredCost(transfers.length));
+    response.headers.set('x-payment-cost', meteredTransferCost(transfers.length));
     return response;
   } catch (error) {
     console.error('[rwa/transfers]', error);
