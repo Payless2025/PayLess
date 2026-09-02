@@ -10,7 +10,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { privateKeyToAccount } from 'viem/accounts';
+import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { hashTypedData, getAddress, createPublicClient, http } from 'viem';
 import {
   permitDigest,
@@ -28,7 +28,11 @@ import {
   type UptoPayload,
 } from '../lib/x402/permit2';
 
-const account = privateKeyToAccount(('0x' + '1'.repeat(64)) as `0x${string}`);
+// Freshly generated, never a well-known key: famous test keys' addresses
+// carry EIP-7702 delegation code on this chain, which flips verification into
+// the ERC-1271 branch — correctly mirroring what Permit2 itself would do at
+// settle time, and breaking every EOA assumption these tests make.
+const account = privateKeyToAccount(generatePrivateKey());
 const USDG = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
 const SELLER = '0x426f8846B5011d5aCf659FE5bFBC5fdA6123f759';
 const OTHER = '0x4fD46Ce55eA3E51b771F663bd56b3910D9f39746';
@@ -183,7 +187,9 @@ async function run() {
     assert.match(r.reason!, /recovers to/, 'changing the amount must break the signature');
   });
 
-  await test('rejects a malformed signature without touching the network', async () => {
+  await test('rejects a malformed signature from an EOA owner', async () => {
+    // One network round trip happens first now: whether the owner has code
+    // decides which kind of signature is even acceptable.
     const r = await verifyPermit2Exact({ payload: base({ signature: '0xabc' }), requiredAmount: '0.01', payTo: SELLER, asset: USDG });
     assert.equal(r.ok, false);
     assert.match(r.reason!, /65 bytes/);
