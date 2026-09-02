@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkWalletTier, verifyMinimumTier, checkRateLimit, TokenTier } from './token-gating';
 import { trackApiRequest } from './analytics';
+import { provenAddress, proofConfigured } from './wallet-proof';
 
 export interface TokenGatedConfig {
   minimumTier?: TokenTier; // Minimum tier required (default: BASIC)
@@ -24,27 +25,37 @@ export function withTokenGating(
     const endpoint = new URL(req.url).pathname;
     
     try {
-      // Get wallet address from headers
-      const walletAddress = req.headers.get('x-wallet-address');
-      
-      if (!walletAddress) {
+      // The address must be proven, not claimed. An `x-wallet-address` header
+      // used to be enough here, which meant anyone could write a known whale's
+      // address and inherit their tier, their rate limit and their access. A
+      // tier derived from balanceOf(address) is only worth something when a
+      // signature ties the caller to that address.
+      const proof = provenAddress(req.headers);
+      if (proof.address === null) {
         trackApiRequest({
           endpoint,
           method: req.method,
           status: 401,
           responseTime: Date.now() - startTime,
-          error: 'Wallet address required',
+          error: proof.reason,
         });
-        
+
+        const legacyHeader = req.headers.get('x-wallet-address');
         return NextResponse.json(
           {
             error: 'Unauthorized',
-            message: 'x-wallet-address header is required for token-gated access',
-            code: 'WALLET_REQUIRED',
+            message: legacyHeader
+              ? 'An unsigned x-wallet-address header is a claim, not a proof, and no longer grants access.'
+              : proof.reason,
+            code: 'WALLET_PROOF_REQUIRED',
+            howTo: proofConfigured()
+              ? 'POST {"address":"0x…"} to /api/auth/challenge, sign the message with personal_sign, POST {message, signature} to /api/auth/verify, then send the returned token as "Authorization: Bearer <token>".'
+              : 'This server has no PAYLESS_AUTH_SECRET configured, so proofs cannot be issued yet.',
           },
           { status: 401 }
         );
       }
+      const walletAddress = proof.address;
       
       // Check rate limit first
       const rateCheck = await checkRateLimit(walletAddress);
