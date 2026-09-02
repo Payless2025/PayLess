@@ -40,6 +40,20 @@ import {
   formatUnits,
   type Hex,
 } from 'viem';
+
+const ERC1271_MAGIC = '0x1626ba7e';
+const ERC1271_ABI = [
+  {
+    name: 'isValidSignature',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'hash', type: 'bytes32' },
+      { name: 'signature', type: 'bytes' },
+    ],
+    outputs: [{ name: '', type: 'bytes4' }],
+  },
+] as const;
 import { chainClient, withRpcRetry } from '../chains/reader';
 import { ROBINHOOD_CHAIN_ID } from '../chains/config';
 
@@ -187,6 +201,69 @@ export async function isNonceUsed(owner: string, nonce: bigint): Promise<boolean
   return ((bitmap >> bit) & BigInt(1)) === BigInt(1);
 }
 
+
+/**
+ * Who authorised this digest — a key, or a contract with opinions.
+ *
+ * An EOA owner signs with its key and we recover the address. A contract
+ * owner cannot sign anything; instead ERC-1271 lets us ask it, and Permit2
+ * will ask it the same question at settle time. This is what makes a
+ * PolicyWallet work with zero changes to the proxies: the wallet's policy
+ * runs inside isValidSignature, so a signature that verifies here is one the
+ * chain itself will accept, and one the policy rejects never even reaches a
+ * broadcast.
+ */
+async function signatureAuthorises(params: {
+  owner: string;
+  digest: Hex;
+  signature: string;
+}): Promise<{ ok: boolean; contract: boolean; reason?: string }> {
+  const owner = getAddress(params.owner);
+
+  let code: string | undefined;
+  try {
+    code = await withRpcRetry(() => chainClient().getBytecode({ address: owner }));
+  } catch {
+    return { ok: false, contract: false, reason: 'Could not determine whether the owner is a contract.' };
+  }
+
+  if (code && code !== '0x') {
+    try {
+      const answer = await withRpcRetry(() =>
+        chainClient().readContract({
+          address: owner,
+          abi: ERC1271_ABI,
+          functionName: 'isValidSignature',
+          args: [params.digest, params.signature as Hex],
+        })
+      );
+      if ((answer as string).toLowerCase() === ERC1271_MAGIC) return { ok: true, contract: true };
+      return {
+        ok: false,
+        contract: true,
+        reason:
+          'The owner is a policy wallet and it refused this signature. Whatever was asked for is outside its policy: over the per-call cap, an unlisted recipient or facilitator, an expired window, or a revoked session key.',
+      };
+    } catch {
+      return { ok: false, contract: true, reason: 'The owner contract reverted on isValidSignature.' };
+    }
+  }
+
+  if (!/^0x[0-9a-fA-F]{130}$/.test(params.signature)) {
+    return { ok: false, contract: false, reason: 'Signature must be 65 bytes of hex.' };
+  }
+  let recovered: string;
+  try {
+    recovered = await recoverAddress({ hash: params.digest, signature: params.signature as Hex });
+  } catch {
+    return { ok: false, contract: false, reason: 'Signature could not be recovered.' };
+  }
+  if (getAddress(recovered) !== owner) {
+    return { ok: false, contract: false, reason: `Signature recovers to ${recovered}, not the stated owner ${owner}.` };
+  }
+  return { ok: true, contract: false };
+}
+
 export interface Permit2Check {
   ok: boolean;
   reason?: string;
@@ -218,8 +295,8 @@ export async function verifyPermit2Exact(params: {
   ] as const) {
     if (!value || !isAddress(value)) return { ok: false, reason: `"${label}" must be a valid address.` };
   }
-  if (!payload.signature || !/^0x[0-9a-fA-F]{130}$/.test(payload.signature)) {
-    return { ok: false, reason: 'Signature must be 65 bytes of hex.' };
+  if (!payload.signature || !/^0x[0-9a-fA-F]+$/.test(payload.signature)) {
+    return { ok: false, reason: 'Signature must be hex. For a policy wallet owner this is the full policy blob, not a bare 65-byte signature.' };
   }
 
   // The binding the proxy enforces on chain. Checked here so a mismatch is a
@@ -244,18 +321,12 @@ export async function verifyPermit2Exact(params: {
     return { ok: false, reason: `The signature expired at ${new Date(Number(deadline) * 1000).toISOString()}.` };
   }
 
-  let recovered: string;
-  try {
-    recovered = await recoverAddress({
-      hash: permitDigest(payload),
-      signature: payload.signature as Hex,
-    });
-  } catch {
-    return { ok: false, reason: 'Signature could not be recovered.' };
-  }
-  if (getAddress(recovered) !== getAddress(payload.owner)) {
-    return { ok: false, reason: `Signature recovers to ${recovered}, not the stated owner ${getAddress(payload.owner)}.` };
-  }
+  const authorised = await signatureAuthorises({
+    owner: payload.owner,
+    digest: permitDigest(payload),
+    signature: payload.signature,
+  });
+  if (!authorised.ok) return { ok: false, reason: authorised.reason, retryable: false };
 
   // Everything above needs no network. Everything below does, so the cheap
   // checks and the pure-crypto one run first: a bad signature should not cost
@@ -406,8 +477,8 @@ export async function verifyPermit2Upto(params: {
   ] as const) {
     if (!value || !isAddress(value)) return { ok: false, reason: `"${label}" must be a valid address.` };
   }
-  if (!payload.signature || !/^0x[0-9a-fA-F]{130}$/.test(payload.signature)) {
-    return { ok: false, reason: 'Signature must be 65 bytes of hex.' };
+  if (!payload.signature || !/^0x[0-9a-fA-F]+$/.test(payload.signature)) {
+    return { ok: false, reason: 'Signature must be hex. For a policy wallet owner this is the full policy blob, not a bare 65-byte signature.' };
   }
 
   if (getAddress(payload.witness.to) !== getAddress(payTo)) {
@@ -439,15 +510,12 @@ export async function verifyPermit2Upto(params: {
     return { ok: false, reason: `The signature expired at ${new Date(Number(deadline) * 1000).toISOString()}.` };
   }
 
-  let recovered: string;
-  try {
-    recovered = await recoverAddress({ hash: uptoDigest(payload), signature: payload.signature as Hex });
-  } catch {
-    return { ok: false, reason: 'Signature could not be recovered.' };
-  }
-  if (getAddress(recovered) !== getAddress(payload.owner)) {
-    return { ok: false, reason: `Signature recovers to ${recovered}, not the stated owner ${getAddress(payload.owner)}.` };
-  }
+  const authorised = await signatureAuthorises({
+    owner: payload.owner,
+    digest: uptoDigest(payload),
+    signature: payload.signature,
+  });
+  if (!authorised.ok) return { ok: false, reason: authorised.reason, retryable: false };
 
   let decimals: number;
   try {
@@ -517,4 +585,50 @@ export async function verifyPermit2Upto(params: {
   }
 
   return { ok: true, payer: getAddress(payload.owner), amount: formatUnits(charge, decimals) };
+}
+
+// ---------------------------------------------------------------------------
+// PolicyWallet
+// ---------------------------------------------------------------------------
+
+export const POLICY_WALLET_ADDRESS = '0xE8f98Abe2Aaca504de0Eb1B033F6B0318a8C237B' as const;
+
+/**
+ * The signature blob a PolicyWallet expects, mirroring PolicyWallet.sol:
+ * the permit fields so the contract can re-derive the digest and apply its
+ * policy, then the session key's 65-byte signature over that digest.
+ *
+ * The session signature alone is worthless on purpose. It only becomes a
+ * payment if the wallet's on-chain policy agrees with every field in front
+ * of it.
+ */
+export function policyWalletBlob(params: {
+  scheme: 'exact' | 'upto';
+  token: string;
+  amount: string;
+  nonce: string;
+  deadline: string;
+  to: string;
+  facilitator?: string;
+  validAfter: string;
+  sessionSignature: Hex;
+}): Hex {
+  return encodeAbiParameters(
+    [
+      { type: 'uint8' }, { type: 'address' }, { type: 'uint256' },
+      { type: 'uint256' }, { type: 'uint256' }, { type: 'address' },
+      { type: 'address' }, { type: 'uint256' }, { type: 'bytes' },
+    ],
+    [
+      params.scheme === 'upto' ? 1 : 0,
+      getAddress(params.token),
+      BigInt(params.amount),
+      BigInt(params.nonce),
+      BigInt(params.deadline),
+      getAddress(params.to),
+      getAddress(params.facilitator ?? '0x0000000000000000000000000000000000000000'),
+      BigInt(params.validAfter),
+      params.sessionSignature,
+    ]
+  );
 }
