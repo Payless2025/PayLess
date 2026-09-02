@@ -3,6 +3,10 @@ import { getWebhook } from '@/lib/x402/webhooks';
 import { WebhookEventType, PaymentWebhookData } from '@/lib/x402/types';
 import { emitPaymentConfirmed } from '@/lib/x402/webhooks';
 
+/** One test per webhook per minute. Enough to test, useless to flood with. */
+const TEST_COOLDOWN_MS = 60_000;
+const lastTest = new Map<string, number>();
+
 /**
  * POST /api/webhooks/test?id={webhookId} - Test webhook delivery
  */
@@ -25,6 +29,21 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
+
+    // A registered destination is public by definition, so the remaining abuse
+    // is volume: point this at somebody and hold down the button. One test per
+    // webhook per minute is plenty for testing and useless for flooding.
+    const last = lastTest.get(webhookId) ?? 0;
+    const waited = Date.now() - last;
+    if (waited < TEST_COOLDOWN_MS) {
+      return NextResponse.json(
+        {
+          error: `Test deliveries are limited to one per minute per webhook. Try again in ${Math.ceil((TEST_COOLDOWN_MS - waited) / 1000)}s.`,
+        },
+        { status: 429 }
+      );
+    }
+    lastTest.set(webhookId, Date.now());
 
     // Create test payment data
     const testData: PaymentWebhookData = {

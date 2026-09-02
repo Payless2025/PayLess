@@ -4,6 +4,7 @@
 
 import crypto from 'crypto';
 import { WebhookEvent, WebhookConfig, WebhookDelivery, WebhookEventType, PaymentWebhookData } from './types';
+import { checkWebhookTarget } from './webhook-target';
 
 // In-memory storage (replace with database in production)
 const webhooks: Map<string, WebhookConfig> = new Map();
@@ -128,6 +129,17 @@ async function deliverWebhook(
     const payload = JSON.stringify(event);
     const signature = createWebhookSignature(payload, config.secret);
 
+    // Re-checked at delivery, not only at registration. A host that was public
+    // when it was registered can point somewhere private later, and following a
+    // redirect would take us there without ever being asked.
+    const target = checkWebhookTarget(config.url);
+    if (!target.ok) {
+      delivery.status = 'failed';
+      delivery.response = { error: target.reason };
+      deliveries.set(delivery.id, delivery);
+      return;
+    }
+
     const response = await fetch(config.url, {
       method: 'POST',
       headers: {
@@ -137,6 +149,10 @@ async function deliverWebhook(
         'X-Payless-Event-Type': event.type,
       },
       body: payload,
+      // A public URL that redirects to a private one is the standard way around
+      // a destination check, so redirects are not followed at all.
+      redirect: 'manual',
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (response.ok) {
