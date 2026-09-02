@@ -7,6 +7,13 @@ import { verifySettlement } from '../chains/settlement';
 import { claimSettlement } from './spent-store';
 import { ROBINHOOD_CONFIG } from '../chains/config';
 import { checkSubscription, subscriptionHeaders, offersFor } from './subscription-middleware';
+import {
+  supportedKinds,
+  verify as facilitatorVerify,
+  settle as facilitatorSettle,
+  NETWORK as X402_NETWORK,
+  type PaymentRequirements,
+} from './facilitator';
 
 /**
  * Verify a Robinhood Chain payment
@@ -129,6 +136,103 @@ export async function verifyPayment(
   }
 }
 
+
+/**
+ * Is this header a signed authorisation rather than a receipt?
+ *
+ * Told apart by shape rather than by a field the caller sets, so an older
+ * client that only knows about transaction hashes keeps working untouched.
+ */
+function parsePermitPayload(header: string): (Record<string, any> & { scheme: string }) | null {
+  let parsed: Record<string, any>;
+  try {
+    parsed = JSON.parse(header);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+  if (parsed.transactionHash) return null;
+  if (!parsed.signature || !parsed.permitted || !parsed.witness) return null;
+
+  // upto authorisations name their facilitator; exact ones do not.
+  const scheme = typeof parsed.scheme === 'string'
+    ? parsed.scheme
+    : parsed.witness?.facilitator
+      ? 'upto'
+      : 'exact';
+  return { ...parsed, scheme };
+}
+
+/**
+ * Serve a request paid for by signature.
+ *
+ * The order here is deliberate and the opposite of the receipt path: settling
+ * is what actually moves the money, so the handler runs first. Charging before
+ * knowing the response rendered would be charging for nothing.
+ */
+async function payViaFacilitator(args: {
+  permitPayload: Record<string, any> & { scheme: string };
+  price: string;
+  pathname: string;
+  req: NextRequest;
+  handler: (req: NextRequest) => Promise<NextResponse>;
+  startTime: number;
+  method: string;
+  userAgent?: string;
+  paymentAmount?: string;
+}): Promise<NextResponse> {
+  const { permitPayload, price, pathname, req, handler } = args;
+
+  const requirements: PaymentRequirements = {
+    scheme: permitPayload.scheme,
+    network: X402_NETWORK,
+    amount: price,
+    payTo: PAYMENT_CONFIG.walletAddress,
+    asset: PAYMENT_CONFIG.tokenAddress,
+    resource: pathname,
+  };
+
+  const check = await facilitatorVerify(requirements, permitPayload as any);
+  if (!check.isValid) {
+    trackApiRequest({
+      endpoint: pathname, method: args.method, status: 402,
+      paymentRequired: true, paymentProvided: true, paymentValid: false,
+      amount: args.paymentAmount, walletAddress: permitPayload.owner,
+      responseTime: Date.now() - args.startTime, userAgent: args.userAgent,
+      error: check.invalidReason,
+    });
+    return NextResponse.json(
+      { error: check.invalidReason, ...(check.retryable ? { retry: true } : {}) },
+      { status: 402 }
+    );
+  }
+
+  const response = await handler(req);
+  const settled = await facilitatorSettle(requirements, permitPayload as any);
+
+  trackApiRequest({
+    endpoint: pathname, method: args.method, status: response.status,
+    paymentRequired: true, paymentProvided: true, paymentValid: settled.success,
+    amount: args.paymentAmount, walletAddress: check.payer,
+    responseTime: Date.now() - args.startTime, userAgent: args.userAgent,
+    ...(settled.success ? {} : { error: settled.errorReason }),
+  });
+
+  if (!settled.success) {
+    // The response is already made. Saying so on it is the only honest option
+    // left, and hiding a failed settlement would be the dishonest one.
+    response.headers.set('x-payment-settlement', 'failed');
+    response.headers.set('x-payment-error', String(settled.errorReason ?? '').slice(0, 200));
+    return response;
+  }
+
+  response.headers.set('x-payment-confirmed', settled.transaction ?? '');
+  response.headers.set('x-payment-scheme', permitPayload.scheme);
+  response.headers.set('x-payment-chain', 'robinhood');
+  if (check.payer) response.headers.set('x-payment-payer', check.payer);
+  return response;
+}
+
 /**
  * Create 402 Payment Required response
  */
@@ -152,6 +256,20 @@ export function create402Response(amount: string, pathname?: string): NextRespon
           tokens: ROBINHOOD_CONFIG.paymentTokens.map((token) => token.symbol),
         },
       ],
+      // Every way this endpoint can be paid, in the x402 v2 shape.
+      //
+      // Without this a caller cannot know a gasless option exists, and will
+      // send a transfer and wait for its receipt because that is the only
+      // thing the challenge told them about.
+      accepts: supportedKinds().map((kind) => ({
+        scheme: kind.scheme,
+        network: kind.network,
+        amount,
+        payTo: PAYMENT_CONFIG.walletAddress,
+        asset: PAYMENT_CONFIG.tokenAddress,
+        resource: pathname,
+        extra: kind.extra,
+      })),
       // One request, one payment is not the only shape. Where a plan covers this
       // endpoint, the caller can commit once and stop paying per call.
       ...(subscribe.length ? { subscribe } : {}),
@@ -329,6 +447,24 @@ export function withX402Payment(
         walletAddress = payment.from;
       } catch (e) {
         // Ignore parsing errors for analytics
+      }
+
+      // A signed Permit2 authorisation rather than a transaction hash. The
+      // buyer sent nothing and paid no gas; the facilitator broadcasts on their
+      // behalf. Routed separately because there is no receipt to verify yet.
+      const permitPayload = parsePermitPayload(paymentHeader);
+      if (permitPayload) {
+        return await payViaFacilitator({
+          permitPayload,
+          price: endpointPrice,
+          pathname,
+          req,
+          handler,
+          startTime,
+          method,
+          userAgent,
+          paymentAmount,
+        });
       }
 
       // Verify payment
