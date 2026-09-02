@@ -95,6 +95,9 @@ export const ENDPOINT_PRICING: EndpointConfig = {
   '/api/rwa/token': '0.01',
   '/api/rwa/holdings': '0.02',
   '/api/data/stock': '0.01',
+  // Metered: a base fee plus a per-row rate, settled at actual cost under the
+  // upto scheme. This figure is the ceiling, not the price.
+  '/api/rwa/transfers': '0.05',
 
   // Real third-party data, no key required
   '/api/data/crypto': '0.015',

@@ -128,3 +128,111 @@ export async function readStockHoldings(owner: `0x${string}`, tokens: StockToken
   );
   return held;
 }
+
+// ---------------------------------------------------------------------------
+// Transfer history
+//
+// Everything above reads the present: supply, balance, metadata. This reads
+// what actually happened — who moved NVDA, when, how much. It is the first
+// endpoint here whose answer has no knowable size in advance: a quiet block
+// range holds nothing, an active one holds hundreds of rows. That makes it the
+// natural first user of the `upto` scheme, where the buyer signs a ceiling and
+// is charged for what actually came back.
+// ---------------------------------------------------------------------------
+
+const TRANSFER_EVENT = {
+  name: 'Transfer',
+  type: 'event',
+  inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false },
+  ],
+} as const;
+
+/**
+ * The widest range one query may scan. Wide enough to be useful (about two
+ * hours of blocks), narrow enough that the public RPC answers it, and a hard
+ * bound on how much work one payment can buy.
+ */
+export const MAX_TRANSFER_RANGE = 5000;
+
+export interface StockTransfer {
+  from: string;
+  to: string;
+  amount: string;
+  amountRaw: string;
+  blockNumber: string;
+  txHash: string;
+  logIndex: number;
+  explorer: string;
+}
+
+export interface StockTransferReading {
+  token: StockToken;
+  /** Re-checked against the on-chain name at read time, same as readStockToken. */
+  canonical: boolean;
+  fromBlock: string;
+  toBlock: string;
+  transfers: StockTransfer[];
+}
+
+/**
+ * Every Transfer of one stock token in a block range, straight from the chain.
+ *
+ * The range is clamped rather than rejected: a caller asking for more than
+ * MAX_TRANSFER_RANGE gets the most recent slice of what they asked for and the
+ * response says which blocks it actually covers, so paging is a matter of
+ * moving `fromBlock` — not of guessing what the server silently did.
+ */
+export async function readStockTransfers(
+  token: StockToken,
+  fromBlock: bigint,
+  toBlock: bigint
+): Promise<StockTransferReading> {
+  const rpc = chainClient();
+
+  if (toBlock < fromBlock) {
+    throw new Error(`Block range is inverted: ${fromBlock} to ${toBlock}.`);
+  }
+  const clampedFrom =
+    toBlock - fromBlock >= BigInt(MAX_TRANSFER_RANGE)
+      ? toBlock - BigInt(MAX_TRANSFER_RANGE - 1)
+      : fromBlock;
+
+  const [logs, name, decimalsRaw] = await Promise.all([
+    withRpcRetry(() =>
+      rpc.getLogs({
+        address: token.address,
+        event: TRANSFER_EVENT,
+        fromBlock: clampedFrom,
+        toBlock,
+      })
+    ),
+    withRpcRetry(() =>
+      rpc.readContract({ address: token.address, abi: ERC20_READ_ABI, functionName: 'name' })
+    ),
+    withRpcRetry(() =>
+      rpc.readContract({ address: token.address, abi: ERC20_READ_ABI, functionName: 'decimals' })
+    ),
+  ]);
+
+  const decimals = Number(decimalsRaw);
+
+  return {
+    token,
+    canonical: CANONICAL_NAME.test(name as string),
+    fromBlock: clampedFrom.toString(),
+    toBlock: toBlock.toString(),
+    transfers: (logs as any[]).map((log) => ({
+      from: getAddress(log.args.from),
+      to: getAddress(log.args.to),
+      amount: formatUnits(log.args.value as bigint, decimals),
+      amountRaw: (log.args.value as bigint).toString(),
+      blockNumber: log.blockNumber.toString(),
+      txHash: log.transactionHash,
+      logIndex: log.logIndex,
+      explorer: `${ROBINHOOD_EXPLORER_URL}/tx/${log.transactionHash}`,
+    })),
+  };
+}
