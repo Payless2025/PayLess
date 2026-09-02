@@ -24,6 +24,11 @@ import {
 import { MemorySpentStore, type SpentStore } from './store.js';
 import { verifySettlement, DEFAULT_MAX_AGE_MS } from './verify.js';
 import type { Challenge, PaylessOptions, PaymentPayload } from './types.js';
+import {
+  FacilitatorClient,
+  FacilitatorUnavailable,
+  type FacilitatorPaymentRequirements,
+} from './facilitator.js';
 
 export type Handler = (req: Request, ...rest: any[]) => Promise<Response> | Response;
 
@@ -40,6 +45,9 @@ export class Payless {
   readonly client: PublicClient;
   readonly store: SpentStore;
   readonly maxAgeMs: number;
+  readonly facilitator?: FacilitatorClient;
+  readonly scheme: string;
+  private settleFirst: boolean;
 
   constructor(options: PaylessOptions) {
     if (!options?.recipient) {
@@ -50,6 +58,37 @@ export class Payless {
     this.client = createChainClient(options.rpcUrl);
     this.store = options.store ?? new MemorySpentStore();
     this.maxAgeMs = options.maxAgeMs ?? DEFAULT_MAX_AGE_MS;
+    this.scheme = options.scheme ?? 'receipt';
+
+    if (options.facilitator) {
+      this.facilitator =
+        options.facilitator instanceof FacilitatorClient
+          ? options.facilitator
+          : new FacilitatorClient(options.facilitator as any);
+    }
+
+    // Receipt payments have already moved before the request arrives, so
+    // claiming first costs the buyer nothing and closes the window where two
+    // concurrent requests both pass verify and both get served. Signature
+    // schemes settle money at settle time, so there the handler runs first.
+    this.settleFirst = options.settleFirst ?? this.scheme === 'receipt';
+  }
+
+  /** CAIP-2, which is how x402 v2 names a network. */
+  get network() {
+    return `eip155:${ROBINHOOD_CHAIN_ID}`;
+  }
+
+  private requirements(price: string, resource: string): FacilitatorPaymentRequirements {
+    return {
+      scheme: this.scheme,
+      network: this.network,
+      amount: price,
+      payTo: this.recipient,
+      asset: this.tokens[0]?.address,
+      resource,
+      maxAgeMs: this.maxAgeMs,
+    };
   }
 
   /** The 402 body advertising what this endpoint costs and how to pay it. */
@@ -107,6 +146,10 @@ export class Payless {
         );
       }
 
+      if (this.facilitator) {
+        return this.viaFacilitator(req, rest, handler, price, pathname, payload);
+      }
+
       const settlement = await verifySettlement({
         client: this.client,
         txHash: payload.transactionHash,
@@ -149,6 +192,80 @@ export class Payless {
       out.headers.set('x-payment-chain', String(ROBINHOOD_CHAIN_ID));
       return out;
     };
+  }
+
+  /**
+   * The facilitator path. No RPC call, no local ledger, two HTTP calls.
+   *
+   * A facilitator being down is reported as 503, not 402. Telling a buyer their
+   * payment is invalid because our dependency is unreachable would be a lie
+   * that costs them money.
+   */
+  private async viaFacilitator(
+    req: Request,
+    rest: any[],
+    handler: Handler,
+    price: string,
+    pathname: string,
+    payload: PaymentPayload
+  ): Promise<Response> {
+    const requirements = this.requirements(price, pathname);
+    const facilitator = this.facilitator!;
+
+    try {
+      const check = await facilitator.verify(requirements, payload);
+      if (!check.isValid) {
+        return json(
+          { error: check.invalidReason, ...(check.retryable ? { pending: true, retry: true } : {}) },
+          402
+        );
+      }
+
+      // Claim before serving, when claiming takes nothing. See the constructor.
+      let settled;
+      if (this.settleFirst) {
+        settled = await facilitator.settle(requirements, payload);
+        if (!settled.success) {
+          return json(
+            { error: settled.errorReason, ...(settled.retryable ? { retry: true } : {}) },
+            402
+          );
+        }
+      }
+
+      const response = await handler(req, ...rest);
+
+      if (!this.settleFirst) {
+        settled = await facilitator.settle(requirements, payload);
+        if (!settled.success) {
+          // The resource is already served. Surfacing this on the response
+          // rather than swallowing it is the only honest option left.
+          const out = new Response(response.body, response);
+          out.headers.set('x-payment-settlement', 'failed');
+          out.headers.set('x-payment-error', String(settled.errorReason ?? 'settlement failed').slice(0, 200));
+          return out;
+        }
+      }
+
+      const out = new Response(response.body, response);
+      out.headers.set('x-payment-confirmed', settled?.transaction ?? '');
+      out.headers.set('x-payment-amount', price);
+      out.headers.set('x-payment-chain', String(ROBINHOOD_CHAIN_ID));
+      out.headers.set('x-payment-facilitator', facilitator.url);
+      if (check.payer) out.headers.set('x-payment-payer', check.payer);
+      return out;
+    } catch (error) {
+      if (error instanceof FacilitatorUnavailable) {
+        return json(
+          {
+            error: 'Payment could not be checked right now, so nothing was consumed. Retry shortly.',
+            retry: true,
+          },
+          503
+        );
+      }
+      throw error;
+    }
   }
 
   /** Verify a transaction without gating a request — useful for reconciliation. */

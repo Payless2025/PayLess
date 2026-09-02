@@ -84,6 +84,59 @@ If the transfer is not mined yet the server answers `402` with `retry: true` —
 "come back in a moment", not "pay again". `payFor` reuses the same hash rather
 than paying twice.
 
+## Using a facilitator
+
+Everything above assumes you run the chain work yourself: an RPC endpoint, log
+decoding, token decimals, a freshness policy and a replay ledger, all to sell one
+response for a cent.
+
+A facilitator absorbs that. Point at one and you need none of it:
+
+```ts
+import { createPayless } from 'payless';
+
+const payless = createPayless({
+  recipient: '0xYourAddress',
+  facilitator: 'https://www.payless.network/api/facilitator',
+});
+
+export const GET = payless.protect(handler, '0.01');
+```
+
+No `rpcUrl`, no `store`. Two HTTP calls happen per paid request and your code
+makes neither of them.
+
+Check at startup that it settles what you intend to sell, because finding out at
+settlement time is too late — the response is already served:
+
+```ts
+import { createFacilitator } from 'payless';
+
+const f = createFacilitator('https://www.payless.network/api/facilitator');
+await f.assertSupports('receipt', 'eip155:4663');
+```
+
+### When settlement happens
+
+For the `receipt` scheme the payment has already moved on chain before your
+endpoint is called, so settling only claims it. That is done **before** your
+handler runs: claiming costs the buyer nothing at that point, and it closes the
+window where two concurrent requests both pass verification and both get served
+off one payment.
+
+For signature schemes, where settling is what actually moves the money, the
+handler runs first. Charging before knowing the response rendered would be
+charging for nothing.
+
+Both defaults follow from `scheme`. Override with `settleFirst` if your endpoint
+needs the other order.
+
+### When the facilitator is down
+
+A facilitator that cannot be reached produces a **503** with `retry: true`, not a
+402. Telling a buyer their payment is invalid because a dependency is unreachable
+would be a lie that costs them money.
+
 ## Replay protection
 
 The transaction hash is the replay key: unique, already on chain, and no
@@ -134,6 +187,9 @@ createPayless({
 | `tokens` | USDG, WETH | Accepted payment tokens. |
 | `store` | in-memory | Replay ledger. Replace on serverless. |
 | `maxAgeMs` | 30 min | How old a settlement may be. |
+| `facilitator` | — | URL or client. Set it and `rpcUrl` and `store` stop mattering: verification and the replay ledger move to the facilitator. |
+| `scheme` | `receipt` | What to advertise and settle. |
+| `settleFirst` | true for `receipt` | Claim before running the handler. See above for why the default differs by scheme. |
 
 ## Reconciliation
 
