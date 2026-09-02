@@ -35,6 +35,7 @@ import {
   PERMIT2_ADDRESS,
   type Permit2Payload,
 } from './permit2';
+import { signerFromEnv } from './facilitator-signer';
 
 /** CAIP-2, the identifier form x402 v2 uses for networks. */
 export const NETWORK = `eip155:${ROBINHOOD_CHAIN_ID}`;
@@ -138,13 +139,30 @@ export const SUPPORTED_KINDS = [
       witnessTypeString: 'Witness(address to,uint256 validAfter)',
       description:
         'The buyer signs a Permit2 authorisation and never sends a transaction. Requires one prior approve(Permit2) on the token. USDG here implements neither EIP-3009 nor EIP-2612, so this is the gasless path on this chain.',
-      settlement: 'pending',
+      settlement: 'reported at runtime',
       assets: ROBINHOOD_CONFIG.paymentTokens.map((t) => ({
         address: t.address, symbol: t.symbol, decimals: t.decimals,
       })),
     },
   },
 ] as const;
+
+/**
+ * The advertised list, with the one field that cannot be a constant.
+ *
+ * Whether `exact` can actually settle depends on a key being present in this
+ * process. Advertising `live` from a constant would make the discovery document
+ * lie the moment the key is missing, which is the failure a client can least
+ * afford to discover at settle time.
+ */
+export function supportedKinds() {
+  const canBroadcast = signerFromEnv() !== null;
+  return SUPPORTED_KINDS.map((kind) =>
+    kind.scheme === 'exact'
+      ? { ...kind, extra: { ...kind.extra, settlement: canBroadcast ? 'live' : 'unconfigured' } }
+      : kind
+  );
+}
 
 const KNOWN_SCHEMES: Set<string> = new Set(SUPPORTED_KINDS.map((k) => k.scheme));
 
@@ -317,20 +335,7 @@ export async function settle(
   requirements: PaymentRequirements,
   payload: PaymentPayload
 ): Promise<SettleResponse> {
-  if (requirements?.scheme === 'exact') {
-    // Verification for this scheme is complete and honest; broadcasting is not
-    // built. Saying so beats returning a success that moved no money.
-    const check = await verify(requirements, payload);
-    return {
-      success: false,
-      errorReason: check.isValid
-        ? 'This authorisation verifies, but exact settlement is not live yet: the facilitator has no signing key to broadcast it. Use the receipt scheme today.'
-        : check.invalidReason,
-      retryable: check.isValid ? true : check.retryable,
-      network: NETWORK,
-      payer: check.payer,
-    };
-  }
+  if (requirements?.scheme === 'exact') return settleExact(requirements, payload);
 
   const check = await verify(requirements, payload);
   if (!check.isValid) {
@@ -364,6 +369,70 @@ export async function settle(
   return {
     success: true,
     transaction: payload.transactionHash,
+    network: NETWORK,
+    payer: check.payer,
+  };
+}
+
+/**
+ * Broadcast an `exact` authorisation.
+ *
+ * Double-settling is prevented by Permit2 itself: the nonce bitmap is on chain
+ * and a second settle of the same nonce cannot succeed. The simulation below
+ * catches that before it costs gas, which is why the ledger claim here is an
+ * optimisation rather than the safety mechanism. A ledger outage therefore does
+ * not have to block settlement the way it does for the receipt scheme, where
+ * nothing on chain distinguishes a first use from a replay.
+ */
+async function settleExact(
+  requirements: PaymentRequirements,
+  payload: PaymentPayload
+): Promise<SettleResponse> {
+  const check = await verify(requirements, payload);
+  if (!check.isValid) {
+    return { success: false, errorReason: check.invalidReason, retryable: check.retryable, network: NETWORK };
+  }
+
+  const signer = signerFromEnv();
+  if (!signer) {
+    return {
+      success: false,
+      errorReason:
+        'This authorisation is valid, but the facilitator has no signing key configured, so it cannot be broadcast. The receipt scheme settles today.',
+      retryable: true,
+      network: NETWORK,
+      payer: check.payer,
+    };
+  }
+
+  // Refusing while out of gas beats a revert the seller has to interpret.
+  try {
+    if ((await signer.gasBalance()) === BigInt(0)) {
+      return {
+        success: false,
+        errorReason: 'The facilitator is out of gas and cannot broadcast right now.',
+        retryable: true,
+        network: NETWORK,
+        payer: check.payer,
+      };
+    }
+  } catch {
+    // A balance read failing is not a reason to refuse; the simulation will
+    // catch anything that actually cannot be sent.
+  }
+
+  const result = await signer.settleExact(payload as unknown as Permit2Payload);
+
+  if (result.status === 'settled') {
+    return { success: true, transaction: result.txHash, network: NETWORK, payer: check.payer };
+  }
+  return {
+    success: false,
+    errorReason: result.error,
+    // Broadcast but unconfirmed: asking again is safe, because Permit2 will
+    // refuse a second settle of a nonce that landed.
+    retryable: result.status === 'in-flight',
+    transaction: result.txHash,
     network: NETWORK,
     payer: check.payer,
   };

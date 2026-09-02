@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SUPPORTED_KINDS, NETWORK, X402_VERSION } from '@/lib/x402/facilitator';
+import { supportedKinds, NETWORK, X402_VERSION } from '@/lib/x402/facilitator';
 import { isSpentStoreShared, getSpentStore } from '@/lib/x402/spent-store';
 
 // Reports live runtime state, so it must not be answered from a build-time render.
@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    kinds: SUPPORTED_KINDS,
+    kinds: supportedKinds(),
     x402Version: X402_VERSION,
     network: NETWORK,
     // Settling without an atomic ledger would let one payment buy a response
