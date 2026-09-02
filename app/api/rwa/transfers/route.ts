@@ -3,6 +3,7 @@ import { withX402Payment } from '@/lib/x402/middleware';
 import {
   findStockToken,
   readStockTransfers,
+  pageTransfers,
   STOCK_TOKENS,
   MAX_TRANSFER_RANGE,
 } from '@/lib/chains/rwa';
@@ -43,7 +44,10 @@ async function handler(req: NextRequest) {
     const head = await withRpcRetry(() => chainClient().getBlockNumber());
     const since = searchParams.get('since');
     const toBlock = head;
-    const fromBlock = since ? BigInt(since) : head - BigInt(MAX_TRANSFER_RANGE - 1);
+    // Default window is 1000 blocks, not the 5000 cap: at NVDA's observed rate
+    // a 5000-block default hit the price ceiling on nearly every first query,
+    // which made the metering invisible exactly where it should show.
+    const fromBlock = since ? BigInt(since) : head - BigInt(999);
     if (fromBlock > toBlock) {
       return NextResponse.json(
         { success: false, error: `"since" (${fromBlock}) is beyond the chain head (${toBlock}).` },
@@ -54,7 +58,8 @@ async function handler(req: NextRequest) {
     const reading = await readStockTransfers(token, fromBlock, toBlock);
 
     const limit = Math.max(1, Math.min(Number(searchParams.get('limit') || 500), 500));
-    const transfers = reading.transfers.slice(-limit);
+    const page = pageTransfers(reading.transfers, limit, BigInt(reading.toBlock));
+    const transfers = page.rows;
 
     const response = NextResponse.json({
       success: true,
@@ -76,7 +81,11 @@ async function handler(req: NextRequest) {
         charged: meteredTransferCost(transfers.length),
         note: 'Under the upto scheme you pay this metered cost. Under receipt or exact you pay the advertised maximum.',
       },
-      nextSince: (BigInt(reading.toBlock) + BigInt(1)).toString(),
+      truncated: page.truncated,
+      ...(page.overlap
+        ? { overlap: true, note: 'One block held more rows than the limit; the next page revisits it rather than losing rows.' }
+        : {}),
+      nextSince: page.nextSince.toString(),
       source: 'Robinhood Chain RPC (live getLogs)',
       retrievedAt: new Date().toISOString(),
     });

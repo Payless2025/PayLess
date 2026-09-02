@@ -13,26 +13,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { Budget } from './budget.js';
 import { AgentWallet, PERMIT2_ADDRESS } from './wallet.js';
+import { gaslessOption, toBaseUnits, type Accept } from './select.js';
 
 const USDG = {
   address: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' as `0x${string}`,
   decimals: 6,
   symbol: 'USDG',
 };
-
-interface Accept {
-  scheme: string;
-  network: string;
-  amount: string;
-  payTo: string;
-  asset?: string;
-  extra?: {
-    assetTransferMethod?: string;
-    spender?: string;
-    facilitator?: string;
-    settlement?: string;
-  };
-}
 
 interface Challenge {
   payment?: {
@@ -45,26 +32,6 @@ interface Challenge {
   };
 }
 
-/**
- * Pick the cheapest way to pay.
- *
- * A signed authorisation costs the agent no gas and no wait for a block, so it
- * wins whenever the endpoint offers one and the facilitator is actually live.
- * `exact` is preferred over `upto` because it settles a known amount; `upto`
- * hands the seller discretion within a ceiling, which is worth having but not
- * worth taking by default.
- */
-function gaslessOption(challenge: Challenge): Accept | null {
-  const accepts = challenge.payment?.accepts ?? [];
-  const usable = accepts.filter(
-    (a) =>
-      a.extra?.assetTransferMethod === 'permit2' &&
-      a.extra?.settlement === 'live' &&
-      a.extra?.spender &&
-      a.asset
-  );
-  return usable.find((a) => a.scheme === 'exact') ?? usable[0] ?? null;
-}
 
 const text = (value: unknown) => ({
   content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }],
@@ -151,7 +118,7 @@ export function createServer(opts: { budget: Budget; wallet: AgentWallet | null 
 
       // Prefer signing over sending. The agent then needs no gas and does not
       // wait for its own transaction to confirm, which was three seconds a call.
-      const gasless = gaslessOption(challenge);
+      const gasless = gaslessOption(challenge.payment?.accepts as Accept[] | undefined);
       let paymentHeader: string;
       let method_used: 'signature' | 'transfer';
       let txHash: string | undefined;
@@ -159,14 +126,14 @@ export function createServer(opts: { budget: Budget; wallet: AgentWallet | null 
 
       if (gasless) {
         const asset = gasless.asset as `0x${string}`;
-        const value = BigInt(Math.round(Number(gasless.amount) * 10 ** USDG.decimals));
+        const value = toBaseUnits(gasless.amount, USDG.decimals);
 
         try {
           // One approval, once, and only ever for what the budget allows. An
           // infinite approval would make the budget meaningless if the key leaked.
           const allowance = await wallet.permit2Allowance(asset);
           if (allowance < value) {
-            const ceiling = BigInt(Math.round(budget.limits.maxTotal * 10 ** USDG.decimals));
+            const ceiling = toBaseUnits(String(budget.limits.maxTotal), USDG.decimals);
             approvalTx = await wallet.approvePermit2(asset, ceiling > value ? ceiling : value);
           }
 
@@ -227,11 +194,16 @@ export function createServer(opts: { budget: Budget; wallet: AgentWallet | null 
       }
 
       // Recorded only once the money actually moved, whatever the server then says.
+      // On a metered endpoint the settled amount can be well under the ceiling
+      // in the challenge. Recording the ceiling would burn budget the agent
+      // never spent; the response header carries what was actually taken.
+      const settledHeader = paid.headers.get('x-payment-settled-amount');
+      const settled = Number(settledHeader);
       budget.record({
         at: Date.now(),
         host: new URL(url).host,
         url,
-        amount: Number(amount),
+        amount: Number.isFinite(settled) && settled > 0 ? settled : Number(amount),
         txHash: txHash ?? '',
       });
 

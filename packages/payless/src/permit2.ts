@@ -32,6 +32,8 @@ export interface AcceptedPayment {
     spender?: string;
     facilitator?: string;
     settlement?: string;
+    /** 'metered' means the advertised amount is a ceiling, not the price. */
+    pricing?: string;
     [k: string]: unknown;
   };
 }
@@ -70,6 +72,11 @@ const BASE_TYPES = {
  * final amount within your ceiling. That is a useful thing to grant when the
  * price genuinely is not knowable in advance, and not a thing to grant by
  * default.
+ *
+ * The exception is an endpoint that declares `pricing: 'metered'` — there the
+ * advertised amount IS the ceiling, and `upto` is how you pay the real cost
+ * instead of the maximum. Preferring `exact` on a metered endpoint means
+ * volunteering to overpay on every call, which is what this client used to do.
  */
 export function chooseGasless(accepts: AcceptedPayment[] | undefined): AcceptedPayment | null {
   const usable = (accepts ?? []).filter(
@@ -80,6 +87,8 @@ export function chooseGasless(accepts: AcceptedPayment[] | undefined): AcceptedP
       typeof a.asset === 'string' &&
       (a.scheme !== 'upto' || typeof a.extra?.facilitator === 'string')
   );
+  const metered = usable.find((a) => a.scheme === 'upto' && a.extra?.pricing === 'metered');
+  if (metered) return metered;
   return usable.find((a) => a.scheme === 'exact') ?? usable[0] ?? null;
 }
 

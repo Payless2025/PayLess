@@ -75,6 +75,23 @@ export function subscriptionRecipient(): string {
 }
 
 /**
+ * Endpoints whose price is decided after the work, not before.
+ *
+ * The 402 advertises this so a client can prefer `upto` here: signing the
+ * ceiling but paying the metered cost. Without the signal, a client has no way
+ * to tell this endpoint apart from a fixed-price one, and our own SDK was
+ * dutifully paying the ceiling every time — which made the whole scheme
+ * decorative.
+ */
+export const METERED_ENDPOINTS: Record<string, true> = {
+  '/api/rwa/transfers': true,
+};
+
+export function isMetered(pathname: string): boolean {
+  return METERED_ENDPOINTS[pathname] === true;
+}
+
+/**
  * Only endpoints that do real work are priced.
  *
  * Settlement is enforced, so a priced endpoint takes real USDG. Charging for a

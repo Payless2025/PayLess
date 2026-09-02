@@ -8,18 +8,7 @@
  */
 import assert from 'node:assert/strict';
 
-// Mirrors the selection in server.ts. Kept here so the rules are testable
-// without standing up a stdio server.
-interface Accept {
-  scheme: string; network: string; amount: string; payTo: string; asset?: string;
-  extra?: { assetTransferMethod?: string; spender?: string; facilitator?: string; settlement?: string };
-}
-function gaslessOption(accepts: Accept[]): Accept | null {
-  const usable = accepts.filter(
-    (a) => a.extra?.assetTransferMethod === 'permit2' && a.extra?.settlement === 'live' && a.extra?.spender && a.asset
-  );
-  return usable.find((a) => a.scheme === 'exact') ?? usable[0] ?? null;
-}
+import { gaslessOption, toBaseUnits, type Accept } from '../src/select.js';
 
 const receipt: Accept = { scheme: 'receipt', network: 'eip155:4663', amount: '0.01', payTo: '0xA', asset: '0xT', extra: { assetTransferMethod: 'receipt', settlement: 'live' } };
 const exact: Accept = { scheme: 'exact', network: 'eip155:4663', amount: '0.01', payTo: '0xA', asset: '0xT', extra: { assetTransferMethod: 'permit2', settlement: 'live', spender: '0xS' } };
@@ -65,6 +54,19 @@ test('will not sign without a spender to pin', () => {
 
 test('will not sign without an asset', () => {
   assert.equal(gaslessOption([{ ...exact, asset: undefined }]), null);
+});
+
+test('prefers upto on a metered endpoint, where exact means overpaying', () => {
+  const meteredUpto = { ...upto, extra: { ...upto.extra!, pricing: 'metered' } };
+  const meteredExact = { ...exact, extra: { ...exact.extra!, pricing: 'metered' } };
+  assert.equal(gaslessOption([meteredExact, meteredUpto])?.scheme, 'upto');
+});
+
+test('base-unit conversion never goes through floating point', () => {
+  assert.equal(toBaseUnits('0.007', 6), 7000n);
+  assert.equal(toBaseUnits('0.05', 6), 50000n);
+  assert.equal(toBaseUnits('1', 6), 1000000n);
+  assert.equal(toBaseUnits('0.1234567', 6), 123456n); // fazlası sessizce kırpılır
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ', FAILURES ABOVE' : ''}\n`);

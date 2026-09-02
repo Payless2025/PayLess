@@ -42,3 +42,6 @@ next-env.d.ts
 .npmrc
 packages/**/node_modules
 packages/**/dist
+.env*
+# The example env file is documentation, not a secret.
+!.env.example

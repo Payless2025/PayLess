@@ -118,16 +118,36 @@ Response:
 }
 ```
 
-### 2. Access Token-Gated Endpoints
+### 2. Prove You Control the Wallet
 
-Include your wallet address in the `x-wallet-address` header:
+An address in a header is a claim, not a proof — anyone can type a whale's
+address. Access therefore requires a signature. The flow is three steps, costs
+no gas, and moves nothing:
+
+```bash
+# a) Ask for a challenge to sign
+curl -X POST https://payless.network/api/auth/challenge \
+  -H "content-type: application/json" \
+  -d '{"address":"YOUR_WALLET_ADDRESS"}'
+
+# b) Sign the returned `message` with personal_sign (EIP-191) in your wallet.
+
+# c) Trade the signature for a bearer token (valid 1 hour)
+curl -X POST https://payless.network/api/auth/verify \
+  -H "content-type: application/json" \
+  -d '{"message":"<the message>","signature":"0x..."}'
+```
+
+### 3. Access Token-Gated Endpoints
 
 ```bash
 curl -X POST https://payless.network/api/premium/holder-content \
-  -H "x-wallet-address: YOUR_WALLET_ADDRESS"
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### 3. Monitor Rate Limits
+An unsigned `x-wallet-address` header no longer grants access to anything.
+
+### 4. Monitor Rate Limits
 
 Response headers include your rate limit info:
 ```
@@ -153,12 +173,22 @@ console.log(`Your tier: ${tierInfo.tier}`);
 console.log(`Rate limit: ${tierInfo.rateLimit} req/hour`);
 console.log(`Balance: ${tierInfo.balance.toLocaleString()} tokens`);
 
-// Make token-gated API request
+// Prove wallet ownership once (signature, no gas), then use the token
+const { message } = await (await fetch('https://payless.network/api/auth/challenge', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ address: account.address }),
+})).json();
+const signature = await walletClient.signMessage({ account, message });
+const { token } = await (await fetch('https://payless.network/api/auth/verify', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ message, signature }),
+})).json();
+
 const response = await fetch('https://payless.network/api/premium/holder-content', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'x-wallet-address': 'YOUR_WALLET',
+    'Authorization': `Bearer ${token}`,
   },
 });
 
