@@ -89,6 +89,20 @@ async function run() {
     assert.equal(calls.length, 0, 'should not have touched the chain');
   });
 
+  await test('success is never reported without a transaction to point at', async () => {
+    // The invariant that matters most in a settle response: if it says the
+    // payment went through, there must be a hash somebody can go and check.
+    chainSays(good);
+    for (const [r, p] of [
+      [req(), pay()],
+      [req({ scheme: 'exact', asset: USDG }), { scheme: 'exact', network: NETWORK } as any],
+      [req({ amount: 'nonsense' }), pay()],
+    ] as const) {
+      const out = await settle(r as any, p as any);
+      if (out.success) assert.ok(out.transaction, 'reported success with no transaction');
+    }
+  });
+
   await test('the exact scheme refuses to claim a settlement it cannot broadcast', async () => {
     chainSays(good);
     const r = await settle(
