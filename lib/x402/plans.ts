@@ -24,7 +24,9 @@ export const PLANS: Plan[] = [
     token: DEFAULT_PAYMENT_TOKEN.address as `0x${string}`,
     decimals: DEFAULT_PAYMENT_TOKEN.decimals,
     symbol: DEFAULT_PAYMENT_TOKEN.symbol,
-    endpoints: ['/api/chain/token', '/api/chain/balance', '/api/chain/receipt'],
+    // Transfer history pairs naturally with the short leash: the data changes
+    // every block, so an agent re-asks it every cycle.
+    endpoints: ['/api/chain/token', '/api/chain/balance', '/api/chain/receipt', '/api/rwa/transfers'],
   },
 ];
 

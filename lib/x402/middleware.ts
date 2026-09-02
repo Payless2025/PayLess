@@ -138,6 +138,20 @@ export async function verifyPayment(
 
 
 /**
+ * What an upto settlement should charge, given what the handler reported.
+ *
+ * Clamped to the advertised price: a handler must never out-charge what the
+ * 402 promised, however its metering came out. Anything unparseable or
+ * non-positive is treated as "no report", falling back to the full price —
+ * never to zero, because a buggy header should cost us revenue, not honesty.
+ */
+export function meteredSettlement(header: string | null, ceiling: string): string | undefined {
+  const metered = Number(header);
+  if (!header || !Number.isFinite(metered) || metered <= 0) return undefined;
+  return Math.min(metered, Number(ceiling)).toFixed(6);
+}
+
+/**
  * Is this header a signed authorisation rather than a receipt?
  *
  * Told apart by shape rather than by a field the caller sets, so an older
@@ -208,6 +222,18 @@ async function payViaFacilitator(args: {
   }
 
   const response = await handler(req);
+
+  // A metered endpoint reports what the response actually cost via the
+  // x-payment-cost header. Only `upto` can act on it: that is the scheme where
+  // the buyer signed a ceiling precisely so the final amount could be decided
+  // after the work. It is clamped to the advertised price, because a handler
+  // must never be able to out-charge what the 402 promised, and ignored on
+  // fixed-amount schemes, where the signature commits to one exact figure.
+  if (permitPayload.scheme === 'upto') {
+    const metered = meteredSettlement(response.headers.get('x-payment-cost'), price);
+    if (metered) requirements.settlementAmount = metered;
+  }
+
   const settled = await facilitatorSettle(requirements, permitPayload as any);
 
   trackApiRequest({
@@ -228,6 +254,7 @@ async function payViaFacilitator(args: {
 
   response.headers.set('x-payment-confirmed', settled.transaction ?? '');
   response.headers.set('x-payment-scheme', permitPayload.scheme);
+  response.headers.set('x-payment-settled-amount', requirements.settlementAmount ?? requirements.amount);
   response.headers.set('x-payment-chain', 'robinhood');
   if (check.payer) response.headers.set('x-payment-payer', check.payer);
   return response;
