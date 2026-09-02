@@ -21,6 +21,8 @@ import {
   getAddress,
   type Chain,
 } from 'viem';
+
+export const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3' as const;
 import { privateKeyToAccount } from 'viem/accounts';
 
 export const ROBINHOOD_CHAIN: Chain = {
@@ -68,7 +70,76 @@ const ERC20 = [
     inputs: [],
     outputs: [{ name: '', type: 'string' }],
   },
+  {
+    name: 'approve',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'value', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    name: 'allowance',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
 ] as const;
+
+/** The EIP-712 shapes Permit2 signs. Both witnesses, since the schemes differ. */
+const PERMIT_TYPES = {
+  exact: {
+    PermitWitnessTransferFrom: [
+      { name: 'permitted', type: 'TokenPermissions' },
+      { name: 'spender', type: 'address' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' },
+      { name: 'witness', type: 'Witness' },
+    ],
+    TokenPermissions: [
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    Witness: [
+      { name: 'to', type: 'address' },
+      { name: 'validAfter', type: 'uint256' },
+    ],
+  },
+  upto: {
+    PermitWitnessTransferFrom: [
+      { name: 'permitted', type: 'TokenPermissions' },
+      { name: 'spender', type: 'address' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' },
+      { name: 'witness', type: 'Witness' },
+    ],
+    TokenPermissions: [
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    Witness: [
+      { name: 'to', type: 'address' },
+      { name: 'facilitator', type: 'address' },
+      { name: 'validAfter', type: 'uint256' },
+    ],
+  },
+} as const;
+
+export interface SignedPermit {
+  scheme: 'exact' | 'upto';
+  owner: string;
+  permitted: { token: string; amount: string };
+  nonce: string;
+  deadline: string;
+  witness: { to: string; validAfter: string; facilitator?: string };
+  signature: string;
+}
 
 export class AgentWallet {
   readonly address: `0x${string}`;
@@ -100,6 +171,98 @@ export class AgentWallet {
       address: this.address,
       gas: { symbol: 'ETH', balance: formatEther(eth) },
       token: { symbol: symbol as string, address: token, decimals: dp, balance: formatUnits(raw as bigint, dp) },
+    };
+  }
+
+  /** What Permit2 may currently pull on this agent's behalf. */
+  async permit2Allowance(token: `0x${string}`): Promise<bigint> {
+    return (await this.pub.readContract({
+      address: token,
+      abi: ERC20,
+      functionName: 'allowance',
+      args: [this.address, PERMIT2_ADDRESS],
+    })) as bigint;
+  }
+
+  /**
+   * Approve Permit2, once, so later payments need no transaction at all.
+   *
+   * Deliberately not an infinite approval. The agent approves what its budget
+   * allows and no more, so the standing exposure of this wallet never exceeds
+   * what it was allowed to spend anyway. An unlimited approval would quietly
+   * make the budget meaningless the moment the key leaked.
+   */
+  async approvePermit2(token: `0x${string}`, amount: bigint): Promise<string> {
+    const hash = await this.wallet.writeContract({
+      address: token,
+      abi: ERC20,
+      functionName: 'approve',
+      args: [PERMIT2_ADDRESS, amount],
+    });
+    const receipt = await this.pub.waitForTransactionReceipt({ hash });
+    if (receipt.status !== 'success') throw new Error(`approve ${hash} reverted`);
+    return hash;
+  }
+
+  /**
+   * Sign an authorisation. No transaction, no gas, no waiting for a block.
+   *
+   * The facilitator broadcasts this and pays for it. Note what the signature
+   * pins: the destination, the token, the ceiling, and for `upto` the one
+   * facilitator allowed to choose the final amount. None of those can be
+   * changed by whoever relays it.
+   */
+  async signPermit(params: {
+    scheme: 'exact' | 'upto';
+    token: `0x${string}`;
+    amount: bigint;
+    to: string;
+    spender: string;
+    facilitator?: string;
+    validAfter?: bigint;
+    ttlSeconds?: number;
+  }): Promise<SignedPermit> {
+    const { scheme, token, amount, to, spender } = params;
+    if (scheme === 'upto' && !params.facilitator) {
+      throw new Error('An upto authorisation has to name the facilitator allowed to settle it.');
+    }
+
+    // Unordered nonces: any unused value works, so a timestamp cannot collide
+    // with itself across restarts the way a counter would.
+    const nonce = BigInt(Date.now()) * BigInt(1000) + BigInt(Math.floor(Math.random() * 1000));
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + (params.ttlSeconds ?? 600));
+    const validAfter = params.validAfter ?? BigInt(0);
+
+    const witness =
+      scheme === 'upto'
+        ? { to: getAddress(to), facilitator: getAddress(params.facilitator!), validAfter }
+        : { to: getAddress(to), validAfter };
+
+    const signature = await this.account.signTypedData({
+      domain: { name: 'Permit2', chainId: ROBINHOOD_CHAIN.id, verifyingContract: PERMIT2_ADDRESS },
+      types: PERMIT_TYPES[scheme] as any,
+      primaryType: 'PermitWitnessTransferFrom',
+      message: {
+        permitted: { token: getAddress(token), amount },
+        spender: getAddress(spender),
+        nonce,
+        deadline,
+        witness,
+      } as any,
+    });
+
+    return {
+      scheme,
+      owner: this.address,
+      permitted: { token: getAddress(token), amount: amount.toString() },
+      nonce: nonce.toString(),
+      deadline: deadline.toString(),
+      witness: {
+        to: getAddress(to),
+        validAfter: validAfter.toString(),
+        ...(scheme === 'upto' ? { facilitator: getAddress(params.facilitator!) } : {}),
+      },
+      signature,
     };
   }
 

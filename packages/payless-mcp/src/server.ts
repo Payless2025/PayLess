@@ -12,13 +12,27 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { Budget } from './budget.js';
-import { AgentWallet } from './wallet.js';
+import { AgentWallet, PERMIT2_ADDRESS } from './wallet.js';
 
 const USDG = {
   address: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' as `0x${string}`,
   decimals: 6,
   symbol: 'USDG',
 };
+
+interface Accept {
+  scheme: string;
+  network: string;
+  amount: string;
+  payTo: string;
+  asset?: string;
+  extra?: {
+    assetTransferMethod?: string;
+    spender?: string;
+    facilitator?: string;
+    settlement?: string;
+  };
+}
 
 interface Challenge {
   payment?: {
@@ -27,7 +41,29 @@ interface Challenge {
     recipient?: string;
     tokenAddress?: string;
     network?: string;
+    accepts?: Accept[];
   };
+}
+
+/**
+ * Pick the cheapest way to pay.
+ *
+ * A signed authorisation costs the agent no gas and no wait for a block, so it
+ * wins whenever the endpoint offers one and the facilitator is actually live.
+ * `exact` is preferred over `upto` because it settles a known amount; `upto`
+ * hands the seller discretion within a ceiling, which is worth having but not
+ * worth taking by default.
+ */
+function gaslessOption(challenge: Challenge): Accept | null {
+  const accepts = challenge.payment?.accepts ?? [];
+  const usable = accepts.filter(
+    (a) =>
+      a.extra?.assetTransferMethod === 'permit2' &&
+      a.extra?.settlement === 'live' &&
+      a.extra?.spender &&
+      a.asset
+  );
+  return usable.find((a) => a.scheme === 'exact') ?? usable[0] ?? null;
 }
 
 const text = (value: unknown) => ({
@@ -113,31 +149,82 @@ export function createServer(opts: { budget: Budget; wallet: AgentWallet | null 
         });
       }
 
-      let txHash: string;
-      try {
-        txHash = await wallet.pay({ to, amount, token, decimals: USDG.decimals });
-      } catch (error) {
-        return text({
-          paid: false,
-          error: `Payment failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+      // Prefer signing over sending. The agent then needs no gas and does not
+      // wait for its own transaction to confirm, which was three seconds a call.
+      const gasless = gaslessOption(challenge);
+      let paymentHeader: string;
+      let method_used: 'signature' | 'transfer';
+      let txHash: string | undefined;
+      let approvalTx: string | undefined;
+
+      if (gasless) {
+        const asset = gasless.asset as `0x${string}`;
+        const value = BigInt(Math.round(Number(gasless.amount) * 10 ** USDG.decimals));
+
+        try {
+          // One approval, once, and only ever for what the budget allows. An
+          // infinite approval would make the budget meaningless if the key leaked.
+          const allowance = await wallet.permit2Allowance(asset);
+          if (allowance < value) {
+            const ceiling = BigInt(Math.round(budget.limits.maxTotal * 10 ** USDG.decimals));
+            approvalTx = await wallet.approvePermit2(asset, ceiling > value ? ceiling : value);
+          }
+
+          const permit = await wallet.signPermit({
+            scheme: gasless.scheme === 'upto' ? 'upto' : 'exact',
+            token: asset,
+            amount: value,
+            to: gasless.payTo,
+            spender: gasless.extra!.spender!,
+            facilitator: gasless.extra?.facilitator,
+          });
+          paymentHeader = JSON.stringify(permit);
+          method_used = 'signature';
+        } catch (error) {
+          return text({
+            paid: false,
+            error: `Could not authorise payment: ${error instanceof Error ? error.message : 'unknown error'}`,
+          });
+        }
+      } else {
+        try {
+          txHash = await wallet.pay({ to, amount, token, decimals: USDG.decimals });
+        } catch (error) {
+          return text({
+            paid: false,
+            error: `Payment failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+          });
+        }
+        paymentHeader = JSON.stringify({
+          transactionHash: txHash,
+          from: wallet.address,
+          to,
+          amount,
+          token: challenge.payment?.currency || USDG.symbol,
+          tokenAddress: token,
+          chainId: challenge.payment?.network || '4663',
         });
+        method_used = 'transfer';
       }
 
       const paid = await fetch(url, {
         ...init,
-        headers: {
-          ...(init.headers || {}),
-          'X-Payment': JSON.stringify({
-            transactionHash: txHash,
-            from: wallet.address,
-            to,
-            amount,
-            token: challenge.payment?.currency || USDG.symbol,
-            tokenAddress: token,
-            chainId: challenge.payment?.network || '4663',
-          }),
-        },
+        headers: { ...(init.headers || {}), 'X-Payment': paymentHeader },
       });
+
+      // With a signature the money moves during this request, so the hash comes
+      // back on the response rather than from us.
+      if (method_used === 'signature') {
+        txHash = paid.headers.get('x-payment-confirmed') || undefined;
+        if (paid.headers.get('x-payment-settlement') === 'failed') {
+          return text({
+            paid: false,
+            method: 'signature',
+            error: paid.headers.get('x-payment-error') || 'Settlement failed after the response was served.',
+            body: (await paid.text()).slice(0, 20000),
+          });
+        }
+      }
 
       // Recorded only once the money actually moved, whatever the server then says.
       budget.record({
@@ -145,16 +232,23 @@ export function createServer(opts: { budget: Budget; wallet: AgentWallet | null 
         host: new URL(url).host,
         url,
         amount: Number(amount),
-        txHash,
+        txHash: txHash ?? '',
       });
 
       const payload = await paid.text();
       return text({
         paid: true,
+        method: method_used,
+        ...(method_used === 'signature'
+          ? { gas: 'none — the facilitator broadcast and paid for it' }
+          : {}),
+        ...(approvalTx
+          ? { permit2Approval: approvalTx, note: 'One-time approval. Later payments cost no gas at all.' }
+          : {}),
         amount,
         currency: challenge.payment?.currency || USDG.symbol,
         txHash,
-        explorer: `https://robinhoodchain.blockscout.com/tx/${txHash}`,
+        ...(txHash ? { explorer: `https://robinhoodchain.blockscout.com/tx/${txHash}` } : {}),
         status: paid.status,
         body: payload.slice(0, 20000),
         budget: budget.summary(),
