@@ -19,7 +19,15 @@
  */
 
 export { Payless, createPayless, type Handler } from './server.js';
-export { payFor, PaymentRefused, type PayRequest, type PayForOptions } from './client.js';
+export { payFor, PaymentRefused, type PayRequest, type PayForOptions, type SignRequest } from './client.js';
+export {
+  chooseGasless,
+  permit2TypedData,
+  permitHeader,
+  PERMIT2_ADDRESS,
+  type AcceptedPayment,
+  type Permit2TypedData,
+} from './permit2.js';
 export {
   FacilitatorClient,
   createFacilitator,

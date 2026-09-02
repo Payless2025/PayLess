@@ -84,6 +84,54 @@ If the transfer is not mined yet the server answers `402` with `retry: true` —
 "come back in a moment", not "pay again". `payFor` reuses the same hash rather
 than paying twice.
 
+## Paying without gas
+
+If the endpoint offers it, sign instead of sending a transaction. No gas, no
+waiting for a block, and a facilitator broadcasts on your behalf:
+
+```ts
+import { payFor } from 'payless';
+
+const res = await payFor(url, {
+  owner: account.address,
+  sign: async ({ typedData }) => account.signTypedData(typedData),
+});
+```
+
+The SDK reads the 402's `accepts`, picks the best gasless option, builds the
+typed data and hands it to you ready to sign. It never sees a key.
+
+It prefers `exact` over `upto`, because `upto` grants the seller discretion over
+the final amount within your ceiling. That is worth granting when the price
+genuinely is not knowable in advance, and not worth granting by default.
+
+Keep `pay` as the fallback for endpoints that offer nothing gasless:
+
+```ts
+await payFor(url, {
+  owner: account.address,
+  sign: async ({ typedData }) => account.signTypedData(typedData),
+  pay: async ({ to, amount }) => sendTransfer(to, amount),
+});
+```
+
+### The one-time approval
+
+Permit2 needs `approve(0x000000000022D473030F116dDEE9F6B43aC78BA3, amount)` on
+the token, once, ever. That transaction costs gas. Every payment after it does
+not.
+
+Approve what you intend to spend rather than an unlimited amount. An infinite
+approval makes any spending limit you set elsewhere meaningless the moment the
+key leaks.
+
+### What the signature pins
+
+The destination, the token, the amount and the deadline, all inside the signed
+message. The proxy that settles it takes the destination **from the signature
+itself**, so a facilitator cannot redirect the payment. That is enforced by the
+contract, not promised by the facilitator.
+
 ## Using a facilitator
 
 Everything above assumes you run the chain work yourself: an RPC endpoint, log
