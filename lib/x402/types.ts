@@ -43,6 +43,22 @@ export interface X402Response {
     network?: string; // Chain ID
     tokenAddress?: string;
     chains?: ChainPaymentInfo[];
+    /**
+     * Every way this endpoint can be paid, in the x402 v2 shape.
+     *
+     * Without it a caller cannot know a gasless option exists, and will send a
+     * transfer and wait for its receipt because that is the only thing the
+     * challenge told them about.
+     */
+    accepts?: Array<{
+      scheme: string;
+      network: string;
+      amount: string;
+      payTo: string;
+      asset?: string;
+      resource?: string;
+      extra?: Record<string, unknown>;
+    }>;
     /** Recurring alternatives to paying per call */
     subscribe?: Array<{
       planId: string;
