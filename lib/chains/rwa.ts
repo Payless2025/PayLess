@@ -236,3 +236,54 @@ export async function readStockTransfers(
     })),
   };
 }
+
+export interface TransferPage {
+  rows: StockTransfer[];
+  /** Rows existed beyond this page. */
+  truncated: boolean;
+  /**
+   * Where the next query's `since` should start to see everything this page
+   * could not fit. When a single block holds more rows than the limit, this
+   * points back INTO that block and `overlap` says so, because losing rows
+   * silently is worse than sending a few twice.
+   */
+  nextSince: bigint;
+  overlap: boolean;
+}
+
+/**
+ * Page oldest-first, cutting at a block boundary.
+ *
+ * The bug this replaces: the route kept the newest `limit` rows and advanced
+ * `since` past the whole range, so on a busy token the older rows in the range
+ * simply vanished — paid for, scanned, never delivered, unreachable by the
+ * next page. NVDA at ~1 transfer per block trips that on almost every default
+ * query.
+ */
+export function pageTransfers(all: StockTransfer[], limit: number, toBlock: bigint): TransferPage {
+  if (all.length <= limit) {
+    return { rows: all, truncated: false, nextSince: toBlock + BigInt(1), overlap: false };
+  }
+
+  let rows = all.slice(0, limit);
+  const lastBlock = rows[rows.length - 1].blockNumber;
+
+  // If the cut would split a block, retreat to the previous boundary so the
+  // next page sees that block whole.
+  if (all[limit].blockNumber === lastBlock) {
+    const beforeBlock = rows.filter((t) => t.blockNumber !== lastBlock);
+    if (beforeBlock.length > 0) {
+      return {
+        rows: beforeBlock,
+        truncated: true,
+        nextSince: BigInt(lastBlock),
+        overlap: false,
+      };
+    }
+    // One block alone exceeds the limit. Keep the split and point the next
+    // page back at the same block: duplicates, but nothing lost.
+    return { rows, truncated: true, nextSince: BigInt(lastBlock), overlap: true };
+  }
+
+  return { rows, truncated: true, nextSince: BigInt(lastBlock) + BigInt(1), overlap: false };
+}

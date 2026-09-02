@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import { meteredSettlement } from '../lib/x402/middleware';
 import { meteredTransferCost as meteredCost, TRANSFERS_BASE_FEE as BASE_FEE, TRANSFERS_PER_ROW_FEE as PER_ROW_FEE, TRANSFERS_CEILING as CEILING } from '../lib/x402/metering';
-import { readStockTransfers, findStockToken } from '../lib/chains/rwa';
+import { readStockTransfers, findStockToken, pageTransfers, type StockTransfer } from '../lib/chains/rwa';
 import { chainClient, withRpcRetry } from '../lib/chains/reader';
 
 let passed = 0;
@@ -73,7 +73,7 @@ async function run() {
       assert.match(t.txHash, /^0x[0-9a-f]{64}$/);
       assert.ok(t.explorer.includes(t.txHash));
     }
-    console.log(`    (${reading.transfers.length} transfer in son 200 blok)`);
+    console.log(`    (${reading.transfers.length} transfers in the last 200 blocks)`);
   });
 
   await test('live: a range wider than the cap is clamped and says so', async () => {
@@ -82,6 +82,47 @@ async function run() {
     const reading = await readStockTransfers(nvda, head - BigInt(20000), head);
     const span = BigInt(reading.toBlock) - BigInt(reading.fromBlock) + BigInt(1);
     assert.equal(span, BigInt(5000), `span ${span} — the response must state the range it actually covered`);
+  });
+
+  const row = (block: number, i = 0): StockTransfer => ({
+    from: '0xA', to: '0xB', amount: '1', amountRaw: '1',
+    blockNumber: String(block), txHash: '0x' + String(i).padStart(64, '0'),
+    logIndex: i, explorer: 'x',
+  });
+
+  await test('pagination advances without losing rows', async () => {
+    // The bug this pins: the route used to keep the newest rows and advance
+    // `since` past the whole range, so trimmed older rows were paid for,
+    // scanned, and unreachable forever.
+    const all = [row(10), row(11), row(12), row(13)];
+    const page = pageTransfers(all, 2, BigInt(100));
+    assert.equal(page.rows.length, 2);
+    assert.equal(page.rows[1].blockNumber, '11');
+    assert.equal(page.truncated, true);
+    assert.equal(page.nextSince, BigInt(12), 'next page must start at the first unseen block');
+  });
+
+  await test('a page never splits a block silently', async () => {
+    const all = [row(10, 1), row(11, 2), row(11, 3), row(11, 4)];
+    const page = pageTransfers(all, 2, BigInt(100));
+    // Cutting at 2 would hand over half of block 11; retreat to the boundary.
+    assert.deepEqual(page.rows.map((r) => r.blockNumber), ['10']);
+    assert.equal(page.nextSince, BigInt(11));
+    assert.equal(page.overlap, false);
+  });
+
+  await test('a block bigger than the limit overlaps instead of losing rows', async () => {
+    const all = [row(11, 1), row(11, 2), row(11, 3)];
+    const page = pageTransfers(all, 2, BigInt(100));
+    assert.equal(page.rows.length, 2);
+    assert.equal(page.overlap, true, 'must admit the next page revisits this block');
+    assert.equal(page.nextSince, BigInt(11), 'pointing past it would lose the third row');
+  });
+
+  await test('an untruncated page advances past the scanned range', async () => {
+    const page = pageTransfers([row(10)], 5, BigInt(100));
+    assert.equal(page.truncated, false);
+    assert.equal(page.nextSince, BigInt(101));
   });
 
   console.log(`\n${passed} passed${process.exitCode ? ', FAILURES ABOVE' : ''}\n`);

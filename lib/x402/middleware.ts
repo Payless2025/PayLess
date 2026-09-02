@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentVerificationResult, X402Response, RobinhoodPaymentPayload } from './types';
-import { PAYMENT_CONFIG, ENDPOINT_PRICING, FREE_ENDPOINTS } from './config';
+import { PAYMENT_CONFIG, ENDPOINT_PRICING, FREE_ENDPOINTS, isMetered } from './config';
 import { trackApiRequest, analyticsStore } from './analytics';
 import { verifyRobinhoodPayment } from '../chains/robinhood';
 import { verifySettlement } from '../chains/settlement';
@@ -310,7 +310,11 @@ export function create402Response(amount: string, pathname?: string): NextRespon
         payTo: PAYMENT_CONFIG.walletAddress,
         asset: PAYMENT_CONFIG.tokenAddress,
         resource: pathname,
-        extra: kind.extra,
+        // `metered` tells a client the advertised amount is a ceiling, not the
+        // price, so preferring `upto` here is preferring to pay less.
+        extra: pathname && isMetered(pathname)
+          ? { ...kind.extra, pricing: 'metered' }
+          : kind.extra,
       })),
       // One request, one payment is not the only shape. Where a plan covers this
       // endpoint, the caller can commit once and stop paying per call.

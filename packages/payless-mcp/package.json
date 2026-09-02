@@ -1,6 +1,6 @@
 {
   "name": "payless-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server that lets an agent pay for APIs over x402 on Robinhood Chain \u2014 with a spending cap it cannot exceed.",
   "keywords": [
     "mcp",

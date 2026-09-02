@@ -4,11 +4,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { provenAddress } from '@/lib/x402/wallet-proof';
 import { withProTier } from '@/lib/x402/token-gated-middleware';
 
 async function handler(req: NextRequest) {
   try {
-    const walletAddress = req.headers.get('x-wallet-address');
+    // Display only — access was already enforced by the middleware. But showing
+    // an unproven header back would echo whatever the caller claimed, so the
+    // proven address is preferred and the legacy header is only a fallback.
+    const walletAddress = provenAddress(req.headers).address ?? req.headers.get('x-wallet-address');
     
     // Advanced analytics data for Pro tier holders
     const proAnalytics = {

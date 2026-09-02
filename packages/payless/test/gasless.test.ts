@@ -60,6 +60,17 @@ async function run() {
     assert.equal(chooseGasless([upto, exact])?.scheme, 'exact');
   });
 
+  await test('prefers upto on a metered endpoint, where exact means overpaying', async () => {
+    // On a metered endpoint the advertised amount is a ceiling. Picking exact
+    // there settles the ceiling on every call, which defeats the metering.
+    const meteredUpto = { ...upto, extra: { ...upto.extra!, pricing: 'metered' } };
+    const meteredExact = { ...exact, extra: { ...exact.extra!, pricing: 'metered' } };
+    assert.equal(chooseGasless([meteredExact, meteredUpto])?.scheme, 'upto');
+    // ...but only when the metered upto is actually usable.
+    const dead = { ...meteredUpto, extra: { ...meteredUpto.extra, settlement: 'unconfigured' } };
+    assert.equal(chooseGasless([meteredExact, dead])?.scheme, 'exact');
+  });
+
   await test('will not sign for a facilitator that cannot settle', async () => {
     assert.equal(chooseGasless([{ ...exact, extra: { ...exact.extra!, settlement: 'unconfigured' } }]), null);
   });
