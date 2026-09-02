@@ -25,15 +25,18 @@
  * something else would be worse than advertising a name of our own.
  */
 
-import { getAddress, isAddress } from 'viem';
+import { getAddress, isAddress, parseUnits } from 'viem';
 import { verifySettlement, SETTLEMENT_MAX_AGE_MS } from '../chains/settlement';
 import { claimSettlement, getSpentStore } from './spent-store';
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_CONFIG } from '../chains/config';
 import {
   verifyPermit2Exact,
+  verifyPermit2Upto,
   EXACT_PROXY_ADDRESS,
+  UPTO_PROXY_ADDRESS,
   PERMIT2_ADDRESS,
   type Permit2Payload,
+  type UptoPayload,
 } from './permit2';
 import { signerFromEnv } from './facilitator-signer';
 
@@ -56,6 +59,12 @@ export interface PaymentRequirements {
   resource?: string;
   /** Overrides the default freshness window, downward only. */
   maxAgeMs?: number;
+  /**
+   * upto only: what the work actually cost, decided after doing it. Must not
+   * exceed `amount`, which is the ceiling the buyer signed. Defaults to the
+   * ceiling, which makes upto behave like exact.
+   */
+  settlementAmount?: string;
 }
 
 /** What the buyer presented, from the X-Payment header. */
@@ -70,7 +79,7 @@ export interface PaymentPayload {
   permitted?: { token: string; amount: string };
   nonce?: string;
   deadline?: string;
-  witness?: { to: string; validAfter: string };
+  witness?: { to: string; validAfter: string; facilitator?: string };
   signature?: string;
 }
 
@@ -148,6 +157,23 @@ export const SUPPORTED_KINDS = [
       })),
     },
   },
+  {
+    x402Version: X402_VERSION,
+    scheme: 'upto',
+    network: NETWORK,
+    extra: {
+      assetTransferMethod: 'permit2',
+      spender: UPTO_PROXY_ADDRESS,
+      permit2: PERMIT2_ADDRESS,
+      witnessTypeString: 'Witness(address to,address facilitator,uint256 validAfter)',
+      description:
+        'The buyer signs a ceiling and the seller settles what the work actually cost, within it. For anything whose price is not knowable before it runs, such as a model call billed by tokens.',
+      settlement: 'reported at runtime',
+      assets: ROBINHOOD_CONFIG.paymentTokens.map((t) => ({
+        address: t.address, symbol: t.symbol, decimals: t.decimals,
+      })),
+    },
+  },
 ] as const;
 
 /**
@@ -159,12 +185,27 @@ export const SUPPORTED_KINDS = [
  * afford to discover at settle time.
  */
 export function supportedKinds() {
-  const canBroadcast = signerFromEnv() !== null;
-  return SUPPORTED_KINDS.map((kind) =>
-    kind.scheme === 'exact'
-      ? { ...kind, extra: { ...kind.extra, settlement: canBroadcast ? 'live' : 'unconfigured' } }
-      : kind
-  );
+  const signer = signerFromEnv();
+  const canBroadcast = signer !== null;
+  return SUPPORTED_KINDS.map((kind) => {
+    if (kind.scheme === 'exact') {
+      return { ...kind, extra: { ...kind.extra, settlement: canBroadcast ? 'live' : 'unconfigured' } };
+    }
+    if (kind.scheme === 'upto') {
+      return {
+        ...kind,
+        extra: {
+          ...kind.extra,
+          settlement: canBroadcast ? 'live' : 'unconfigured',
+          // Must be advertised, because the proxy rejects any settle whose
+          // caller is not the facilitator named inside the signature. A buyer
+          // who signs the wrong one has produced an authorisation nobody can use.
+          facilitator: signer?.address ?? null,
+        },
+      };
+    }
+    return kind;
+  });
 }
 
 const KNOWN_SCHEMES: Set<string> = new Set(SUPPORTED_KINDS.map((k) => k.scheme));
@@ -229,6 +270,17 @@ function checkShape(
   if (requirements.scheme === 'receipt' && !payload.transactionHash) {
     return 'The receipt scheme needs "transactionHash" in the payload.';
   }
+  if (requirements.scheme === 'upto') {
+    if (!requirements.asset) {
+      return 'The upto scheme needs "asset" in the requirements, because the signature names a specific token.';
+    }
+    for (const field of ['owner', 'permitted', 'nonce', 'deadline', 'witness', 'signature'] as const) {
+      if (payload[field] === undefined) return `The upto scheme needs "${field}" in the payload.`;
+    }
+    if (!payload.witness?.facilitator) {
+      return 'The upto scheme needs "witness.facilitator" — the signature has to name which facilitator may choose the amount.';
+    }
+  }
   if (requirements.scheme === 'exact') {
     if (!requirements.asset) {
       return 'The exact scheme needs "asset" in the requirements, because the signature names a specific token.';
@@ -252,6 +304,7 @@ export async function verify(
   if (shapeError) return { isValid: false, invalidReason: shapeError };
 
   if (requirements.scheme === 'exact') return verifyExact(requirements, payload);
+  if (requirements.scheme === 'upto') return verifyUpto(requirements, payload);
 
   // A seller may tighten the freshness window but never widen it, or one
   // careless seller would make every old receipt spendable through us.
@@ -326,6 +379,36 @@ async function verifyExact(
   return { isValid: true, payer: result.payer };
 }
 
+/** The upto scheme: verified against the ceiling and the chosen amount. */
+async function verifyUpto(
+  requirements: PaymentRequirements,
+  payload: PaymentPayload
+): Promise<VerifyResponse> {
+  const signer = signerFromEnv();
+  if (!signer) {
+    return {
+      isValid: false,
+      invalidReason:
+        'This facilitator has no signing key, so it cannot be named in an upto signature and cannot settle one.',
+      retryable: true,
+    };
+  }
+
+  const result = await verifyPermit2Upto({
+    payload: payload as unknown as UptoPayload,
+    maxAmount: requirements.amount,
+    settlementAmount: requirements.settlementAmount,
+    payTo: requirements.payTo,
+    asset: requirements.asset!,
+    facilitator: signer.address,
+  });
+
+  if (!result.ok) {
+    return { isValid: false, invalidReason: result.reason, retryable: result.retryable };
+  }
+  return { isValid: true, payer: result.payer };
+}
+
 /**
  * Consume the payment. Called after the resource has been served.
  *
@@ -339,6 +422,7 @@ export async function settle(
   payload: PaymentPayload
 ): Promise<SettleResponse> {
   if (requirements?.scheme === 'exact') return settleExact(requirements, payload);
+  if (requirements?.scheme === 'upto') return settleUpto(requirements, payload);
 
   const check = await verify(requirements, payload);
   if (!check.isValid) {
@@ -439,6 +523,80 @@ async function settleExact(
     network: NETWORK,
     payer: check.payer,
   };
+}
+
+/**
+ * Broadcast an `upto` authorisation at the amount the seller decided on.
+ *
+ * The seller passes `settlementAmount` after doing the work. It cannot exceed
+ * the ceiling the buyer signed, and the proxy enforces that rather than
+ * trusting us, which is what makes handing a facilitator this discretion safe.
+ */
+async function settleUpto(
+  requirements: PaymentRequirements,
+  payload: PaymentPayload
+): Promise<SettleResponse> {
+  const check = await verify(requirements, payload);
+  if (!check.isValid) {
+    return { success: false, errorReason: check.invalidReason, retryable: check.retryable, network: NETWORK };
+  }
+
+  const signer = signerFromEnv();
+  if (!signer) {
+    return {
+      success: false,
+      errorReason: 'This facilitator has no signing key configured, so it cannot broadcast.',
+      retryable: true,
+      network: NETWORK,
+      payer: check.payer,
+    };
+  }
+
+  // verify has already checked this against the ceiling and the payer's
+  // balance; here it only has to be turned into base units.
+  const asset = getAddress(requirements.asset as `0x${string}`);
+  let charge: bigint;
+  try {
+    const decimals = await tokenDecimals(asset);
+    charge = parseUnits((requirements.settlementAmount ?? requirements.amount) as `${number}`, decimals);
+  } catch {
+    return {
+      success: false,
+      errorReason: 'Could not read the token decimals needed to settle.',
+      retryable: true,
+      network: NETWORK,
+    };
+  }
+
+  const result = await signer.settleUpto(payload as unknown as UptoPayload, charge);
+  if (result.status === 'settled') {
+    return { success: true, transaction: result.txHash, network: NETWORK, payer: check.payer };
+  }
+  return {
+    success: false,
+    errorReason: result.error,
+    retryable: result.status === 'in-flight',
+    transaction: result.txHash,
+    network: NETWORK,
+    payer: check.payer,
+  };
+}
+
+async function tokenDecimals(asset: `0x${string}`): Promise<number> {
+  const known = ROBINHOOD_CONFIG.paymentTokens.find(
+    (t) => getAddress(t.address as `0x${string}`) === asset
+  );
+  if (known) return known.decimals;
+  const { chainClient, withRpcRetry } = await import('../chains/reader');
+  return Number(
+    await withRpcRetry(() =>
+      chainClient().readContract({
+        address: asset,
+        abi: [{ name: 'decimals', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint8' }] }],
+        functionName: 'decimals',
+      })
+    )
+  );
 }
 
 /** Normalise an address for a response, or return it untouched if unparseable. */

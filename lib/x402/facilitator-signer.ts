@@ -26,7 +26,7 @@
 import { createPublicClient, createWalletClient, http, getAddress, type Chain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ROBINHOOD_RPC_URL, ROBINHOOD_CHAIN_ID } from '../chains/config';
-import { EXACT_PROXY_ADDRESS, type Permit2Payload } from './permit2';
+import { EXACT_PROXY_ADDRESS, UPTO_PROXY_ADDRESS, type Permit2Payload, type UptoPayload } from './permit2';
 
 export const EXACT_PROXY_ABI = [
   {
@@ -56,6 +56,49 @@ export const EXACT_PROXY_ABI = [
         type: 'tuple',
         components: [
           { name: 'to', type: 'address' },
+          { name: 'validAfter', type: 'uint256' },
+        ],
+      },
+      { name: 'signature', type: 'bytes' },
+    ],
+    outputs: [],
+  },
+] as const;
+
+/**
+ * The upto proxy's settle, which takes the amount as a separate argument
+ * because the whole point of the scheme is that it is not known at signing.
+ */
+export const UPTO_PROXY_ABI = [
+  {
+    name: 'settle',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'permit',
+        type: 'tuple',
+        components: [
+          {
+            name: 'permitted',
+            type: 'tuple',
+            components: [
+              { name: 'token', type: 'address' },
+              { name: 'amount', type: 'uint256' },
+            ],
+          },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+        ],
+      },
+      { name: 'settlementAmount', type: 'uint256' },
+      { name: 'owner', type: 'address' },
+      {
+        name: 'witness',
+        type: 'tuple',
+        components: [
+          { name: 'to', type: 'address' },
+          { name: 'facilitator', type: 'address' },
           { name: 'validAfter', type: 'uint256' },
         ],
       },
@@ -166,12 +209,75 @@ export class FacilitatorSigner {
       return { status: 'in-flight', txHash, error: 'Broadcast, but the receipt was not seen in time.' };
     }
   }
+
+  /**
+   * Settle at an amount the seller chose after doing the work.
+   *
+   * The proxy checks two things we cannot fake: the amount must not exceed the
+   * signed ceiling, and msg.sender must be the facilitator named in the
+   * witness. So an authorisation written for somebody else is unusable here,
+   * and over-charging is impossible rather than merely discouraged.
+   */
+  async settleUpto(payload: UptoPayload, settlementAmount: bigint): Promise<BroadcastResult> {
+    const args = [
+      {
+        permitted: {
+          token: getAddress(payload.permitted.token),
+          amount: BigInt(payload.permitted.amount),
+        },
+        nonce: BigInt(payload.nonce),
+        deadline: BigInt(payload.deadline),
+      },
+      settlementAmount,
+      getAddress(payload.owner),
+      {
+        to: getAddress(payload.witness.to),
+        facilitator: getAddress(payload.witness.facilitator),
+        validAfter: BigInt(payload.witness.validAfter),
+      },
+      payload.signature as `0x${string}`,
+    ] as const;
+
+    try {
+      await this.pub.simulateContract({
+        address: UPTO_PROXY_ADDRESS,
+        abi: UPTO_PROXY_ABI,
+        functionName: 'settle',
+        args: args as any,
+        account: this.account,
+      });
+    } catch (error) {
+      return { status: 'failed', error: `Settlement would revert: ${shortReason(error)}` };
+    }
+
+    let txHash: `0x${string}`;
+    try {
+      txHash = await this.wallet.writeContract({
+        address: UPTO_PROXY_ADDRESS,
+        abi: UPTO_PROXY_ABI,
+        functionName: 'settle',
+        args: args as any,
+      });
+    } catch (error) {
+      return { status: 'failed', error: shortReason(error) };
+    }
+
+    try {
+      const receipt = await this.pub.waitForTransactionReceipt({ hash: txHash, timeout: 60_000 });
+      if (receipt.status !== 'success') {
+        return { status: 'failed', txHash, error: 'Settlement reverted on chain.' };
+      }
+      return { status: 'settled', txHash };
+    } catch {
+      return { status: 'in-flight', txHash, error: 'Broadcast, but the receipt was not seen in time.' };
+    }
+  }
 }
 
 function shortReason(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   // viem errors carry a useful first line and a long tail of request detail.
-  const named = /(InvalidDestination|PaymentTooEarly|InvalidAmount|InvalidOwner|InvalidSigner|InvalidNonce|SignatureExpired|TransferFromFailed)/.exec(message);
+  const named = /(InvalidDestination|PaymentTooEarly|InvalidAmount|InvalidOwner|InvalidSigner|InvalidNonce|SignatureExpired|TransferFromFailed|UnauthorizedFacilitator|AmountExceedsPermitted)/.exec(message);
   if (named) return named[1];
   return message.split('\n')[0].slice(0, 200);
 }
