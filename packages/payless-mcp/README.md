@@ -101,3 +101,28 @@ export const GET = payless.protect(handler, '0.01');
 
 MIT · [payless.network](https://payless.network) ·
 [source](https://github.com/Payless2025/PayLess/tree/master/packages/payless-mcp)
+
+## Gasless payments
+
+When an endpoint offers it, the agent signs instead of sending a transaction:
+
+```
+paid:   true
+method: signature
+gas:    none — the facilitator broadcast and paid for it
+```
+
+The agent never sends a transaction, never waits for a block, and never spends
+native currency. It signs a Permit2 authorisation and a facilitator broadcasts
+it. Measured against the transfer path, that removes about three seconds and one
+gas fee from every paid call.
+
+It needs one on-chain approval first, once, and the agent does that itself when
+it is missing. That approval is deliberately **not** unlimited: it is capped at
+the agent's own total budget, so the standing exposure of the wallet never
+exceeds what it was allowed to spend anyway. An infinite approval would make the
+budget meaningless the moment the key leaked.
+
+Endpoints that offer nothing gasless still work. The agent sends the transfer
+and waits for its receipt, exactly as before.
+
