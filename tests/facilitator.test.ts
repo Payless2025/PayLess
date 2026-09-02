@@ -67,9 +67,9 @@ async function run() {
 
   await test('rejects a scheme it does not settle', async () => {
     chainSays(good);
-    // 'upto' has a deployed proxy on this chain but we do not speak it yet,
-    // which makes it the honest example of something to refuse.
-    const r = await verify(req({ scheme: 'upto' }), pay({ scheme: 'upto' }));
+    // 'batch-settlement' is a real x402 scheme that we do not implement. It has
+    // to be refused by name rather than half-attempted.
+    const r = await verify(req({ scheme: 'batch-settlement' }), pay({ scheme: 'batch-settlement' }));
     assert.equal(r.isValid, false);
     assert.match(r.invalidReason!, /Unsupported scheme/);
   });
@@ -110,6 +110,17 @@ async function run() {
       { scheme: 'exact', network: NETWORK } as any
     );
     assert.equal(r.success, false, 'must never report success without moving money');
+  });
+
+  await test('advertises upto, and needs a facilitator named in the signature', async () => {
+    chainSays(good);
+    const r = await verify(
+      req({ scheme: 'upto', asset: USDG }),
+      { scheme: 'upto', network: NETWORK, owner: PAYER, permitted: { token: USDG, amount: '1' },
+        nonce: '1', deadline: '1', witness: { to: SELLER_A, validAfter: '0' }, signature: '0x' } as any
+    );
+    assert.equal(r.isValid, false);
+    assert.match(r.invalidReason!, /witness\.facilitator/);
   });
 
   await test('rejects another network', async () => {
