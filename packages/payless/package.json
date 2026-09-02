@@ -1,6 +1,6 @@
 {
   "name": "payless",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Price an HTTP endpoint in one line. x402 payments settled on Robinhood Chain in USDG \u2014 no accounts, no processor, no protocol fee.",
   "keywords": [
     "x402",
