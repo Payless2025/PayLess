@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { 
   getTransactions, 
   getAllTransactions, 
-  generateMockTransactions,
   type Transaction 
 } from '@/lib/x402/analytics';
 
@@ -12,7 +11,6 @@ export async function GET(req: NextRequest) {
     
     // Generate mock data if needed
     if (getAllTransactions().length === 0) {
-      generateMockTransactions(50);
     }
 
     // Parse filters from query params
