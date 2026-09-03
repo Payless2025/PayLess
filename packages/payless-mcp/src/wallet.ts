@@ -15,11 +15,14 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  encodeAbiParameters,
   formatEther,
   formatUnits,
+  hashTypedData,
   parseUnits,
   getAddress,
   type Chain,
+  type Hex,
 } from 'viem';
 
 export const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3' as const;
@@ -282,7 +285,168 @@ export class AgentWallet {
   }
 }
 
-export function walletFromEnv(env = process.env): AgentWallet | null {
+/**
+ * The wallet an agent should actually hold: none.
+ *
+ * In this mode the money lives in a PolicyWallet contract on chain, and the
+ * process holds only a session key. The session key signs Permit2 digests; the
+ * contract re-derives each digest from the fields presented alongside it and
+ * answers Permit2's ERC-1271 check against its own policy: per-call cap,
+ * recipient allowlist, facilitator allowlist, expiry. A leaked session key can
+ * spend at most the contract's balance, within policy, until one revocation
+ * transaction ends it.
+ *
+ * Two things this wallet deliberately cannot do:
+ *
+ *   - Send a plain transfer. The receipt scheme needs the payer to move funds
+ *     itself, and a session key has no funds to move. Endpoints offering no
+ *     gasless scheme are refused with a sentence, not worked around.
+ *   - Approve anything. The contract granted Permit2 its allowance at
+ *     construction; there is nothing left for the process to authorise.
+ */
+export class SessionWallet {
+  readonly mode = 'policy' as const;
+  /** The payer: the contract, not the key. */
+  readonly address: `0x${string}`;
+  readonly sessionAddress: `0x${string}`;
+  private account;
+  private pub;
+
+  constructor(policyWallet: string, sessionKey: string, rpcUrl = ROBINHOOD_CHAIN.rpcUrls.default.http[0]) {
+    const key = sessionKey.startsWith('0x') ? sessionKey : `0x${sessionKey}`;
+    if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
+      throw new Error('PAYLESS_SESSION_KEY must be a 32-byte hex private key.');
+    }
+    this.address = getAddress(policyWallet as `0x${string}`);
+    this.account = privateKeyToAccount(key as `0x${string}`);
+    this.sessionAddress = this.account.address;
+    this.pub = createPublicClient({ chain: ROBINHOOD_CHAIN, transport: http(rpcUrl) });
+  }
+
+  async balances(token: `0x${string}`) {
+    const [raw, decimals, symbol, maxPerCall, sessionOnChain] = await Promise.all([
+      this.pub.readContract({ address: token, abi: ERC20, functionName: 'balanceOf', args: [this.address] }),
+      this.pub.readContract({ address: token, abi: ERC20, functionName: 'decimals' }),
+      this.pub.readContract({ address: token, abi: ERC20, functionName: 'symbol' }),
+      this.pub.readContract({ address: this.address, abi: POLICY_ABI, functionName: 'maxPerCall' }).catch(() => null),
+      this.pub.readContract({ address: this.address, abi: POLICY_ABI, functionName: 'sessionKey' }).catch(() => null),
+    ]);
+    const dp = Number(decimals);
+    return {
+      mode: 'policy',
+      policyWallet: this.address,
+      sessionKey: this.sessionAddress,
+      sessionKeyActiveOnChain:
+        sessionOnChain === null ? 'unknown' : getAddress(sessionOnChain as string) === this.sessionAddress,
+      token: { symbol: symbol as string, address: token, decimals: dp, balance: formatUnits(raw as bigint, dp) },
+      // The balance IS the budget: refills are daily, so this number is also
+      // the most a fully compromised session could ever move today.
+      note: 'The process holds a session key only. Funds and policy live in the contract.',
+      ...(maxPerCall !== null ? { maxPerCallOnChain: formatUnits(maxPerCall as bigint, dp) } : {}),
+    };
+  }
+
+  async permit2Allowance(token: `0x${string}`): Promise<bigint> {
+    return (await this.pub.readContract({
+      address: token, abi: ERC20, functionName: 'allowance', args: [this.address, PERMIT2_ADDRESS],
+    })) as bigint;
+  }
+
+  /**
+   * Sign as the session key, package as the contract's blob.
+   *
+   * The signature that leaves this function is not an authorisation by itself.
+   * It becomes one only if the PolicyWallet, asked by Permit2 at settle time,
+   * re-derives the same digest from these fields and finds every one of them
+   * inside policy.
+   */
+  async signPermit(params: {
+    scheme: 'exact' | 'upto';
+    token: `0x${string}`;
+    amount: bigint;
+    to: string;
+    spender: string;
+    facilitator?: string;
+    validAfter?: bigint;
+    ttlSeconds?: number;
+  }): Promise<SignedPermit> {
+    const { scheme, token, amount, to, spender } = params;
+    if (scheme === 'upto' && !params.facilitator) {
+      throw new Error('An upto authorisation has to name the facilitator allowed to settle it.');
+    }
+    const nonce = BigInt(Date.now()) * BigInt(1000) + BigInt(Math.floor(Math.random() * 1000));
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + (params.ttlSeconds ?? 600));
+    const validAfter = params.validAfter ?? BigInt(0);
+    const witness =
+      scheme === 'upto'
+        ? { to: getAddress(to), facilitator: getAddress(params.facilitator!), validAfter }
+        : { to: getAddress(to), validAfter };
+
+    const digest = hashTypedData({
+      domain: { name: 'Permit2', chainId: ROBINHOOD_CHAIN.id, verifyingContract: PERMIT2_ADDRESS },
+      types: PERMIT_TYPES[scheme] as any,
+      primaryType: 'PermitWitnessTransferFrom',
+      message: { permitted: { token: getAddress(token), amount }, spender: getAddress(spender), nonce, deadline, witness } as any,
+    });
+    const sessionSig = await this.account.sign({ hash: digest });
+
+    const blob = encodeAbiParameters(
+      [
+        { type: 'uint8' }, { type: 'address' }, { type: 'uint256' },
+        { type: 'uint256' }, { type: 'uint256' }, { type: 'address' },
+        { type: 'address' }, { type: 'uint256' }, { type: 'bytes' },
+      ],
+      [
+        scheme === 'upto' ? 1 : 0,
+        getAddress(token), amount, nonce, deadline, getAddress(to),
+        getAddress(params.facilitator ?? '0x0000000000000000000000000000000000000000'),
+        validAfter, sessionSig as Hex,
+      ]
+    );
+
+    return {
+      scheme,
+      owner: this.address,
+      permitted: { token: getAddress(token), amount: amount.toString() },
+      nonce: nonce.toString(),
+      deadline: deadline.toString(),
+      witness: {
+        to: getAddress(to),
+        validAfter: validAfter.toString(),
+        ...(scheme === 'upto' ? { facilitator: getAddress(params.facilitator!) } : {}),
+      },
+      signature: blob,
+    };
+  }
+}
+
+const POLICY_ABI = [
+  { name: 'maxPerCall', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256' }] },
+  { name: 'sessionKey', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'address' }] },
+] as const;
+
+export type PayerWallet = AgentWallet | SessionWallet;
+
+export function walletFromEnv(env = process.env): PayerWallet | null {
+  const policy = env.PAYLESS_POLICY_WALLET;
+  const session = env.PAYLESS_SESSION_KEY;
+
+  // Policy mode wins. If both are configured, holding a treasury key next to a
+  // session key defeats the entire point of having a session key, so say so.
+  if (policy && session) {
+    if (env.PAYLESS_AGENT_PRIVATE_KEY) {
+      console.error(
+        '[payless-mcp] Both PAYLESS_AGENT_PRIVATE_KEY and a policy wallet are set. ' +
+          'Using the policy wallet; remove the agent key — a process that still holds ' +
+          'the treasury key has nothing to gain from a session key.'
+      );
+    }
+    return new SessionWallet(policy, session, env.PAYLESS_RPC_URL || undefined);
+  }
+  if (policy || session) {
+    console.error('[payless-mcp] Policy mode needs BOTH PAYLESS_POLICY_WALLET and PAYLESS_SESSION_KEY. Falling back.');
+  }
+
   const key = env.PAYLESS_AGENT_PRIVATE_KEY;
   if (!key) return null;
   return new AgentWallet(key, env.PAYLESS_RPC_URL || undefined);
