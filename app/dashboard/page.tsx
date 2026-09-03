@@ -51,6 +51,10 @@ interface Transaction {
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
+  const [chain, setChain] = useState<{
+    paymentsReceived: number; uniquePayers: number; volumeUSDG: string;
+    atLeast: boolean; explorer: string;
+  } | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
@@ -62,6 +66,10 @@ export default function DashboardPage() {
 
   const fetchAnalytics = async () => {
     try {
+      fetch('/api/metrics')
+        .then((r) => r.json())
+        .then((m) => m.success && setChain(m))
+        .catch(() => {});
       const response = await fetch('/api/analytics');
       const data = await response.json();
       if (data.success) {
@@ -130,6 +138,37 @@ export default function DashboardPage() {
           <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-text">Dashboard</h1>
             <p className="mt-2 text-sm text-text-muted">Every request that hit a priced endpoint, and what it settled for.</p>
+          </div>
+
+          {/* On-chain truth: read from the explorer index, never invented.
+              The dashboard used to seed fifty fake rows when empty; these three
+              numbers with a proof link replaced that. */}
+          <div className="bg-surface border border-line rounded p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-mono text-xs uppercase tracking-widest text-text-faint">On-chain · USDG into the treasury</h3>
+              {chain && (
+                <a href={chain.explorer} target="_blank" rel="noopener noreferrer"
+                   className="font-mono text-xs text-accent hover:underline">verify on Blockscout →</a>
+              )}
+            </div>
+            {chain ? (
+              <div className="grid grid-cols-3 gap-6">
+                <div>
+                  <p className="font-mono text-3xl tnum text-text">{chain.atLeast ? '≥' : ''}{chain.paymentsReceived}</p>
+                  <p className="mt-1 text-xs text-text-muted">payments received</p>
+                </div>
+                <div>
+                  <p className="font-mono text-3xl tnum text-text">{chain.uniquePayers}</p>
+                  <p className="mt-1 text-xs text-text-muted">unique payers</p>
+                </div>
+                <div>
+                  <p className="font-mono text-3xl tnum text-text">{chain.volumeUSDG}</p>
+                  <p className="mt-1 text-xs text-text-muted">USDG volume</p>
+                </div>
+              </div>
+            ) : (
+              <p className="font-mono text-sm text-text-faint">chain index unreachable — no numbers beat made-up numbers</p>
+            )}
           </div>
 
           {/* Metrics Cards */}

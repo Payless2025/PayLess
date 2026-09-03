@@ -247,33 +247,9 @@ export const analyticsStore = {
 /**
  * Generate mock transactions for demo purposes
  */
-export function generateMockTransactions(count: number = 20): void {
-  const statuses: Array<'pending' | 'completed' | 'failed'> = ['completed', 'completed', 'completed', 'completed', 'pending', 'failed'];
-  const descriptions = [
-    'AI API Chat Request',
-    'Image Generation',
-    'Premium Content Access',
-    'Payment Link Payment',
-    'Translation Service',
-    'Text-to-Speech API',
-  ];
-
-  for (let i = 0; i < count; i++) {
-    const daysAgo = Math.floor(Math.random() * 7);
-    const timestamp = Date.now() - (daysAgo * 24 * 60 * 60 * 1000) - (Math.random() * 24 * 60 * 60 * 1000);
-    const amount = (Math.random() * 50 + 0.5).toFixed(2);
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-
-    recordTransaction({
-      amount,
-      currency: 'USDG',
-      chain: 'robinhood',
-      status,
-      fromAddress: `0x${Math.random().toString(16).substr(2, 40)}`,
-      toAddress: `0x${Math.random().toString(16).substr(2, 40)}`,
-      transactionHash: status === 'completed' ? `0x${Math.random().toString(16).substr(2, 64)}` : undefined,
-      timestamp,
-      description: descriptions[Math.floor(Math.random() * descriptions.length)],
-    });
-  }
-}
+/*
+ * generateMockTransactions used to live here: fifty invented rows whenever the
+ * store was empty. Deleted, not disabled. A payments dashboard that fabricates
+ * volume answers the only question that matters with a lie. Empty is a valid
+ * state; /api/metrics has the real numbers, read from the chain.
+ */
