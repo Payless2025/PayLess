@@ -12,7 +12,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { Budget } from './budget.js';
-import { AgentWallet, PERMIT2_ADDRESS } from './wallet.js';
+import { AgentWallet, SessionWallet, PERMIT2_ADDRESS, type PayerWallet } from './wallet.js';
 import { gaslessOption, toBaseUnits, type Accept } from './select.js';
 
 const USDG = {
@@ -37,7 +37,7 @@ const text = (value: unknown) => ({
   content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }],
 });
 
-export function createServer(opts: { budget: Budget; wallet: AgentWallet | null }) {
+export function createServer(opts: { budget: Budget; wallet: PayerWallet | null }) {
   const { budget, wallet } = opts;
 
   const server = new McpServer({ name: 'payless', version: '0.1.0' });
@@ -130,11 +130,16 @@ export function createServer(opts: { budget: Budget; wallet: AgentWallet | null 
 
         try {
           // One approval, once, and only ever for what the budget allows. An
-          // infinite approval would make the budget meaningless if the key leaked.
-          const allowance = await wallet.permit2Allowance(asset);
-          if (allowance < value) {
-            const ceiling = toBaseUnits(String(budget.limits.maxTotal), USDG.decimals);
-            approvalTx = await wallet.approvePermit2(asset, ceiling > value ? ceiling : value);
+          // infinite approval would make the budget meaningless if the key
+          // leaked. A policy wallet skips this entirely: its contract granted
+          // Permit2 the allowance at construction, and the thing capping a
+          // leaked key there is the contract, not an allowance.
+          if (wallet instanceof AgentWallet) {
+            const allowance = await wallet.permit2Allowance(asset);
+            if (allowance < value) {
+              const ceiling = toBaseUnits(String(budget.limits.maxTotal), USDG.decimals);
+              approvalTx = await wallet.approvePermit2(asset, ceiling > value ? ceiling : value);
+            }
           }
 
           const permit = await wallet.signPermit({
@@ -154,6 +159,15 @@ export function createServer(opts: { budget: Budget; wallet: AgentWallet | null 
           });
         }
       } else {
+        if (wallet instanceof SessionWallet) {
+          // A session key holds no funds; the receipt scheme needs the payer to
+          // move money itself. Refusing beats pretending.
+          return text({
+            paid: false,
+            error:
+              'This endpoint offers no gasless payment option, and a policy wallet pays by signature only. The session key cannot send a transfer, by design.',
+          });
+        }
         try {
           txHash = await wallet.pay({ to, amount, token, decimals: USDG.decimals });
         } catch (error) {

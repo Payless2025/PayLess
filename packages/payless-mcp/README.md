@@ -102,6 +102,38 @@ export const GET = payless.protect(handler, '0.01');
 MIT · [payless.network](https://payless.network) ·
 [source](https://github.com/Payless2025/PayLess/tree/master/packages/payless-mcp)
 
+
+## Policy wallet mode: the agent holds nothing stealable
+
+Instead of a funded private key, give the agent a **session key** and point it
+at a PolicyWallet contract:
+
+```
+PAYLESS_POLICY_WALLET=0xYourPolicyWallet
+PAYLESS_SESSION_KEY=0xSessionPrivateKey
+```
+
+The money lives in the contract. The session key signs payment authorisations,
+and the contract answers the chain's signature check against its own policy:
+per-call cap, recipient allowlist, facilitator allowlist, expiry. A signature
+outside policy is invalid at settlement, on chain, no matter what the process
+that produced it believed.
+
+What this changes about a compromise: a leaked session key can spend at most
+the contract's balance, within policy, until the operator revokes it with one
+transaction. The contract's balance is its daily float, so the worst day has a
+number, and anyone can read it on the explorer.
+
+Two deliberate limitations in this mode:
+
+- No plain transfers. Endpoints offering no gasless scheme are refused with a
+  sentence; a session key has no funds to move, by design.
+- No approvals. The contract granted its allowance at construction; there is
+  nothing left for the process to authorise.
+
+Set both variables or neither. Setting the old `PAYLESS_AGENT_PRIVATE_KEY`
+alongside them defeats the point, and the server will tell you so.
+
 ## Gasless payments
 
 When an endpoint offers it, the agent signs instead of sending a transaction:

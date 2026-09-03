@@ -1,6 +1,6 @@
 {
   "name": "payless-mcp",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "MCP server that lets an agent pay for APIs over x402 on Robinhood Chain \u2014 with a spending cap it cannot exceed.",
   "keywords": [
     "mcp",
@@ -37,7 +37,7 @@
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "npm run build",
-    "test": "tsx test/gasless.test.ts"
+    "test": "tsx test/gasless.test.ts && tsx test/policy.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
