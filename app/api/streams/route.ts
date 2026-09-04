@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Create stream
-    const stream = createStream(
+    const stream = await createStream(
       walletAddress,
       streamConfig,
       initialBalance || 0
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     const getMetrics = searchParams.get('metrics') === 'true';
 
     if (getMetrics) {
-      const metrics = getStreamMetrics();
+      const metrics = await getStreamMetrics();
       return NextResponse.json({
         success: true,
         metrics,
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const streams = getWalletStreams(walletAddress);
+    const streams = await getWalletStreams(walletAddress);
 
     return NextResponse.json({
       success: true,

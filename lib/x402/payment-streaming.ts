@@ -75,7 +75,12 @@ export interface StreamMetrics {
 }
 
 // In-memory stream storage (use database in production)
-const streamStore = new Map<string, PaymentStream>();
+// Shared when Upstash is configured. A stream opened on one instance used to be
+// invisible on the next, so billing simply stopped when a request landed
+// elsewhere.
+import { keyedStore } from './keyed-store';
+
+const streamStore = () => keyedStore<PaymentStream>('streams');
 
 /**
  * Generate unique stream ID
@@ -114,11 +119,11 @@ export function calculateStreamCost(
 /**
  * Create a new payment stream
  */
-export function createStream(
+export async function createStream(
   walletAddress: string,
   config: StreamConfig,
   initialBalance: number = 0
-): PaymentStream {
+): Promise<PaymentStream> {
   const stream: PaymentStream = {
     id: generateStreamId(),
     walletAddress,
@@ -139,22 +144,22 @@ export function createStream(
     ],
   };
 
-  streamStore.set(stream.id, stream);
+  await streamStore().put(stream.id, stream);
   return stream;
 }
 
 /**
  * Get stream by ID
  */
-export function getStream(streamId: string): PaymentStream | null {
-  return streamStore.get(streamId) || null;
+export async function getStream(streamId: string): Promise<PaymentStream | null> {
+  return await streamStore().get(streamId) || null;
 }
 
 /**
  * Get all streams for a wallet
  */
-export function getWalletStreams(walletAddress: string): PaymentStream[] {
-  return Array.from(streamStore.values())
+export async function getWalletStreams(walletAddress: string): Promise<PaymentStream[]> {
+  return (await streamStore().all())
     .filter(stream => stream.walletAddress === walletAddress)
     .sort((a, b) => b.createdAt - a.createdAt);
 }
@@ -162,16 +167,16 @@ export function getWalletStreams(walletAddress: string): PaymentStream[] {
 /**
  * Get all active streams
  */
-export function getActiveStreams(): PaymentStream[] {
-  return Array.from(streamStore.values())
+export async function getActiveStreams(): Promise<PaymentStream[]> {
+  return (await streamStore().all())
     .filter(stream => stream.status === StreamStatus.ACTIVE);
 }
 
 /**
  * Update stream billing
  */
-export function updateStreamBilling(streamId: string): PaymentStream | null {
-  const stream = streamStore.get(streamId);
+export async function updateStreamBilling(streamId: string): Promise<PaymentStream | null> {
+  const stream = await streamStore().get(streamId);
   if (!stream || stream.status !== StreamStatus.ACTIVE) {
     return null;
   }
@@ -222,15 +227,15 @@ export function updateStreamBilling(streamId: string): PaymentStream | null {
     });
   }
 
-  streamStore.set(streamId, stream);
+  await streamStore().put(streamId, stream);
   return stream;
 }
 
 /**
  * Pause a stream
  */
-export function pauseStream(streamId: string): PaymentStream | null {
-  const stream = streamStore.get(streamId);
+export async function pauseStream(streamId: string): Promise<PaymentStream | null> {
+  const stream = await streamStore().get(streamId);
   if (!stream || stream.status !== StreamStatus.ACTIVE) {
     return null;
   }
@@ -247,15 +252,15 @@ export function pauseStream(streamId: string): PaymentStream | null {
     balance: stream.estimatedBalance,
   });
 
-  streamStore.set(streamId, stream);
+  await streamStore().put(streamId, stream);
   return stream;
 }
 
 /**
  * Resume a paused stream
  */
-export function resumeStream(streamId: string): PaymentStream | null {
-  const stream = streamStore.get(streamId);
+export async function resumeStream(streamId: string): Promise<PaymentStream | null> {
+  const stream = await streamStore().get(streamId);
   if (!stream || stream.status !== StreamStatus.PAUSED) {
     return null;
   }
@@ -269,15 +274,15 @@ export function resumeStream(streamId: string): PaymentStream | null {
     balance: stream.estimatedBalance,
   });
 
-  streamStore.set(streamId, stream);
+  await streamStore().put(streamId, stream);
   return stream;
 }
 
 /**
  * Complete a stream (normal end)
  */
-export function completeStream(streamId: string): PaymentStream | null {
-  const stream = streamStore.get(streamId);
+export async function completeStream(streamId: string): Promise<PaymentStream | null> {
+  const stream = await streamStore().get(streamId);
   if (!stream) {
     return null;
   }
@@ -296,15 +301,15 @@ export function completeStream(streamId: string): PaymentStream | null {
     balance: stream.estimatedBalance,
   });
 
-  streamStore.set(streamId, stream);
+  await streamStore().put(streamId, stream);
   return stream;
 }
 
 /**
  * Cancel a stream (user-initiated)
  */
-export function cancelStream(streamId: string, reason?: string): PaymentStream | null {
-  const stream = streamStore.get(streamId);
+export async function cancelStream(streamId: string, reason?: string): Promise<PaymentStream | null> {
+  const stream = await streamStore().get(streamId);
   if (!stream) {
     return null;
   }
@@ -324,15 +329,15 @@ export function cancelStream(streamId: string, reason?: string): PaymentStream |
     reason: reason || 'User cancelled',
   });
 
-  streamStore.set(streamId, stream);
+  await streamStore().put(streamId, stream);
   return stream;
 }
 
 /**
  * Add funds to a stream
  */
-export function addStreamFunds(streamId: string, amount: number): PaymentStream | null {
-  const stream = streamStore.get(streamId);
+export async function addStreamFunds(streamId: string, amount: number): Promise<PaymentStream | null> {
+  const stream = await streamStore().get(streamId);
   if (!stream) {
     return null;
   }
@@ -354,15 +359,15 @@ export function addStreamFunds(streamId: string, amount: number): PaymentStream 
     }
   }
 
-  streamStore.set(streamId, stream);
+  await streamStore().put(streamId, stream);
   return stream;
 }
 
 /**
  * Get stream metrics
  */
-export function getStreamMetrics(): StreamMetrics {
-  const streams = Array.from(streamStore.values());
+export async function getStreamMetrics(): Promise<StreamMetrics> {
+  const streams = (await streamStore().all());
   
   return {
     activeStreams: streams.filter(s => s.status === StreamStatus.ACTIVE).length,
@@ -378,11 +383,13 @@ export function getStreamMetrics(): StreamMetrics {
  * Background job to update all active streams
  * Call this periodically (e.g., every 10 seconds)
  */
-export function updateAllActiveStreams(): void {
-  const activeStreams = getActiveStreams();
-  activeStreams.forEach(stream => {
-    updateStreamBilling(stream.id);
-  });
+export async function updateAllActiveStreams(): Promise<void> {
+  const activeStreams = await getActiveStreams();
+  // Sequential on purpose: each bill is a read-modify-write on the same store,
+  // and racing them would let two updates overwrite one another's charge.
+  for (const stream of activeStreams) {
+    await updateStreamBilling(stream.id);
+  }
 }
 
 /**

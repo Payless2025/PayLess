@@ -10,22 +10,20 @@ import {
  */
 export async function GET(req: NextRequest) {
   try {
-    const activeStreams = getActiveStreams();
+    const activeStreams = await getActiveStreams();
 
     // Update billing for all active streams and add current amounts
-    const streamsWithAmounts = activeStreams.map(stream => {
-      // Update billing to get latest amounts
-      const updatedStream = updateStreamBilling(stream.id) || stream;
-      
-      // Calculate current duration
-      const currentDuration = updatedStream.totalDuration;
-      
-      return {
+    // Sequential: each billing update is a read-modify-write on the same
+    // stream store, and Promise.all here would let updates clobber each other.
+    const streamsWithAmounts = [];
+    for (const stream of activeStreams) {
+      const updatedStream = (await updateStreamBilling(stream.id)) || stream;
+      streamsWithAmounts.push({
         ...updatedStream,
         currentAmount: updatedStream.totalCharged,
-        duration: Math.floor(currentDuration),
-      };
-    });
+        duration: Math.floor(updatedStream.totalDuration),
+      });
+    }
 
     // Calculate total streaming volume
     const totalVolume = streamsWithAmounts.reduce(

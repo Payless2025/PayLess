@@ -30,8 +30,17 @@ export interface CreatePaymentLinkParams {
   metadata?: Record<string, any>;
 }
 
-// In-memory storage (replace with database in production)
-const paymentLinks: Map<string, PaymentLink> = new Map();
+// Shared when Upstash is configured, in-memory otherwise. It used to be a bare
+// Map, which on serverless meant a link created by one instance was "not found"
+// on the next — the link worked or did not depending on which machine answered.
+import { keyedStore, isKeyedStoreShared } from './keyed-store';
+
+const links = () => keyedStore<PaymentLink>('links');
+
+/** True when links survive a scale-out. Reported so the API need not guess. */
+export function linksArePersistent(): boolean {
+  return isKeyedStoreShared('links');
+}
 
 /**
  * Generate a unique payment link ID
@@ -43,7 +52,7 @@ function generateLinkId(): string {
 /**
  * Create a new payment link
  */
-export function createPaymentLink(params: CreatePaymentLinkParams): PaymentLink {
+export async function createPaymentLink(params: CreatePaymentLinkParams): Promise<PaymentLink> {
   const id = generateLinkId();
   const now = Date.now();
   
@@ -60,15 +69,15 @@ export function createPaymentLink(params: CreatePaymentLinkParams): PaymentLink 
     status: 'active',
   };
 
-  paymentLinks.set(id, link);
+  await links().put(id, link);
   return link;
 }
 
 /**
  * Get payment link by ID
  */
-export function getPaymentLink(id: string): PaymentLink | null {
-  const link = paymentLinks.get(id);
+export async function getPaymentLink(id: string): Promise<PaymentLink | null> {
+  const link = await links().get(id);
   
   if (!link) {
     return null;
@@ -77,7 +86,7 @@ export function getPaymentLink(id: string): PaymentLink | null {
   // Check if expired
   if (link.expiresAt && Date.now() > link.expiresAt) {
     link.status = 'expired';
-    paymentLinks.set(id, link);
+    await links().put(id, link);
   }
 
   return link;
@@ -86,13 +95,13 @@ export function getPaymentLink(id: string): PaymentLink | null {
 /**
  * Mark payment link as completed
  */
-export function completePaymentLink(
+export async function completePaymentLink(
   id: string,
   transactionSignature: string,
   paidBy: string,
   paidChain: string
-): boolean {
-  const link = paymentLinks.get(id);
+): Promise<boolean> {
+  const link = await links().get(id);
   
   if (!link || link.status !== 'active') {
     return false;
@@ -103,54 +112,50 @@ export function completePaymentLink(
   link.transactionSignature = transactionSignature;
   link.paidBy = paidBy;
   link.paidChain = paidChain;
-  
-  paymentLinks.set(id, link);
+
+  await links().put(id, link);
   return true;
 }
 
 /**
  * List all payment links (for dashboard)
  */
-export function listPaymentLinks(recipientAddress?: string): PaymentLink[] {
-  const links = Array.from(paymentLinks.values());
-  
+export async function listPaymentLinks(recipientAddress?: string): Promise<PaymentLink[]> {
+  const all = await links().all();
   if (recipientAddress) {
-    return links.filter(link => link.recipientAddress === recipientAddress);
+    return all.filter((link) => link.recipientAddress === recipientAddress);
   }
-  
-  return links;
+  return all;
 }
 
 /**
  * Delete payment link
  */
-export function deletePaymentLink(id: string): boolean {
-  return paymentLinks.delete(id);
+export async function deletePaymentLink(id: string): Promise<boolean> {
+  return links().delete(id);
 }
 
 /**
  * Get payment link statistics
  */
-export function getPaymentLinkStats(recipientAddress?: string): {
+export async function getPaymentLinkStats(recipientAddress?: string): Promise<{
   total: number;
   active: number;
   completed: number;
   expired: number;
   totalAmount: string;
-} {
-  const links = recipientAddress 
-    ? listPaymentLinks(recipientAddress)
-    : Array.from(paymentLinks.values());
+}> {
+  const all = await listPaymentLinks(recipientAddress);
 
   const stats = {
-    total: links.length,
-    active: links.filter(l => l.status === 'active').length,
-    completed: links.filter(l => l.status === 'completed').length,
-    expired: links.filter(l => l.status === 'expired').length,
+    total: all.length,
+    active: all.filter((l) => l.status === 'active').length,
+    completed: all.filter((l) => l.status === 'completed').length,
+    expired: all.filter((l) => l.status === 'expired').length,
     totalAmount: '0',
   };
 
-  const completedLinks = links.filter(l => l.status === 'completed');
+  const completedLinks = all.filter((l) => l.status === 'completed');
   if (completedLinks.length > 0) {
     const total = completedLinks.reduce((sum, link) => sum + parseFloat(link.amount), 0);
     stats.totalAmount = total.toFixed(2);

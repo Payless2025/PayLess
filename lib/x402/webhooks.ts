@@ -6,49 +6,53 @@ import crypto from 'crypto';
 import { WebhookEvent, WebhookConfig, WebhookDelivery, WebhookEventType, PaymentWebhookData } from './types';
 import { checkWebhookTarget } from './webhook-target';
 
-// In-memory storage (replace with database in production)
-const webhooks: Map<string, WebhookConfig> = new Map();
-const deliveries: Map<string, WebhookDelivery> = new Map();
+// Shared when Upstash is configured. A webhook registered on one instance used
+// to be invisible to every other one, so deliveries fired or did not depending
+// on which machine handled the event.
+import { keyedStore } from './keyed-store';
+
+const webhooks = () => keyedStore<WebhookConfig>('webhooks');
+const deliveries = () => keyedStore<WebhookDelivery>('webhook-deliveries');
 
 /**
  * Register a webhook
  */
-export function registerWebhook(config: WebhookConfig): string {
+export async function registerWebhook(config: WebhookConfig): Promise<string> {
   const id = crypto.randomUUID();
-  webhooks.set(id, config);
+  await webhooks().put(id, config);
   return id;
 }
 
 /**
  * Get webhook by ID
  */
-export function getWebhook(id: string): WebhookConfig | undefined {
-  return webhooks.get(id);
+export async function getWebhook(id: string): Promise<WebhookConfig | undefined> {
+  return (await webhooks().get(id)) ?? undefined;
 }
 
 /**
  * Update webhook
  */
-export function updateWebhook(id: string, config: Partial<WebhookConfig>): boolean {
-  const existing = webhooks.get(id);
+export async function updateWebhook(id: string, config: Partial<WebhookConfig>): Promise<boolean> {
+  const existing = await webhooks().get(id);
   if (!existing) return false;
-  
-  webhooks.set(id, { ...existing, ...config });
+
+  await webhooks().put(id, { ...existing, ...config });
   return true;
 }
 
 /**
  * Delete webhook
  */
-export function deleteWebhook(id: string): boolean {
-  return webhooks.delete(id);
+export async function deleteWebhook(id: string): Promise<boolean> {
+  return webhooks().delete(id);
 }
 
 /**
  * List all webhooks
  */
-export function listWebhooks(): Array<{ id: string; config: WebhookConfig }> {
-  return Array.from(webhooks.entries()).map(([id, config]) => ({ id, config }));
+export async function listWebhooks(): Promise<Array<{ id: string; config: WebhookConfig }>> {
+  return (await webhooks().entries()).map(([id, config]) => ({ id, config }));
 }
 
 /**
@@ -91,8 +95,8 @@ export async function triggerWebhook(
   };
 
   // Find all webhooks subscribed to this event type
-  const subscribedWebhooks = Array.from(webhooks.entries()).filter(
-    ([_, config]) => config.enabled && config.events.includes(eventType)
+  const subscribedWebhooks = (await webhooks().entries()).filter(
+    ([, config]) => config.enabled && config.events.includes(eventType)
   );
 
   // Deliver to each webhook
@@ -123,7 +127,7 @@ async function deliverWebhook(
     lastAttemptAt: Date.now(),
   };
 
-  deliveries.set(delivery.id, delivery);
+  await deliveries().put(delivery.id, delivery);
 
   try {
     const payload = JSON.stringify(event);
@@ -136,7 +140,7 @@ async function deliverWebhook(
     if (!target.ok) {
       delivery.status = 'failed';
       delivery.response = { error: target.reason };
-      deliveries.set(delivery.id, delivery);
+      await deliveries().put(delivery.id, delivery);
       return;
     }
 
@@ -157,7 +161,7 @@ async function deliverWebhook(
 
     if (response.ok) {
       delivery.status = 'success';
-      deliveries.set(delivery.id, delivery);
+      await deliveries().put(delivery.id, delivery);
     } else {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
@@ -166,13 +170,13 @@ async function deliverWebhook(
     delivery.response = {
       error: error instanceof Error ? error.message : 'Unknown error',
     };
-    deliveries.set(delivery.id, delivery);
+    await deliveries().put(delivery.id, delivery);
 
     // Retry with exponential backoff
     if (retryCount < 2) {
       const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
       delivery.nextRetryAt = Date.now() + retryDelay;
-      deliveries.set(delivery.id, delivery);
+      await deliveries().put(delivery.id, delivery);
 
       setTimeout(() => {
         deliverWebhook(webhookId, event, config, retryCount + 1);
@@ -184,12 +188,12 @@ async function deliverWebhook(
 /**
  * Get webhook delivery history
  */
-export function getWebhookDeliveries(webhookId?: string): WebhookDelivery[] {
-  const allDeliveries = Array.from(deliveries.values());
+export async function getWebhookDeliveries(webhookId?: string): Promise<WebhookDelivery[]> {
+  const all = await deliveries().all();
   if (webhookId) {
-    return allDeliveries.filter(d => d.webhookId === webhookId);
+    return all.filter((d) => d.webhookId === webhookId);
   }
-  return allDeliveries;
+  return all;
 }
 
 /**

@@ -9,6 +9,7 @@ import { ENDPOINT_PRICING, PAYMENT_CONFIG } from '@/lib/x402/config';
 import { ROBINHOOD_CONFIG } from '@/lib/chains/config';
 import { isSpentStoreShared, getSpentStore } from '@/lib/x402/spent-store';
 import { demoPaymentsEnabled } from '@/lib/x402/middleware';
+import { isKeyedStoreShared } from '@/lib/x402/keyed-store';
 
 /**
  * One real round trip to the replay ledger.
@@ -64,6 +65,14 @@ export async function GET(req: NextRequest) {
       // Whether payments are actually being verified. If this ever says
       // 'skipped' on a live deployment, nothing here is being paid for.
       paymentVerification: demoPaymentsEnabled() ? 'SKIPPED (demo mode)' : 'enforced',
+      // Which collections outlive a single instance. Anything reported as
+      // per-instance will appear to lose data on a scale-out, so it is stated
+      // rather than discovered.
+      persistence: {
+        links: isKeyedStoreShared('links') ? 'shared' : 'per-instance',
+        webhooks: isKeyedStoreShared('webhooks') ? 'shared' : 'per-instance',
+        streams: isKeyedStoreShared('streams') ? 'shared' : 'per-instance',
+      },
       // Which credential names this runtime can see. Names only, never values —
       // enough to tell "not set" from "set under a name we do not read", which
       // is otherwise only diagnosable by guessing.
