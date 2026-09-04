@@ -29,13 +29,26 @@ export async function GET() {
   } else {
     try {
       const gas = await signer.gasBalance();
-      // Roughly a dozen settlements. Below that, say so before a seller finds out.
-      const enough = gas > BigInt(3e14);
+      // A balance means nothing on its own; what a seller needs to know is how
+      // many more settlements it buys. Measured against the live gas price and
+      // the gas a settle actually uses, rather than a fixed threshold that
+      // stops being true the moment the chain gets busy.
+      let remaining: number | null = null;
+      try {
+        const price = await withRpcRetry(() => chainClient().getGasPrice());
+        const perSettle = BigInt(110_000) * price;
+        remaining = perSettle > BigInt(0) ? Number(gas / perSettle) : null;
+      } catch {
+        // Fall back to the balance alone rather than claiming an estimate.
+      }
+      // Twenty is the line: enough that a top-up is a chore, not an incident.
+      const enough = remaining === null ? gas > BigInt(2e15) : remaining >= 20;
       checks.signer = {
         ok: enough,
-        detail: enough
-          ? `${formatEther(gas)} ETH, enough to keep settling.`
-          : `${formatEther(gas)} ETH. Too low to keep settling reliably; top up ${signer.address}.`,
+        detail:
+          `${formatEther(gas)} ETH` +
+          (remaining !== null ? `, about ${remaining} more settlements` : '') +
+          (enough ? '.' : `. Running low; top up ${signer.address}.`),
       };
     } catch {
       checks.signer = { ok: false, detail: 'Signer configured, but its balance could not be read.' };
