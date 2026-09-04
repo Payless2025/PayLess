@@ -20,9 +20,9 @@ export async function GET(
     const streamId = params.id;
     
     // Update billing before returning
-    updateStreamBilling(streamId);
+    await updateStreamBilling(streamId);
     
-    const stream = getStream(streamId);
+    const stream = await getStream(streamId);
 
     if (!stream) {
       return NextResponse.json(
@@ -60,19 +60,19 @@ export async function PATCH(
 
     switch (action) {
       case 'pause':
-        stream = pauseStream(streamId);
+        stream = await pauseStream(streamId);
         break;
 
       case 'resume':
-        stream = resumeStream(streamId);
+        stream = await resumeStream(streamId);
         break;
 
       case 'complete':
-        stream = completeStream(streamId);
+        stream = await completeStream(streamId);
         break;
 
       case 'cancel':
-        stream = cancelStream(streamId, reason);
+        stream = await cancelStream(streamId, reason);
         break;
 
       case 'add_funds':
@@ -82,7 +82,7 @@ export async function PATCH(
             { status: 400 }
           );
         }
-        stream = addStreamFunds(streamId, amount);
+        stream = await addStreamFunds(streamId, amount);
         break;
 
       default:
@@ -122,7 +122,7 @@ export async function DELETE(
 ) {
   try {
     const streamId = params.id;
-    const stream = cancelStream(streamId, 'Deleted by user');
+    const stream = await cancelStream(streamId, 'Deleted by user');
 
     if (!stream) {
       return NextResponse.json(

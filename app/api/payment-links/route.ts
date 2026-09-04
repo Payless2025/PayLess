@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const recipientAddress = searchParams.get('recipientAddress') || undefined;
 
-    const links = listPaymentLinks(recipientAddress);
+    const links = await listPaymentLinks(recipientAddress);
 
     return NextResponse.json({
       success: true,
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create payment link
-    const link = createPaymentLink({
+    const link = await createPaymentLink({
       amount: amountNum.toString(),
       description,
       chains,
@@ -108,7 +108,7 @@ export async function DELETE(req: NextRequest) {
     // Deleting used to need nothing but the id, so anyone could delete
     // anyone's link. The wallet that receives the payments is the natural
     // owner, and destroying the link now requires proving control of it.
-    const link = getPaymentLink(linkId);
+    const link = await getPaymentLink(linkId);
     if (!link) {
       return NextResponse.json({ error: 'Payment link not found' }, { status: 404 });
     }
@@ -133,7 +133,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const deleted = deletePaymentLink(linkId);
+    const deleted = await deletePaymentLink(linkId);
 
     if (!deleted) {
       return NextResponse.json(

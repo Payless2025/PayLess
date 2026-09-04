@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     // The secret is what makes a webhook signature mean anything. Returning it
     // from a readable endpoint turned every signed delivery into a formality.
-    const webhooks = listWebhooks().map(({ id, config }) => ({
+    const webhooks = (await listWebhooks()).map(({ id, config }) => ({
       id,
       config: { ...config, secret: redactSecret((config as { secret?: string }).secret) },
     }));
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       enabled,
     };
 
-    const webhookId = registerWebhook(config);
+    const webhookId = await registerWebhook(config);
 
     return NextResponse.json({
       success: true,

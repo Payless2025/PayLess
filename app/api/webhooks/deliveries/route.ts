@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const webhookId = searchParams.get('webhookId') || undefined;
 
-    const deliveries = getWebhookDeliveries(webhookId);
+    const deliveries = await getWebhookDeliveries(webhookId);
 
     return NextResponse.json({
       success: true,
