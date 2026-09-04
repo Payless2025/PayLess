@@ -25,7 +25,7 @@
  * something else would be worse than advertising a name of our own.
  */
 
-import { getAddress, isAddress, parseUnits } from 'viem';
+import { getAddress, isAddress, parseUnits, formatEther } from 'viem';
 import { verifySettlement, SETTLEMENT_MAX_AGE_MS } from '../chains/settlement';
 import { claimSettlement, getSpentStore } from './spent-store';
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_CONFIG } from '../chains/config';
@@ -184,19 +184,43 @@ export const SUPPORTED_KINDS = [
  * lie the moment the key is missing, which is the failure a client can least
  * afford to discover at settle time.
  */
-export function supportedKinds() {
+export async function supportedKinds() {
   const signer = signerFromEnv();
-  const canBroadcast = signer !== null;
+  // A key with no gas cannot settle. Reporting `live` off the key alone is the
+  // same lie as reporting a shared ledger off credentials alone: true about
+  // configuration, false about capability, and only discovered by a client at
+  // the one moment it cannot recover.
+  let canBroadcast = signer !== null;
+  let gas: string | null = null;
+  if (signer) {
+    try {
+      const balance = await signer.gasBalance();
+      gas = formatEther(balance);
+      // Roughly a dozen settlements' worth. Below that, say so rather than
+      // letting a seller discover it mid-request.
+      canBroadcast = balance > BigInt(3e14);
+    } catch {
+      // A balance read failing is not proof of empty; keep the key's answer.
+    }
+  }
   return SUPPORTED_KINDS.map((kind) => {
     if (kind.scheme === 'exact') {
-      return { ...kind, extra: { ...kind.extra, settlement: canBroadcast ? 'live' : 'unconfigured' } };
+      return {
+        ...kind,
+        extra: {
+          ...kind.extra,
+          settlement: canBroadcast ? 'live' : signer ? 'out-of-gas' : 'unconfigured',
+          ...(gas ? { facilitatorGasETH: gas } : {}),
+        },
+      };
     }
     if (kind.scheme === 'upto') {
       return {
         ...kind,
         extra: {
           ...kind.extra,
-          settlement: canBroadcast ? 'live' : 'unconfigured',
+          settlement: canBroadcast ? 'live' : signer ? 'out-of-gas' : 'unconfigured',
+          ...(gas ? { facilitatorGasETH: gas } : {}),
           // Must be advertised, because the proxy rejects any settle whose
           // caller is not the facilitator named inside the signature. A buyer
           // who signs the wrong one has produced an authorisation nobody can use.

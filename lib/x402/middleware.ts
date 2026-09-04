@@ -278,7 +278,7 @@ export function demoPaymentsEnabled(env = process.env): boolean {
 /**
  * Create 402 Payment Required response
  */
-export function create402Response(amount: string, pathname?: string): NextResponse<X402Response> {
+export async function create402Response(amount: string, pathname?: string): Promise<NextResponse<X402Response>> {
   const subscribe = pathname ? offersFor(pathname) : [];
   const response: X402Response = {
     status: 402,
@@ -303,7 +303,7 @@ export function create402Response(amount: string, pathname?: string): NextRespon
       // Without this a caller cannot know a gasless option exists, and will
       // send a transfer and wait for its receipt because that is the only
       // thing the challenge told them about.
-      accepts: supportedKinds().map((kind) => ({
+      accepts: (await supportedKinds()).map((kind) => ({
         scheme: kind.scheme,
         network: kind.network,
         amount,
@@ -482,7 +482,7 @@ export function withX402Payment(
           userAgent,
         });
 
-        return create402Response(endpointPrice, pathname);
+        return await create402Response(endpointPrice, pathname);
       }
 
       paymentProvided = true;
