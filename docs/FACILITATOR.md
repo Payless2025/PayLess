@@ -209,6 +209,39 @@ authorisations that had already been granted. Keep only gas there.
 Check your own `/status`. If `signer` is not `ok`, signature schemes will fail at
 the last possible moment, which is the worst moment.
 
+
+---
+
+## Discovery
+
+A seller publishes what it sells at `/.well-known/x402`, and the same catalogue
+is served at `/api/discovery/resources` in the shape production x402
+facilitators already use.
+
+```
+GET https://www.payless.network/.well-known/x402
+```
+
+```json
+{
+  "items": [
+    {
+      "resource": "https://www.payless.network/api/rwa/transfers",
+      "method": "GET",
+      "accepts": [ { "scheme": "upto", "amount": "50000", "extra": { "pricing": "metered" } } ],
+      "metadata": { "pricing": "metered", "description": "..." }
+    }
+  ]
+}
+```
+
+Amounts are base units. `pricing: metered` means the amount is a ceiling and the
+real charge is decided after the work, so an agent budgeting against it should
+not reserve the full figure.
+
+Free, because charging to find out what things cost would be an odd first
+impression.
+
 ---
 
 ## Using it as a seller
