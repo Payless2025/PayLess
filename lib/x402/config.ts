@@ -115,6 +115,10 @@ export const ENDPOINT_PRICING: EndpointConfig = {
   // Metered: a base fee plus a per-row rate, settled at actual cost under the
   // upto scheme. This figure is the ceiling, not the price.
   '/api/rwa/transfers': '0.05',
+  // Corporate actions and transfer eligibility: data that only exists on a
+  // chain carrying transfer-gated tokenised equities.
+  '/api/rwa/corporate-actions': '0.03',
+  '/api/rwa/eligibility': '0.01',
 
   // Real third-party data, no key required
   '/api/data/crypto': '0.015',
