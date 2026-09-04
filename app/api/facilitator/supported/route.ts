@@ -28,6 +28,14 @@ export async function GET() {
     // per warm instance, so the state of that ledger is part of the contract.
     replayLedger: shared ? 'shared' : 'in-memory',
     ledgerReachable,
+    // Who runs this, and how to stop depending on it. A payment layer that
+    // does not answer these is a single point of failure with a logo on it.
+    operator: {
+      name: process.env.PAYLESS_FACILITATOR_OPERATOR || 'Payless',
+      contact: process.env.PAYLESS_FACILITATOR_CONTACT || 'https://github.com/Payless2025/PayLess/issues',
+    },
+    status: '/api/facilitator/status',
+    selfHost: 'https://github.com/Payless2025/PayLess/blob/master/docs/FACILITATOR.md',
     notes: {
       order:
         'Call /verify before serving the resource and /settle after. Verify consumes nothing; settle is what makes the payment unusable again.',
