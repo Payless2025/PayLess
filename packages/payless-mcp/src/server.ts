@@ -242,6 +242,66 @@ export function createServer(opts: { budget: Budget; wallet: PayerWallet | null 
     }
   );
 
+
+  server.tool(
+    'discover',
+    'List what an origin sells and what each item costs, without paying or triggering a single 402. Use this before quoting or fetching, to choose between endpoints and to plan a budget.',
+    {
+      origin: z.string().describe('An origin such as https://www.payless.network, or a full manifest URL'),
+    },
+    async ({ origin }) => {
+      // Two conventions, tried in order: the server's own manifest, then the
+      // discovery path production facilitators serve. A server that answers
+      // neither simply is not discoverable, and saying so beats guessing routes.
+      const base = origin.replace(/\/+$/, '');
+      const candidates = base.includes('/.well-known') || base.includes('/discovery')
+        ? [base]
+        : [`${base}/.well-known/x402`, `${base}/api/discovery/resources`, `${base}/discovery/resources`];
+
+      for (const url of candidates) {
+        let body: any;
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          body = await res.json();
+        } catch {
+          continue;
+        }
+        const items: any[] = body?.items ?? [];
+        if (!items.length) continue;
+
+        return text({
+          source: url,
+          count: items.length,
+          items: items.map((i) => {
+            const cheapest = (i.accepts ?? [])[0];
+            const metered = i.metadata?.pricing === 'metered';
+            return {
+              resource: i.resource,
+              method: i.method ?? 'GET',
+              description: i.metadata?.description ?? i.description,
+              // Base units are what the wire carries; an agent reasoning about
+              // budget wants the human figure too, and guessing decimals is how
+              // that goes wrong.
+              amountBaseUnits: cheapest?.amount,
+              asset: cheapest?.asset,
+              network: cheapest?.network,
+              schemes: (i.accepts ?? []).map((a: any) => a.scheme),
+              pricing: metered ? 'metered — the amount is a ceiling, you pay what the work costs' : 'fixed',
+            };
+          }),
+          note: 'Nothing here was paid for. Use quote to price one exactly, or fetch_paid to buy it.',
+        });
+      }
+
+      return text({
+        discoverable: false,
+        tried: candidates,
+        note: 'This origin publishes no x402 catalogue. You can still quote a specific URL to read its 402.',
+      });
+    }
+  );
+
   server.tool(
     'budget_status',
     'How much of the spending allowance is left, and what has been spent so far.',
