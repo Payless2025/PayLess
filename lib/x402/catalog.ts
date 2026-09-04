@@ -64,6 +64,10 @@ const DESCRIPTIONS: Record<string, string> = {
     'Which tokenised equities an address holds, and how much of each.',
   '/api/rwa/transfers':
     'Transfer history for one tokenised equity, straight from the chain logs. Priced per row returned, because the size of the answer is not knowable in advance.',
+  '/api/rwa/corporate-actions':
+    'Corporate actions on tokenised equities: the current scaling multiplier, any scheduled change with its effective date, pause state, and the full history from the chain event log. Tells you when a raw balanceOf will not match the issuer figure.',
+  '/api/rwa/eligibility':
+    'Whether an address can receive a tokenised equity, read from the access registry every stock token defers to plus that token pause flags. On-chain state only.',
   '/api/data/stock':
     'Market data for a tokenised equity, paired with its on-chain supply.',
   '/api/tools/qrcode': 'Generate a QR code for a payment link or arbitrary payload.',
