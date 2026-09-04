@@ -46,7 +46,8 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "tsx test/facilitator.test.ts && tsx test/gasless.test.ts"
   },
   "peerDependencies": {
     "viem": "^1.0.0 || ^2.0.0"

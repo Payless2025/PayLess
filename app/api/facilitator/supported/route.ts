@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    kinds: supportedKinds(),
+    kinds: await supportedKinds(),
     x402Version: X402_VERSION,
     network: NETWORK,
     // Settling without an atomic ledger would let one payment buy a response
