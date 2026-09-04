@@ -103,6 +103,24 @@ MIT · [payless.network](https://payless.network) ·
 [source](https://github.com/Payless2025/PayLess/tree/master/packages/payless-mcp)
 
 
+
+## Finding things to buy
+
+`discover` reads an origin's catalogue and tells the agent what it sells, what
+each item costs and which schemes it accepts. No payment, and no 402 triggered:
+
+```
+discover({ origin: "https://www.payless.network" })
+→ 10 items, prices, schemes, and which ones are metered
+```
+
+Metered items are flagged, because there the advertised amount is a ceiling
+rather than a price and an agent budgeting against it would over-reserve.
+
+It tries the server's own `/.well-known/x402` first, then the `/discovery/resources`
+path production facilitators serve. An origin answering neither is reported as
+not discoverable rather than guessed at.
+
 ## Policy wallet mode: the agent holds nothing stealable
 
 Instead of a funded private key, give the agent a **session key** and point it
