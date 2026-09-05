@@ -25,6 +25,14 @@ const shipped: Group[] = [
         note: 'The receipt is the payment. Every request is paid for by a verified ERC-20 transfer, not by a signature.',
       },
       {
+        title: 'Three ways to pay for one request',
+        note: 'Send the transfer and show the receipt, sign an authorisation and let a facilitator broadcast it, or sign a ceiling and be charged what the work actually cost. USDG on this chain implements neither EIP-3009 nor EIP-2612, checked by scanning the dispatch table behind its proxy, so the gasless routes run through Permit2 and the canonical x402 proxies instead.',
+      },
+      {
+        title: 'A wallet the chain can refuse',
+        note: 'An agent holds a session key; the money sits in a contract that answers the signature check itself. Per-call ceiling, allowed recipients, allowed facilitator, expiry, all enforced by consensus rather than by our process. A payment inside the policy settles and one over it reverts before anything moves. A leaked session key cannot drain the wallet, though it can spend the day float within policy until the operator revokes it.',
+      },
+      {
         title: 'Replay protection and a freshness window',
         note: 'A settled transaction buys exactly one response, and only within 30 minutes of being mined.',
       },
@@ -62,26 +70,50 @@ const shipped: Group[] = [
         note: 'npx payless-mcp gives any MCP client four tools, of which exactly one can move money. The spending limit is checked in the tool before a transaction is signed, so the model cannot see it, raise it, or argue with it. Four agent payments have settled on chain under it.',
       },
       {
+        title: 'Reference agent, running live',
+        note: 'An agent that reads a price off a 402 and pays it with nobody approving the transaction. Its per-call ceiling is enforced by the policy wallet contract rather than by our code: a payment inside the limit settles, and one over it reverts before any money moves. It runs at /agent, reporting every step it takes, including the ones that fail.',
+      },
+      {
+        title: 'A facilitator anyone can run',
+        note: 'Verifying and settling x402 payments so a seller never touches a chain: two HTTP calls and no RPC, no replay ledger, no key. The protocol is specified, the implementation is in the repository, and swapping our URL for your own is one string. It also reports its own health with a reason per check, because a payment service that can only say up will say up while it is quietly out of gas.',
+      },
+      {
+        title: 'A catalogue agents can read before spending',
+        note: 'Every priced endpoint published at /.well-known/x402 in the shape production x402 facilitators already use: what it returns, what it costs in base units, which schemes it accepts, and whether the amount is a price or a ceiling. Learning what five endpoints cost used to mean calling five of them and reading five rejections.',
+      },
+      {
+        title: 'Corporate actions on tokenised equities',
+        note: 'The stock tokens carry a scaling multiplier the issuer adjusts, and every change is announced on chain with an effective date. So a scheduled adjustment is visible before it lands, and a token already off 1 means a raw balanceOf does not match the issuer figure. Reported as numbers and timestamps only: a multiplier moving is a fact, naming it a split is paperwork we do not have. Data that cannot exist on a chain without transfer-gated equities.',
+      },
+      {
+        title: 'Proof of wallet ownership',
+        note: 'Token gating used to trust an address in a header, which is a claim rather than a proof. Access now needs a signature over a challenge this server issued, traded for a short-lived token. Writing a whale address into a header no longer opens anything.',
+      },
+      {
         title: 'Shared replay and subscription stores',
         note: 'Both ledgers sit behind Upstash Redis, claimed with SET NX so the server decides the winner. Without them a receipt could be spent once per warm serverless instance; the app now fails closed if the ledger is unreachable.',
       },
       {
-        title: 'Published SDK on npm',
-        note: 'npm i payless — one wrapper prices any fetch-style route handler, with settlement verification and replay protection built in.',
+        title: 'Storage that survives a scale-out',
+        note: 'Payment links, webhooks and streams left the per-instance maps they were born in. A link created by one machine used to be missing from the next, so whether it worked depended on which one answered. Each collection now reports whether it is shared or per-instance rather than leaving anyone to find out.',
       },
       {
-        title: 'Nine paid endpoints that return real output',
-        note: 'Live reads from Robinhood Chain — token metadata, balances and receipts — plus market data and QR generation. Anything that would return placeholder data is free and labelled demo until a real provider sits behind it.',
+        title: 'Published SDK on npm',
+        note: 'npm i payless. One wrapper prices any fetch-style route handler, with settlement verification and replay protection built in.',
+      },
+      {
+        title: 'Recurring payments, collecting',
+        note: 'The commitment is an ERC-20 allowance rather than a card on file: the payer approves a spend limit, we may collect the plan amount once per period and never more than was approved, and cancelling is approve(0) from their own wallet, immediate, and not something we can block. The collector runs as a separate worker holding the only key that can pull funds, and its first collections have settled on chain.',
+      },
+      {
+        title: 'Twelve paid endpoints that return real output',
+        note: 'Live reads from Robinhood Chain (token metadata, balances, receipts, transfer history, corporate actions and transfer eligibility), plus market data and QR generation. Transfer history is metered rather than fixed price, because the size of the answer is not knowable before the query runs. Anything that would return placeholder data is free and labelled demo until a real provider sits behind it.',
       },
     ],
   },
 ];
 
 const inProgress: Item[] = [
-  {
-    title: 'Recurring payments',
-    note: 'The commitment is an ERC-20 allowance rather than a card on file. The payer approves a spend limit, we may collect the plan amount once per period and never more than was approved, and cancelling is approve(0) from their own wallet — immediate, and not something we can block. Collection now runs in a separate process holding the only key that can pull funds, each period is claimed atomically before anything is signed, and a transfer whose outcome is unknown is resolved from the chain rather than sent again. Live once that worker is deployed with its key.',
-  },
   { title: 'Email receipts and payment alerts' },
   {
     title: 'Deeper merchant dashboard',
@@ -95,7 +127,7 @@ const planned: Group[] = [
     items: [
       {
         title: 'Payment splits',
-        note: 'One transfer, several recipients, settled together — so an API can pay its upstream out of the same payment that paid it.',
+        note: 'One transfer, several recipients, settled together, so an API can pay its upstream out of the same payment that paid it.',
       },
       {
         title: 'Escrow',
@@ -112,12 +144,12 @@ const planned: Group[] = [
     heading: 'Platform',
     items: [
       {
-        title: 'Rate limiting and API keys per tier',
-        note: 'Paying for a response and hammering an endpoint are different problems. x402 only solves the first.',
+        title: 'Sub-agent budget delegation',
+        note: 'A budget belongs to a process today, so an agent that spawns five helpers has five budgets. The limit should follow the work rather than the process: a parent granting a child a share of its own ceiling, with the arithmetic on chain where neither can edit it.',
       },
       {
-        title: 'Persistent storage for links, streams and webhooks',
-        note: 'The same in-memory caveat as above, applied to everything else that outlives a single request.',
+        title: 'Rate limiting and API keys per tier',
+        note: 'Paying for a response and hammering an endpoint are different problems. x402 only solves the first.',
       },
       {
         title: 'Real providers behind the demo endpoints',
@@ -221,7 +253,7 @@ export default function RoadmapPage() {
       <div className="pt-14">
         <PageHeader
           title="Roadmap"
-          description="What Payless does today, what is being built next, and what it will not do. Dates are deliberately absent — things move here when they ship."
+          description="What Payless does today, what is being built next, and what it will not do. Dates are deliberately absent. Things move here when they ship."
         />
       </div>
 
