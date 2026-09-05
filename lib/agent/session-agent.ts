@@ -25,8 +25,10 @@ import {
 } from 'viem';
 import { policyWalletBlob, PERMIT2_ADDRESS } from '../x402/permit2';
 import { ROBINHOOD_RPC_URL, ROBINHOOD_CHAIN_ID, USDG_ADDRESS } from '../chains/config';
+import { readAllActions } from '../chains/corporate-actions';
+import { decide, type Decision } from './decisions';
 
-const RWA_ENDPOINT = 'https://www.payless.network/api/rwa/transfers?symbol=NVDA&limit=5';
+const ORIGIN = process.env.PAYLESS_PUBLIC_ORIGIN || 'https://www.payless.network';
 
 const UPTO_TYPES = {
   PermitWitnessTransferFrom: [
@@ -58,6 +60,11 @@ export interface AgentTick {
   ok: boolean;
   step: string;
   detail: string;
+  /** What it noticed, and why that changed what it bought. */
+  observation?: string;
+  reason?: string;
+  resource?: string;
+  priority?: string;
   scheme?: string;
   ceiling?: string;
   charged?: string;
@@ -117,6 +124,17 @@ function packSignature(r: Hex, s: Hex, v: bigint | number): Hex {
  * blob) because the contract only accepts what it was built to accept, and two
  * producers of that blob had better agree.
  */
+/**
+ * Tickers examined in this pass, so the agent does not buy the same data twice.
+ * Cleared once every token has been seen, which is what makes it a cycle rather
+ * than a queue that drains and stops.
+ */
+let seenThisCycle: string[] = [];
+
+export function resetCycle() {
+  seenThisCycle = [];
+}
+
 export async function runAgentTick(): Promise<AgentTick> {
   const now = () => new Date().toISOString();
   const cfg = config();
@@ -126,7 +144,51 @@ export async function runAgentTick(): Promise<AgentTick> {
 
   const before = await agentState();
 
-  const challenge = await fetch(RWA_ENDPOINT).then((r) => r.json()).catch(() => null);
+  // Decide before spending. Reading corporate actions is free, so the agent
+  // forms a view first and lets that view choose what it is worth paying for.
+  // The alternative, buying on a schedule and reasoning afterwards, is a cron
+  // job wearing a decision as a hat.
+  let decision: Decision;
+  try {
+    const tokens = await readAllActions(false);
+    decision = decide({
+      tokens,
+      floatRemaining: Number(before.floatUSDG),
+      perCallCeiling: Number(before.capUSDG),
+      seen: seenThisCycle,
+    });
+  } catch {
+    // If the free read fails, fall back to routine sampling rather than
+    // pretending to have noticed something.
+    decision = {
+      observation: 'Could not read corporate actions; proceeding without a view.',
+      action: { kind: 'buy', resource: '/api/rwa/transfers', params: { symbol: 'NVDA', limit: '5' }, reason: 'Routine sampling.' },
+      priority: 'normal',
+    };
+  }
+
+  if (decision.action.kind !== 'buy') {
+    // A cycle that has seen everything starts again, so the stage keeps
+    // running instead of going quiet after one pass.
+    if (decision.action.kind === 'skip') seenThisCycle = [];
+    // Choosing not to spend is a result, and the most interesting one to show.
+    return {
+      ok: true,
+      step: decision.action.kind,
+      detail: decision.action.reason,
+      observation: decision.observation,
+      reason: decision.action.reason,
+      priority: decision.priority,
+      ...before,
+      at: now(),
+    };
+  }
+
+  const params = new URLSearchParams(decision.action.params).toString();
+  const endpoint = `${ORIGIN}${decision.action.resource}?${params}`;
+  if (decision.action.params.symbol) seenThisCycle.push(decision.action.params.symbol);
+
+  const challenge = await fetch(endpoint).then((r) => r.json()).catch(() => null);
   const accepts: any[] = challenge?.payment?.accepts ?? [];
   const upto = accepts.find(
     (a) => a.scheme === 'upto' && a.extra?.assetTransferMethod === 'permit2' && a.extra?.settlement === 'live'
@@ -186,7 +248,7 @@ export async function runAgentTick(): Promise<AgentTick> {
     signature: blob,
   };
 
-  const res = await fetch(RWA_ENDPOINT, { headers: { 'X-Payment': JSON.stringify(payload) } });
+  const res = await fetch(endpoint, { headers: { 'X-Payment': JSON.stringify(payload) } });
   const settledAmount = res.headers.get('x-payment-settled-amount') || undefined;
   const txHash = res.headers.get('x-payment-confirmed') || undefined;
   const settlementFailed = res.headers.get('x-payment-settlement') === 'failed';
@@ -211,7 +273,11 @@ export async function runAgentTick(): Promise<AgentTick> {
   return {
     ok: true,
     step: 'read+paid',
-    detail: `Bought NVDA transfer history: ${data?.data?.count ?? '?'} rows. Signed a ceiling of ${formatUnits(ceiling, 6)}, charged what it cost.`,
+    detail: `${decision.action.reason} Signed a ceiling of ${formatUnits(ceiling, 6)}, charged what it cost.`,
+    observation: decision.observation,
+    reason: decision.action.reason,
+    resource: decision.action.resource,
+    priority: decision.priority,
     scheme: 'upto',
     ceiling: formatUnits(ceiling, 6),
     charged: settledAmount,

@@ -8,6 +8,10 @@ interface Tick {
   ok: boolean;
   step: string;
   detail: string;
+  observation?: string;
+  reason?: string;
+  resource?: string;
+  priority?: string;
   scheme?: string;
   ceiling?: string;
   charged?: string;
@@ -155,12 +159,24 @@ export default function AgentStage() {
             {feed.map((t, i) => (
               <div key={`${t.at}-${i}`} className={`border rounded p-4 ${t.ok ? 'border-line bg-surface' : 'border-line bg-surface-raised'}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`font-mono text-xs uppercase tracking-widest ${t.ok ? 'text-accent' : 'text-text-faint'}`}>
-                    {t.ok ? 'paid' : t.step}
+                  <span className={`font-mono text-xs uppercase tracking-widest ${t.ok && t.txHash ? 'text-accent' : 'text-text-faint'}`}>
+                    {t.txHash ? 'paid' : t.step}
+                    {t.priority === 'high' && t.txHash ? ' · acted on' : ''}
                   </span>
                   <span className="font-mono text-xs text-text-faint">{new Date(t.at).toLocaleTimeString()}</span>
                 </div>
+                {/* What it noticed comes first: the observation is the reason
+                    this row exists, and the purchase is only its consequence. */}
+                {t.observation && (
+                  <p className="text-sm text-text-muted mb-1">
+                    <span className="font-mono text-xs uppercase tracking-widest text-text-faint mr-2">saw</span>
+                    {t.observation}
+                  </p>
+                )}
                 <p className="text-sm text-text">{t.detail}</p>
+                {t.resource && (
+                  <p className="mt-1 font-mono text-xs text-text-faint">{t.resource}</p>
+                )}
                 {t.ok && (
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs text-text-muted">
                     {t.rows !== undefined && <span>{t.rows} rows</span>}
