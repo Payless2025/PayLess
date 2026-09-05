@@ -65,12 +65,30 @@ test('a scheduled corporate action outranks everything else', () => {
   assert.match(d.observation, /scheduled/);
 });
 
-test('a stale multiplier sends it to holdings, not to flow', () => {
+test('a stale multiplier sends it to holdings when it knows whose', () => {
   // The problem is that a number is wrong, so the fix is to re-read the number.
-  const d = decide({ ...rich, tokens: [token({ ticker: 'AAPL', multiplier: '1.000566', balancesNeedScaling: true })] });
-  assert.equal(d.action.kind, 'buy');
+  const stale = [token({ ticker: 'AAPL', multiplier: '1.000566', balancesNeedScaling: true })];
+  const d = decide({ ...rich, tokens: stale, holder: '0xE8f98Abe2Aaca504de0Eb1B033F6B0318a8C237B' });
   assert.equal((d.action as any).resource, '/api/rwa/holdings');
+  assert.equal((d.action as any).params.address, '0xE8f98Abe2Aaca504de0Eb1B033F6B0318a8C237B');
   assert.match(d.observation, /1\.000566/);
+});
+
+test('without an address it asks the flow rather than sending a malformed request', () => {
+  // The bug this pins: it once sent { symbol } to a holdings endpoint keyed by
+  // address, got a 400, and then marked the token handled so it never retried.
+  const d = decide({ ...rich, tokens: [token({ ticker: 'AAPL', balancesNeedScaling: true })] });
+  assert.equal((d.action as any).resource, '/api/rwa/transfers');
+  assert.equal(d.priority, 'high', 'still urgent, just asked differently');
+});
+
+test('every buy names the token it settles, whatever it is keyed by', () => {
+  // A holdings query is keyed by address, so without this the caller cannot
+  // tell what was handled and would ask about it forever.
+  const withHolder = decide({ ...rich, tokens: [token({ ticker: 'AAPL', balancesNeedScaling: true })], holder: '0xabc' });
+  assert.equal((withHolder.action as any).subject, 'AAPL');
+  const routine = decide({ ...rich, tokens: [token({ ticker: 'MSFT' })] });
+  assert.equal((routine.action as any).subject, 'MSFT');
 });
 
 test('skips a halted token instead of buying frozen history', () => {

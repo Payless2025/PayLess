@@ -36,7 +36,18 @@ export interface EligibilitySnapshot {
 }
 
 export type Action =
-  | { kind: 'buy'; resource: string; params: Record<string, string>; reason: string }
+  | {
+      kind: 'buy';
+      resource: string;
+      params: Record<string, string>;
+      reason: string;
+      /**
+       * Which token this purchase settles. Named separately from the params
+       * because a holdings query is keyed by address, and without this the
+       * caller cannot tell what was handled and would ask again forever.
+       */
+      subject: string;
+    }
   | { kind: 'skip'; reason: string }
   | { kind: 'stop'; reason: string };
 
@@ -63,8 +74,10 @@ export function decide(input: {
   perCallCeiling: number;
   /** Tickers already examined this cycle, so it does not loop. */
   seen?: string[];
+  /** Whose holdings to read. Without it, a holdings question has no subject. */
+  holder?: string;
 }): Decision {
-  const { eligibility, tokens = [], floatRemaining, perCallCeiling, seen = [] } = input;
+  const { eligibility, tokens = [], floatRemaining, perCallCeiling, seen = [], holder } = input;
 
   // 0. Money first. An agent that plans a purchase it cannot afford has not
   //    made a decision, it has made a request that will be refused.
@@ -104,6 +117,7 @@ export function decide(input: {
         kind: 'buy',
         resource: '/api/rwa/transfers',
         params: { symbol: pending.ticker, limit: '20' },
+        subject: pending.ticker,
         reason:
           'A scheduled adjustment changes what every holder balance means. Reading the transfer flow around it is the only way to see who is moving before it lands.',
       },
@@ -115,17 +129,35 @@ export function decide(input: {
   //    which is worth more than any market colour.
   const scaling = tokens.find((t) => t.balancesNeedScaling && !seen.includes(t.ticker));
   if (scaling) {
-    return {
-      observation: `${scaling.ticker} carries a multiplier of ${scaling.multiplier}, so a raw balanceOf does not match the issuer figure.`,
-      action: {
-        kind: 'buy',
-        resource: '/api/rwa/holdings',
-        params: { symbol: scaling.ticker },
-        reason:
-          'Any holding read without this multiplier is wrong by that factor. Worth resolving before trusting a position.',
-      },
-      priority: 'high',
-    };
+    const observation = `${scaling.ticker} carries a multiplier of ${scaling.multiplier}, so a raw balanceOf does not match the issuer figure.`;
+    // Holdings are a question about somebody. Without an address there is no
+    // question, so it asks the flow instead of sending a request it knows is
+    // malformed.
+    return holder
+      ? {
+          observation,
+          action: {
+            kind: 'buy',
+            resource: '/api/rwa/holdings',
+            params: { address: holder },
+            subject: scaling.ticker,
+            reason:
+              'Any holding read without this multiplier is wrong by that factor. Worth resolving before trusting a position.',
+          },
+          priority: 'high',
+        }
+      : {
+          observation,
+          action: {
+            kind: 'buy',
+            resource: '/api/rwa/transfers',
+            params: { symbol: scaling.ticker, limit: '10' },
+            subject: scaling.ticker,
+            reason:
+              'The multiplier makes cached balances wrong, and with no address to check holdings for, the flow is the next best read.',
+          },
+          priority: 'high',
+        };
   }
 
   // 4. A halted token is worth knowing about and not worth studying: nothing
@@ -147,11 +179,14 @@ export function decide(input: {
   const next = tokens.find((t) => !seen.includes(t.ticker));
   if (next) {
     return {
-      observation: `No pending actions and no scaling anomalies across ${tokens.length} tokens.`,
+      observation: seen.length
+        ? `Nothing further needs attention; ${seen.length} of ${tokens.length} tokens already handled this cycle.`
+        : `No pending actions and no scaling anomalies across ${tokens.length} tokens.`,
       action: {
         kind: 'buy',
         resource: '/api/rwa/transfers',
         params: { symbol: next.ticker, limit: '10' },
+        subject: next.ticker,
         reason: 'Nothing needs attention, so this is routine flow sampling rather than a response to anything.',
       },
       priority: 'normal',

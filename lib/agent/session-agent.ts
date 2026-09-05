@@ -156,13 +156,14 @@ export async function runAgentTick(): Promise<AgentTick> {
       floatRemaining: Number(before.floatUSDG),
       perCallCeiling: Number(before.capUSDG),
       seen: seenThisCycle,
+      holder: cfg.wallet,
     });
   } catch {
     // If the free read fails, fall back to routine sampling rather than
     // pretending to have noticed something.
     decision = {
       observation: 'Could not read corporate actions; proceeding without a view.',
-      action: { kind: 'buy', resource: '/api/rwa/transfers', params: { symbol: 'NVDA', limit: '5' }, reason: 'Routine sampling.' },
+      action: { kind: 'buy', resource: '/api/rwa/transfers', params: { symbol: 'NVDA', limit: '5' }, subject: 'NVDA', reason: 'Routine sampling.' },
       priority: 'normal',
     };
   }
@@ -186,7 +187,7 @@ export async function runAgentTick(): Promise<AgentTick> {
 
   const params = new URLSearchParams(decision.action.params).toString();
   const endpoint = `${ORIGIN}${decision.action.resource}?${params}`;
-  if (decision.action.params.symbol) seenThisCycle.push(decision.action.params.symbol);
+  const subject = decision.action.subject;
 
   const challenge = await fetch(endpoint).then((r) => r.json()).catch(() => null);
   const accepts: any[] = challenge?.payment?.accepts ?? [];
@@ -194,7 +195,20 @@ export async function runAgentTick(): Promise<AgentTick> {
     (a) => a.scheme === 'upto' && a.extra?.assetTransferMethod === 'permit2' && a.extra?.settlement === 'live'
   );
   if (!upto) {
-    return { ok: false, step: 'quote', detail: 'The endpoint offered no live upto scheme.', ...before, at: now() };
+    // Deliberately not marked as seen. A purchase that failed is not an
+    // observation that was handled, and quietly skipping it next cycle would
+    // hide the very thing the agent was right to notice.
+    return {
+      ok: false,
+      step: 'quote',
+      detail: `Could not buy ${decision.action.resource}: it offered no live upto scheme.`,
+      observation: decision.observation,
+      reason: decision.action.reason,
+      resource: decision.action.resource,
+      priority: decision.priority,
+      ...before,
+      at: now(),
+    };
   }
 
   const asset = getAddress(upto.asset as `0x${string}`);
@@ -261,6 +275,10 @@ export async function runAgentTick(): Promise<AgentTick> {
       detail: settlementFailed
         ? res.headers.get('x-payment-error') || 'Settlement was refused.'
         : (body as any)?.error || `The endpoint answered ${res.status}.`,
+      observation: decision.observation,
+      reason: decision.action.reason,
+      resource: decision.action.resource,
+      priority: decision.priority,
       scheme: 'upto',
       ceiling: formatUnits(ceiling, 6),
       ...before,
@@ -269,6 +287,8 @@ export async function runAgentTick(): Promise<AgentTick> {
   }
 
   const data = await res.json();
+  // Marked only now, after money actually moved for it.
+  if (subject) seenThisCycle.push(subject);
   const after = await agentState();
   return {
     ok: true,
