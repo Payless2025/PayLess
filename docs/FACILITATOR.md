@@ -253,9 +253,56 @@ A registry entry is a claim that somebody filled in a form. A row here is a
 receipt. Nobody signs up, and nobody can list themselves into it.
 
 It also finds sellers who have never heard of Payless, because it reads the
-proxies rather than our own traffic. What it cannot tell you is what an address
-sells: that appears only when the seller publishes its own manifest, and the two
-are joined then.
+proxies rather than our own traffic.
+
+### Attaching a name to an address
+
+The chain proves an address is paid. It cannot prove what it sells, because a
+settlement carries a recipient and an amount and nothing else. `/api/discovery/register`
+closes that join, and the ordering of the three facts is the point:
+
+| fact | comes from | can it be faked |
+| --- | --- | --- |
+| this address was paid, repeatedly | the chain | no |
+| this address belongs to me | a signature from its key | no |
+| here is what I sell | a manifest at a URL | yes, but bound to the two above |
+
+The third is a claim and always will be. What keeps it honest is that it is
+locked to the other two in both directions: you sign with the address's own key,
+and the manifest you point at has to name that address as a `payTo` recipient.
+So nobody can list themselves against someone else's receipts, and nobody can
+point at a manifest that does not claim them back.
+
+```bash
+# 1. get a challenge, 2. sign it, 3. exchange it for a token
+curl -X POST https://www.payless.network/api/auth/challenge \
+  -d '{"address":"0xYourAddress"}'
+# … personal_sign, then POST {message, signature} to /api/auth/verify …
+
+# 4. register
+curl -X POST https://www.payless.network/api/discovery/register \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"manifestUrl":"https://your.host/.well-known/x402","name":"Your Service"}'
+```
+
+Registration is free. Charging for it would make the list about who paid rather
+than about who sells.
+
+Three properties worth stating because they are what the code actually does:
+
+- **A failing check is refused, not stored.** A registry of entries that do not
+  verify is a list, which is the thing this exists not to be.
+- **Entries are re-checked and dropped when they stop verifying.** A manifest
+  can change after registration, and a row that was true in March is not
+  evidence in September.
+- **A registered seller with no settlements is kept in a separate array**
+  (`registeredWithoutSettlements`). Merging it into `sellers` would put a claim
+  and a receipt in one list under one shape, and telling those apart is the
+  entire value of the index.
+
+The dependency runs one way. The registry reads the chain index; the chain index
+does not read the registry. Registration can be empty, stale, or down without
+changing a single thing the chain says.
 
 ---
 
