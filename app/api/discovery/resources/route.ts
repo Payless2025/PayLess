@@ -22,5 +22,9 @@ export async function GET(req: NextRequest) {
     x402Version: X402_VERSION,
     items: items.slice(offset, offset + limit),
     pagination: { limit, offset, total: items.length },
+    // Our own endpoints are the smallest possible view of this chain. Everyone
+    // being paid through the canonical proxies is at the link below, including
+    // sellers who have never heard of us.
+    chainWideSellers: '/api/discovery/sellers',
   });
 }

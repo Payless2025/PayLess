@@ -242,6 +242,21 @@ not reserve the full figure.
 Free, because charging to find out what things cost would be an odd first
 impression.
 
+
+### Who else is selling here
+
+`/api/discovery/sellers` derives an index from the canonical proxies rather than
+from a signup form: every address that has been paid through x402 on this chain,
+with how many payments, how much, and which facilitator broadcast them.
+
+A registry entry is a claim that somebody filled in a form. A row here is a
+receipt. Nobody signs up, and nobody can list themselves into it.
+
+It also finds sellers who have never heard of Payless, because it reads the
+proxies rather than our own traffic. What it cannot tell you is what an address
+sells: that appears only when the seller publishes its own manifest, and the two
+are joined then.
+
 ---
 
 ## Using it as a seller
