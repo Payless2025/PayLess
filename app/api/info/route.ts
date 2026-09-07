@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
         links: isKeyedStoreShared('links') ? 'shared' : 'per-instance',
         webhooks: isKeyedStoreShared('webhooks') ? 'shared' : 'per-instance',
         streams: isKeyedStoreShared('streams') ? 'shared' : 'per-instance',
+        'seller-registry': isKeyedStoreShared('seller-registry') ? 'shared' : 'per-instance',
       },
       // Which credential names this runtime can see. Names only, never values —
       // enough to tell "not set" from "set under a name we do not read", which

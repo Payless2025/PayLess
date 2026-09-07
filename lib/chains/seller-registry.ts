@@ -44,6 +44,16 @@ export interface ManifestCheck {
   at: string;
   ok: boolean;
   reason: string;
+  /**
+   * Whether we actually got a manifest back and could read it.
+   *
+   * The distinction this draws is the difference between an entry that should
+   * be dropped and one that should be left alone. "Your manifest no longer
+   * names you" disqualifies a seller. "We could not reach your server" says
+   * nothing about the seller at all, and treating the two the same would let
+   * one slow minute delete a legitimate registration permanently.
+   */
+  reachable: boolean;
   itemCount?: number;
   declaredPayTo?: string[];
 }
@@ -183,16 +193,17 @@ export async function checkManifest(address: string, manifestUrl: string): Promi
   const checked = getAddress(address);
 
   const fetched = await fetchManifest(manifestUrl);
-  if (!fetched.ok) return { at, ok: false, reason: fetched.reason };
+  if (!fetched.ok) return { at, ok: false, reachable: false, reason: fetched.reason };
 
   const declared = declaredPayTo(fetched.body);
   if (declared.length === 0) {
-    return { at, ok: false, reason: 'Manifest names no payment address, so it claims nobody.' };
+    return { at, ok: false, reachable: true, reason: 'Manifest names no payment address, so it claims nobody.' };
   }
   if (!declared.includes(checked)) {
     return {
       at,
       ok: false,
+      reachable: true,
       reason: `Manifest does not name ${checked} as a recipient. It names ${declared.join(', ')}.`,
       declaredPayTo: declared,
     };
@@ -201,6 +212,7 @@ export async function checkManifest(address: string, manifestUrl: string): Promi
   return {
     at,
     ok: true,
+    reachable: true,
     reason: `Manifest names ${checked} as a recipient.`,
     itemCount: countItems(fetched.body),
     declaredPayTo: declared,
@@ -279,7 +291,7 @@ export async function allRegistrations(): Promise<RegisteredSeller[]> {
  */
 export async function refreshStale(
   options: { now?: number; limit?: number } = {}
-): Promise<{ rechecked: number; dropped: string[] }> {
+): Promise<{ rechecked: number; dropped: string[]; unreachable: string[] }> {
   const now = options.now ?? Date.now();
   // Bounded, because this runs inside a request. Each recheck is a call to
   // somebody else's server, so an unbounded registry would turn a read of the
@@ -287,6 +299,7 @@ export async function refreshStale(
   // the next read.
   const limit = options.limit ?? 5;
   const dropped: string[] = [];
+  const unreachable: string[] = [];
   let rechecked = 0;
 
   for (const entry of await allRegistrations()) {
@@ -298,13 +311,21 @@ export async function refreshStale(
     const check = await checkManifest(entry.address, entry.manifestUrl);
     if (check.ok) {
       await store().put(entry.address.toLowerCase(), { ...entry, lastCheck: check });
-    } else {
+    } else if (check.reachable) {
+      // The manifest answered and no longer names this address. That is a
+      // disqualification, so the entry goes.
       await store().delete(entry.address.toLowerCase());
       dropped.push(entry.address);
+    } else {
+      // We could not reach or parse it. That says nothing about the seller, so
+      // the entry stays and the failure is recorded to be retried next time.
+      // Deleting here would let one slow minute erase a valid registration.
+      await store().put(entry.address.toLowerCase(), { ...entry, lastCheck: check });
+      unreachable.push(entry.address);
     }
   }
 
-  return { rechecked, dropped };
+  return { rechecked, dropped, unreachable };
 }
 
 // ---------------------------------------------------------------------------
@@ -335,6 +356,17 @@ export interface JoinedIndex extends Omit<SellerIndex, 'sellers'> {
    */
   registeredWithoutSettlements: Array<{ address: string; profile: SellerProfile }>;
   registered: number;
+  /**
+   * Why the registry could not be read, when it could not be.
+   *
+   * Without this the response says "0 registered" for two very different
+   * situations: nobody has registered, and the store did not answer. Those
+   * read identically to a caller and only one of them is a fact, which is the
+   * exact shape of silent failure the rest of this codebase refuses.
+   */
+  registryError: string | null;
+  /** Whether registrations survive a scale-out here. Reported, not assumed. */
+  registryDurable: boolean;
 }
 
 function toProfile(entry: RegisteredSeller): SellerProfile {
@@ -350,11 +382,14 @@ function toProfile(entry: RegisteredSeller): SellerProfile {
 /** Attach names to the rows the chain produced, without changing any of them. */
 export async function joinRegistry(index: SellerIndex): Promise<JoinedIndex> {
   let entries: RegisteredSeller[] = [];
+  let registryError: string | null = null;
   try {
     entries = await allRegistrations();
   } catch (error) {
     // A registry that cannot be read costs names, not rows. The chain data is
-    // already in hand and is returned unchanged.
+    // already in hand and is returned unchanged, and the reason travels with
+    // the response rather than only into a log nobody reads.
+    registryError = (error as Error).message || 'Registry could not be read.';
     console.error('[seller-registry] could not read registrations:', error);
   }
 
@@ -375,6 +410,8 @@ export async function joinRegistry(index: SellerIndex): Promise<JoinedIndex> {
     sellers,
     registeredWithoutSettlements,
     registered: entries.length,
+    registryError,
+    registryDurable: registryIsShared(),
     limits:
       `${index.limits} A name and a URL appear only where the address holder signed for them and the manifest names that address back; rows without a profile are unregistered, not unreal.`,
   };

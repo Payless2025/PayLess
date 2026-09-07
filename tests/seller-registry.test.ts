@@ -272,6 +272,56 @@ async function run() {
     assert.equal(await getRegistration(SELLER), null);
   });
 
+  await test('a manifest we cannot reach keeps the entry rather than deleting it', async () => {
+    // The difference between "you no longer qualify" and "your server did not
+    // answer". Treating them the same lets one slow minute permanently erase a
+    // legitimate registration, and the seller would never learn why.
+    freshStore();
+    script = () => ({ body: manifest(SELLER) });
+    await registerSeller(SELLER, MANIFEST, 'Example Data Co');
+
+    script = () => ({ status: 503 });
+    const r = await refreshStale({ now: Date.now() + RECHECK_AFTER_MS + 1 });
+    assert.deepEqual(r.dropped, [], 'an unreachable host must not disqualify a seller');
+    assert.deepEqual(r.unreachable, [SELLER]);
+
+    const still = await getRegistration(SELLER);
+    assert.ok(still, 'the entry was deleted because a fetch failed');
+    assert.equal(still!.lastCheck.reachable, false);
+    assert.equal(still!.name, 'Example Data Co', 'the entry survived intact');
+  });
+
+  await test('a check records whether the manifest was reachable at all', async () => {
+    freshStore();
+    script = () => ({ status: 500 });
+    assert.equal((await checkManifest(SELLER, MANIFEST)).reachable, false);
+    script = () => ({ text: 'not json' });
+    assert.equal((await checkManifest(SELLER, MANIFEST)).reachable, false);
+    script = () => ({ body: manifest(OTHER) });
+    const answered = await checkManifest(SELLER, MANIFEST);
+    assert.equal(answered.ok, false);
+    assert.equal(answered.reachable, true, 'it answered, it just did not name us');
+  });
+
+  await test('a registry that cannot be read says so instead of reporting zero', async () => {
+    // "0 registered" and "the store did not answer" must never look identical
+    // to a caller. Only one of them is a fact.
+    const broken = new MemoryKeyedStore<RegisteredSeller>();
+    broken.all = async () => { throw new Error('redis is down'); };
+    setKeyedStore('seller-registry', broken);
+
+    const joined = await joinRegistry(chainIndex([SELLER]));
+    assert.equal(joined.registered, 0);
+    assert.match(joined.registryError ?? '', /redis is down/);
+  });
+
+  await test('a genuinely empty registry reports no error', async () => {
+    freshStore();
+    const joined = await joinRegistry(chainIndex([SELLER]));
+    assert.equal(joined.registered, 0);
+    assert.equal(joined.registryError, null, 'an empty registry is not a failure');
+  });
+
   await test('a fresh entry is not re-fetched', async () => {
     freshStore();
     script = () => ({ body: manifest(SELLER) });

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     // Drop entries whose manifest stopped naming them before answering, so a
     // stale claim is never served alongside a live receipt. Bounded per call,
     // and a failure here costs names rather than the whole index.
-    let refreshed = { rechecked: 0, dropped: [] as string[] };
+    let refreshed = { rechecked: 0, dropped: [] as string[], unreachable: [] as string[] };
     try {
       refreshed = await refreshStale();
     } catch (error) {
