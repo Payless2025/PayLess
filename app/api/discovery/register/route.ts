@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { provenAddress } from '@/lib/x402/wallet-proof';
+import { describeKeyedStore } from '@/lib/x402/keyed-store';
 import {
   registerSeller,
   unregisterSeller,
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
     success: true,
     howTo: HOW_TO,
     registrationsVisible: visible,
+    registryStore: await describeKeyedStore('seller-registry'),
     // Stated rather than assumed: without a shared store this deployment's
     // registrations do not survive a scale-out, and a caller should know that
     // before relying on one.

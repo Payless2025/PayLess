@@ -154,6 +154,29 @@ export function isKeyedStoreShared(collection: string): boolean {
   return registry().get(collection)?.shared ?? false;
 }
 
+/**
+ * What a store actually is, from inside the process asking.
+ *
+ * Added because two functions in one deployment reported different contents
+ * for the same collection, which cannot be true of one Redis hash and one key.
+ * Guessing between "the read is broken" and "they are not the same store"
+ * costs a deploy per guess; asking the store to describe itself costs one.
+ */
+export async function describeKeyedStore(
+  collection: string
+): Promise<{ key: string; shared: boolean; kind: string; count: number | string; ids: string[] }> {
+  const store = keyedStore<unknown>(collection);
+  const shared = isKeyedStoreShared(collection);
+  const key = store instanceof UpstashKeyedStore ? (store as any).key : `memory:${collection}`;
+  const kind = store instanceof UpstashKeyedStore ? 'upstash' : 'memory';
+  try {
+    const ids = (await store.entries()).map(([id]) => id);
+    return { key, shared, kind, count: ids.length, ids };
+  } catch (error) {
+    return { key, shared, kind, count: `unreadable: ${(error as Error).message}`, ids: [] };
+  }
+}
+
 /** Swap a store in, for tests. */
 export function setKeyedStore<T>(collection: string, store: KeyedStore<T>, shared = true) {
   registry().set(collection, { store, shared });

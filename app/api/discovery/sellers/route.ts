@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readSellers } from '@/lib/chains/sellers';
 import { joinRegistry, refreshStale } from '@/lib/chains/seller-registry';
+import { describeKeyedStore } from '@/lib/x402/keyed-store';
 import { ROBINHOOD_CHAIN_ID } from '@/lib/chains/config';
 
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,7 @@ export async function GET(req: NextRequest) {
         profile: 'A signature from that address, plus a manifest at the given URL that names the address back.',
       },
       registryRefresh: refreshed,
+      registryStore: await describeKeyedStore('seller-registry'),
       register: '/api/discovery/register',
     });
   } catch (error) {
