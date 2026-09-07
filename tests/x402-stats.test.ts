@@ -104,19 +104,22 @@ async function run() {
   });
 
   await test('a partial scan says so instead of implying a short history', async () => {
+    // The cursor holds window indices; coverage must report blocks. Window 1120
+    // starts at block 56,000,000 and window 1136 ends at 56,849,999.
     seed([day('2026-09-01')], {
-      low: '56000000', high: '56672642', complete: false, updatedAt: '2026-09-07T10:00:00.000Z',
+      low: '1120', high: '1136', complete: false, updatedAt: '2026-09-07T10:00:00.000Z',
     });
     const s = await readStats();
     assert.equal(s.coverage.reachedGenesis, false);
     assert.match(s.coverage.note, /scanned range only/);
     assert.equal(s.coverage.lowestBlockScanned, '56000000');
+    assert.equal(s.coverage.highestBlockScanned, '56849999');
     assert.equal(s.coverage.lastPassAt, '2026-09-07T10:00:00.000Z');
   });
 
   await test('a completed scan claims completeness and only then', async () => {
     seed([day('2026-09-01')], {
-      low: '0', high: '56672642', complete: true, updatedAt: '2026-09-07T10:00:00.000Z',
+      low: '0', high: '1136', complete: true, updatedAt: '2026-09-07T10:00:00.000Z',
     });
     const s = await readStats();
     assert.equal(s.coverage.reachedGenesis, true);

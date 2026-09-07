@@ -496,8 +496,13 @@ export async function readStats(): Promise<X402Stats> {
       days: series.length,
     },
     coverage: {
-      lowestBlockScanned: cursor?.low ?? null,
-      highestBlockScanned: cursor?.high ?? null,
+      // The cursor stores window indices, because that is what "already done"
+      // is tracked by. Callers care about blocks, so the conversion happens
+      // here rather than leaking an internal unit into a public field.
+      lowestBlockScanned: cursor ? (BigInt(cursor.low) * CHUNK).toString() : null,
+      highestBlockScanned: cursor
+        ? (BigInt(cursor.high) * CHUNK + CHUNK - BigInt(1)).toString()
+        : null,
       reachedGenesis: cursor?.complete ?? false,
       lastPassAt: cursor?.updatedAt ?? null,
       note: cursor?.complete
