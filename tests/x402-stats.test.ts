@@ -13,7 +13,7 @@
 
 import assert from 'node:assert/strict';
 import { setKeyedStore, MemoryKeyedStore } from '../lib/x402/keyed-store';
-import { readStats, foldWindow, windowOf, type DayBucket } from '../lib/chains/x402-stats';
+import { readStats, foldWindow, windowOf, backfill, catchUp, type DayBucket } from '../lib/chains/x402-stats';
 
 let passed = 0;
 async function test(name: string, fn: () => Promise<void>) {
@@ -167,6 +167,23 @@ async function run() {
     assert.equal(result.folded, false, 'a marked window was scanned again');
     assert.equal(result.found, 0);
     assert.deepEqual(result.days, []);
+  });
+
+  await test('a pass already out of time does nothing, including no chain calls', async () => {
+    // Window cost is wildly uneven: a quiet window is two RPC calls, a busy one
+    // is several hundred. Without a budget the pass was killed mid-window by
+    // the platform and reported nothing at all, which showed up as HTTP 504 and
+    // no progress. Reaching the deadline must be a clean stop, and no chain
+    // client is reachable from a test, so this also proves it returns before
+    // touching one.
+    seed([]);
+    setKeyedStore('x402-windows', new MemoryKeyedStore<any>());
+    const past = Date.now() - 1;
+    for (const pass of [await backfill({ deadline: past }), await catchUp({ deadline: past })]) {
+      assert.equal(pass.windowsScanned, 0);
+      assert.equal(pass.settlementsFound, 0);
+      assert.equal(pass.complete, false, 'an out of time pass must never claim completeness');
+    }
   });
 
   await test('windows are aligned to fixed boundaries, not to where a pass stopped', async () => {

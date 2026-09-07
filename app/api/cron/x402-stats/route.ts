@@ -48,8 +48,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, reset: cleared });
     }
 
-    const forward = await catchUp({ maxWindows: 2 });
-    const backward = await backfill({ maxWindows: windows });
+    // Leave headroom under the function ceiling so the response is written by
+    // us rather than replaced by a gateway timeout. A pass that reports three
+    // folded windows is worth more than a 504 that reports nothing, even when
+    // both did the same work.
+    const deadline = Date.now() + 45_000;
+    const forward = await catchUp({ maxWindows: 2, deadline });
+    const backward = await backfill({ maxWindows: windows, deadline });
     return NextResponse.json({ success: true, passes: [forward, backward] });
   } catch (error) {
     console.error('[cron/x402-stats]', error);

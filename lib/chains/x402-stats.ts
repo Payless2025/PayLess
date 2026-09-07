@@ -279,6 +279,20 @@ async function foldIntoDays(settlements: Settlement[]): Promise<string[]> {
  * being killed halfway now costs time and nothing else.
  */
 
+/** A pass that did nothing because its budget was already spent. */
+function outOfTime(direction: 'backfill' | 'catch-up'): PassResult {
+  return {
+    direction,
+    windowsScanned: 0,
+    windowsSkipped: 0,
+    settlementsFound: 0,
+    daysTouched: 0,
+    fromBlock: '0',
+    toBlock: '0',
+    complete: false,
+  };
+}
+
 /** Window W covers blocks [W * CHUNK, W * CHUNK + CHUNK - 1]. */
 export function windowOf(block: bigint): bigint {
   return block / CHUNK;
@@ -341,8 +355,21 @@ async function writeCursor(low: bigint, high: bigint, complete: boolean) {
  * The cursor moves after every window rather than after the pass, so being
  * killed costs the window in flight and nothing behind it.
  */
-export async function backfill(options: { maxWindows?: number } = {}): Promise<PassResult> {
+export async function backfill(
+  options: { maxWindows?: number; deadline?: number } = {}
+): Promise<PassResult> {
   const maxWindows = options.maxWindows ?? 4;
+  // A wall clock budget as well as a window budget. Window cost is wildly
+  // uneven: a quiet window is two RPC calls and a busy one is several hundred,
+  // so "three windows" can mean two seconds or two minutes. Without a deadline
+  // the pass gets killed by the platform mid-window and reports nothing at all,
+  // which is how this looked from outside: HTTP 504 and no progress. Stopping
+  // early is safe precisely because the cursor moves per window.
+  const deadline = options.deadline ?? Number.POSITIVE_INFINITY;
+  // Checked before the first chain call, not only between windows. Arriving
+  // here already out of time should cost nothing at all.
+  if (Date.now() > deadline) return outOfTime('backfill');
+
   const rpc = chainClient();
   const head = await withRpcRetry(() => rpc.getBlockNumber());
   const headWindow = windowOf(head);
@@ -359,6 +386,7 @@ export async function backfill(options: { maxWindows?: number } = {}): Promise<P
   let skipped = 0;
 
   for (let i = 0; i < maxWindows && low > BigInt(0); i++) {
+    if (Date.now() > deadline) break;
     const next = low - BigInt(1);
     const result = await foldWindow(next);
     if (result.folded) {
@@ -386,8 +414,13 @@ export async function backfill(options: { maxWindows?: number } = {}): Promise<P
 }
 
 /** Pick up whatever has settled since the last pass, same window rules. */
-export async function catchUp(options: { maxWindows?: number } = {}): Promise<PassResult> {
+export async function catchUp(
+  options: { maxWindows?: number; deadline?: number } = {}
+): Promise<PassResult> {
   const maxWindows = options.maxWindows ?? 4;
+  const deadline = options.deadline ?? Number.POSITIVE_INFINITY;
+  if (Date.now() > deadline) return outOfTime('catch-up');
+
   const rpc = chainClient();
   const head = await withRpcRetry(() => rpc.getBlockNumber());
   const headWindow = windowOf(head);
@@ -408,6 +441,7 @@ export async function catchUp(options: { maxWindows?: number } = {}): Promise<Pa
   // The head window is re-folded only if it was never marked, so a window that
   // was scanned while still filling is not silently frozen half done.
   for (let i = 0; i < maxWindows && high <= headWindow; i++) {
+    if (Date.now() > deadline) break;
     const result = await foldWindow(high);
     if (result.folded) {
       scanned += 1;
