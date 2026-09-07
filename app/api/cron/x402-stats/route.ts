@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { catchUp, backfill } from '@/lib/chains/x402-stats';
+import { catchUp, backfill, resetStats } from '@/lib/chains/x402-stats';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -7,13 +7,14 @@ export const maxDuration = 60;
 /**
  * One pass of the settlement scanner.
  *
- * Catch-up first, then a bounded walk further back. Catch-up wins the tie
- * because recent activity is what a reader notices missing; history filling in
- * slowly behind it is invisible by comparison.
+ * Catch-up first, then a walk further back. Catch-up wins the tie because
+ * recent activity is what a reader notices missing; history filling in behind
+ * it is invisible by comparison.
  *
- * Bounded on purpose. The pass has to finish inside a function timeout, so it
- * takes a fixed bite and records where it stopped rather than trying to close
- * 56 million blocks in one go and being killed halfway with nothing written.
+ * The window budget is small on purpose. This function is killed at sixty
+ * seconds, and the scanner is built so that being killed costs the window in
+ * flight and nothing else, but a pass that never finishes also never makes
+ * progress worth having. Small and repeated beats ambitious and truncated.
  */
 function authorised(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -37,11 +38,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const chunks = Math.max(1, Math.min(Number(new URL(req.url).searchParams.get('chunks') || 4), 12));
+  const params = new URL(req.url).searchParams;
+  const windows = Math.max(1, Math.min(Number(params.get('windows') || 3), 8));
 
   try {
-    const forward = await catchUp();
-    const backward = await backfill({ maxChunks: chunks });
+    // Destructive, so it is never the default and never implicit.
+    if (params.get('reset') === '1') {
+      const cleared = await resetStats();
+      return NextResponse.json({ success: true, reset: cleared });
+    }
+
+    const forward = await catchUp({ maxWindows: 2 });
+    const backward = await backfill({ maxWindows: windows });
     return NextResponse.json({ success: true, passes: [forward, backward] });
   } catch (error) {
     console.error('[cron/x402-stats]', error);

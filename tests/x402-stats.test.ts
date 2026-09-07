@@ -13,7 +13,7 @@
 
 import assert from 'node:assert/strict';
 import { setKeyedStore, MemoryKeyedStore } from '../lib/x402/keyed-store';
-import { readStats, type DayBucket } from '../lib/chains/x402-stats';
+import { readStats, foldWindow, windowOf, type DayBucket } from '../lib/chains/x402-stats';
 
 let passed = 0;
 async function test(name: string, fn: () => Promise<void>) {
@@ -141,6 +141,41 @@ async function run() {
     const s = await readStats();
     assert.equal(s.totals.volumeUSDG, '0.081');
     assert.ok(!s.totals.volumeUSDG.includes('81000'));
+  });
+
+  // -------------------------------------------------------------------------
+  // Idempotency: the bug that shipped, pinned so it cannot ship twice
+  // -------------------------------------------------------------------------
+
+  await test('a window already folded is never folded again', async () => {
+    // The first version folded windows and only recorded progress at the end of
+    // a pass. On a function with a sixty second ceiling that means a timeout
+    // writes data without writing progress, the next pass repeats the same
+    // windows, and the buckets add. Measured against the chain it reported
+    // eleven times the real settlement count.
+    seed([]);
+    const marks = new MemoryKeyedStore<any>();
+    await marks.put('1000', { at: '2026-09-07T00:00:00.000Z', settlements: 7 });
+    setKeyedStore('x402-windows', marks);
+
+    // No chain client is reachable from a test, so this also proves the skip
+    // happens before any RPC call rather than after it.
+    const result = await foldWindow(BigInt(1000));
+    assert.equal(result.folded, false, 'a marked window was scanned again');
+    assert.equal(result.found, 0);
+    assert.deepEqual(result.days, []);
+  });
+
+  await test('windows are aligned to fixed boundaries, not to where a pass stopped', async () => {
+    // Alignment is what makes "have I done this one" answerable at all. Windows
+    // that start wherever the last pass happened to stop can never be compared.
+    assert.equal(windowOf(BigInt(0)).toString(), '0');
+    assert.equal(windowOf(BigInt(49_999)).toString(), '0');
+    assert.equal(windowOf(BigInt(50_000)).toString(), '1');
+    assert.equal(windowOf(BigInt(56_815_136)).toString(), '1136');
+    // Two different blocks in one window must agree, or a window can be folded
+    // twice under two different names.
+    assert.equal(windowOf(BigInt(56_800_000)).toString(), windowOf(BigInt(56_815_136)).toString());
   });
 
   console.log(`\n${passed} passed${process.exitCode ? ', FAILURES ABOVE' : ''}\n`);

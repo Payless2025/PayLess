@@ -223,14 +223,45 @@ async function foldIntoDays(settlements: Settlement[]): Promise<string[]> {
 
   return Array.from(touched.keys());
 }
-
 // ---------------------------------------------------------------------------
 // Passes
 // ---------------------------------------------------------------------------
 
+/**
+ * Scanning is organised around fixed windows, and every window is folded at
+ * most once.
+ *
+ * The first version of this walked from a cursor and wrote that cursor only
+ * after the whole pass finished. On a serverless function with a sixty second
+ * ceiling that is a data corruption bug waiting for a slow RPC: the pass folds
+ * three windows, gets killed, never records progress, and the next pass folds
+ * those same three windows again. The buckets add rather than replace, so the
+ * numbers grow every time. Measured against the chain it reported eleven times
+ * the real settlement count.
+ *
+ * So progress is not a position any more, it is a set of completed windows.
+ * Windows are aligned to fixed block boundaries rather than to wherever the
+ * last pass happened to stop, which is what makes "have I already done this
+ * one" a question with an answer. Re-running a pass, running two at once, or
+ * being killed halfway now costs time and nothing else.
+ */
+
+/** Window W covers blocks [W * CHUNK, W * CHUNK + CHUNK - 1]. */
+export function windowOf(block: bigint): bigint {
+  return block / CHUNK;
+}
+
+interface WindowMark {
+  at: string;
+  settlements: number;
+}
+
+const windows = () => keyedStore<WindowMark>('x402-windows');
+
 export interface PassResult {
   direction: 'backfill' | 'catch-up';
-  chunksScanned: number;
+  windowsScanned: number;
+  windowsSkipped: number;
   settlementsFound: number;
   daysTouched: number;
   fromBlock: string;
@@ -239,102 +270,154 @@ export interface PassResult {
 }
 
 /**
- * Walk further back into history.
+ * Fold one window, unless it has already been folded.
  *
- * Bounded by chunk count rather than by "until done", so a pass has a
- * predictable cost and can be run on a schedule. History gets closed one pass
- * at a time and the cursor remembers where to resume.
+ * The marker is written after the fold, not before. A crash between the two
+ * leaves the window unmarked and it gets folded again, which is the one case
+ * this design still double counts. Marking first would instead lose a window
+ * silently, and a gap in a chart is harder to notice than a spike.
  */
-export async function backfill(options: { maxChunks?: number } = {}): Promise<PassResult> {
-  const maxChunks = options.maxChunks ?? 10;
-  const rpc = chainClient();
-  const head = await withRpcRetry(() => rpc.getBlockNumber());
+export async function foldWindow(index: bigint): Promise<{ folded: boolean; found: number; days: string[] }> {
+  const id = index.toString();
+  if (await windows().get(id)) return { folded: false, found: 0, days: [] };
 
-  const cursor = await cursors().get(CURSOR_ID);
-  let low = cursor ? BigInt(cursor.low) : head;
-  const high = cursor ? BigInt(cursor.high) : head;
+  const from = index * CHUNK;
+  const to = from + CHUNK - BigInt(1);
+  const settlements = await scanRange(from, to);
+  const days = await foldIntoDays(settlements);
+  await windows().put(id, { at: new Date().toISOString(), settlements: settlements.length });
+  return { folded: true, found: settlements.length, days };
+}
 
-  let found = 0;
-  // Distinct days, not day-touches. Summing each chunk's count reports "3 days"
-  // for three chunks that all landed on the same afternoon, which reads as
-  // three days of history that do not exist.
-  const touchedDays = new Set<string>();
-  let chunks = 0;
-  let complete = cursor?.complete ?? false;
-  const startedAt = low;
+async function readCursor(): Promise<Cursor | null> {
+  return cursors().get(CURSOR_ID);
+}
 
-  for (let i = 0; i < maxChunks && low > BigInt(0); i++) {
-    const to = low > BigInt(0) ? low - BigInt(1) : BigInt(0);
-    const from = to > CHUNK ? to - CHUNK : BigInt(0);
-    const settlements = await scanRange(from, to);
-    found += settlements.length;
-    (await foldIntoDays(settlements)).forEach((d) => touchedDays.add(d));
-    chunks += 1;
-    low = from;
-    if (from === BigInt(0)) complete = true;
-  }
-  const touched = touchedDays.size;
-
+async function writeCursor(low: bigint, high: bigint, complete: boolean) {
   await cursors().put(CURSOR_ID, {
     low: low.toString(),
     high: high.toString(),
     complete,
     updatedAt: new Date().toISOString(),
   });
+}
+
+/**
+ * Walk further back into history, one window at a time.
+ *
+ * The cursor moves after every window rather than after the pass, so being
+ * killed costs the window in flight and nothing behind it.
+ */
+export async function backfill(options: { maxWindows?: number } = {}): Promise<PassResult> {
+  const maxWindows = options.maxWindows ?? 4;
+  const rpc = chainClient();
+  const head = await withRpcRetry(() => rpc.getBlockNumber());
+  const headWindow = windowOf(head);
+
+  const cursor = await readCursor();
+  let low = cursor ? BigInt(cursor.low) : headWindow;
+  const high = cursor ? BigInt(cursor.high) : headWindow;
+  let complete = cursor?.complete ?? false;
+
+  const startedAt = low;
+  const touched = new Set<string>();
+  let found = 0;
+  let scanned = 0;
+  let skipped = 0;
+
+  for (let i = 0; i < maxWindows && low > BigInt(0); i++) {
+    const next = low - BigInt(1);
+    const result = await foldWindow(next);
+    if (result.folded) {
+      scanned += 1;
+      found += result.found;
+      result.days.forEach((d) => touched.add(d));
+    } else {
+      skipped += 1;
+    }
+    low = next;
+    if (low === BigInt(0)) complete = true;
+    await writeCursor(low, high, complete);
+  }
 
   return {
     direction: 'backfill',
-    chunksScanned: chunks,
+    windowsScanned: scanned,
+    windowsSkipped: skipped,
     settlementsFound: found,
-    daysTouched: touched,
-    fromBlock: low.toString(),
-    toBlock: startedAt.toString(),
+    daysTouched: touched.size,
+    fromBlock: (low * CHUNK).toString(),
+    toBlock: (startedAt * CHUNK).toString(),
     complete,
   };
 }
 
-/** Pick up everything that has settled since the last pass. */
-export async function catchUp(): Promise<PassResult> {
+/** Pick up whatever has settled since the last pass, same window rules. */
+export async function catchUp(options: { maxWindows?: number } = {}): Promise<PassResult> {
+  const maxWindows = options.maxWindows ?? 4;
   const rpc = chainClient();
   const head = await withRpcRetry(() => rpc.getBlockNumber());
-  const cursor = await cursors().get(CURSOR_ID);
+  const headWindow = windowOf(head);
 
-  // With no cursor there is no history yet, so the first window is simply the
-  // most recent one and backfill takes it from there.
-  const from = cursor ? BigInt(cursor.high) + BigInt(1) : head > CHUNK ? head - CHUNK : BigInt(0);
-  const low = cursor ? BigInt(cursor.low) : from;
+  const cursor = await readCursor();
+  // With no cursor there is no history yet. Starting at the head window means
+  // the first answer is about now, and backfill fills in behind it.
+  let high = cursor ? BigInt(cursor.high) : headWindow;
+  const low = cursor ? BigInt(cursor.low) : headWindow;
+  const complete = cursor?.complete ?? false;
 
+  const startedAt = high;
+  const touched = new Set<string>();
   let found = 0;
-  const touchedDays = new Set<string>();
-  let chunks = 0;
-  let at = from;
+  let scanned = 0;
+  let skipped = 0;
 
-  while (at <= head && chunks < 20) {
-    const to = at + CHUNK > head ? head : at + CHUNK;
-    const settlements = await scanRange(at, to);
-    found += settlements.length;
-    (await foldIntoDays(settlements)).forEach((d) => touchedDays.add(d));
-    chunks += 1;
-    at = to + BigInt(1);
+  // The head window is re-folded only if it was never marked, so a window that
+  // was scanned while still filling is not silently frozen half done.
+  for (let i = 0; i < maxWindows && high <= headWindow; i++) {
+    const result = await foldWindow(high);
+    if (result.folded) {
+      scanned += 1;
+      found += result.found;
+      result.days.forEach((d) => touched.add(d));
+    } else {
+      skipped += 1;
+    }
+    if (high === headWindow) break;
+    high += BigInt(1);
+    await writeCursor(low, high, complete);
   }
-  const touched = touchedDays.size;
 
-  await cursors().put(CURSOR_ID, {
-    low: low.toString(),
-    high: head.toString(),
-    complete: cursor?.complete ?? false,
-    updatedAt: new Date().toISOString(),
-  });
+  await writeCursor(low, high, complete);
 
   return {
     direction: 'catch-up',
-    chunksScanned: chunks,
+    windowsScanned: scanned,
+    windowsSkipped: skipped,
     settlementsFound: found,
-    daysTouched: touched,
-    fromBlock: from.toString(),
-    toBlock: head.toString(),
-    complete: cursor?.complete ?? false,
+    daysTouched: touched.size,
+    fromBlock: (startedAt * CHUNK).toString(),
+    toBlock: (high * CHUNK + CHUNK - BigInt(1)).toString(),
+    complete,
   };
+}
+
+/**
+ * Throw away everything folded so far.
+ *
+ * Needed because the buckets are sums: once a bad pass has added the same
+ * window twice there is no way to subtract it, and the only honest repair is
+ * to count again from nothing.
+ */
+export async function resetStats(): Promise<{ daysCleared: number; windowsCleared: number }> {
+  const [dayIds, windowIds] = await Promise.all([
+    days().entries(),
+    windows().entries(),
+  ]);
+  for (const [id] of dayIds) await days().delete(id);
+  for (const [id] of windowIds) await windows().delete(id);
+  await cursors().delete(CURSOR_ID);
+  return { daysCleared: dayIds.length, windowsCleared: windowIds.length };
 }
 
 // ---------------------------------------------------------------------------

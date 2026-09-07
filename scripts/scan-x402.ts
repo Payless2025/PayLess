@@ -18,7 +18,7 @@
 
 const BASE = (process.env.PAYLESS_URL || 'https://www.payless.network').replace(/\/+$/, '');
 const SECRET = process.env.CRON_SECRET;
-const CHUNKS = process.env.SCAN_CHUNKS || '8';
+const WINDOWS = process.env.SCAN_WINDOWS || '8';
 
 async function main() {
   if (!SECRET) {
@@ -26,7 +26,7 @@ async function main() {
     process.exit(1);
   }
 
-  const url = `${BASE}/api/cron/x402-stats?chunks=${encodeURIComponent(CHUNKS)}`;
+  const url = `${BASE}/api/cron/x402-stats?windows=${encodeURIComponent(WINDOWS)}`;
   const res = await fetch(url, { headers: { authorization: `Bearer ${SECRET}` } });
   const body = await res.json().catch(() => ({}));
 
@@ -37,7 +37,7 @@ async function main() {
 
   for (const pass of body.passes ?? []) {
     console.log(
-      `${pass.direction}: ${pass.chunksScanned} chunks, ` +
+      `${pass.direction}: ${pass.windowsScanned} scanned, ${pass.windowsSkipped} already done, ` +
         `${pass.settlementsFound} settlements, ${pass.daysTouched} days touched, ` +
         `blocks ${pass.fromBlock}..${pass.toBlock}` +
         (pass.complete ? ' (history complete)' : '')
