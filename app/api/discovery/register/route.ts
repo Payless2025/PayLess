@@ -5,6 +5,7 @@ import {
   unregisterSeller,
   getRegistration,
   registryIsShared,
+  allRegistrations,
 } from '@/lib/chains/seller-registry';
 
 export const dynamic = 'force-dynamic';
@@ -38,9 +39,20 @@ export async function GET(req: NextRequest) {
   const proven = provenAddress(req.headers);
   const entry = proven.address ? await getRegistration(proven.address) : null;
 
+  // How many rows this function can see, next to the one it was asked for.
+  // The two answers come from different store operations, and when they
+  // disagree the disagreement is the bug rather than a detail to log.
+  let visible: number | string;
+  try {
+    visible = (await allRegistrations()).length;
+  } catch (error) {
+    visible = `unreadable: ${(error as Error).message}`;
+  }
+
   return NextResponse.json({
     success: true,
     howTo: HOW_TO,
+    registrationsVisible: visible,
     // Stated rather than assumed: without a shared store this deployment's
     // registrations do not survive a scale-out, and a caller should know that
     // before relying on one.
