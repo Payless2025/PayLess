@@ -115,6 +115,8 @@ class UpstashKeyedStore<T> implements KeyedStore<T> {
 interface Entry {
   store: KeyedStore<any>;
   shared: boolean;
+  /** Which env var supplied the URL, and which host it points at. Never the token. */
+  origin?: { source: string; host: string };
 }
 const REGISTRY = Symbol.for('payless.keyedStores');
 const g = globalThis as unknown as Record<symbol, Map<string, Entry> | undefined>;
@@ -132,10 +134,18 @@ export function keyedStore<T>(collection: string): KeyedStore<T> {
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
+  const source = process.env.UPSTASH_REDIS_REST_URL ? 'UPSTASH_REDIS_REST_URL' : 'KV_REST_API_URL';
+  let host = 'none';
+  try { host = url ? new URL(url).host : 'none'; } catch { host = 'unparseable'; }
+
   let entry: Entry;
   if (url && token) {
     try {
-      entry = { store: new UpstashKeyedStore<T>(url, token, `payless:${collection}`), shared: true };
+      entry = {
+        store: new UpstashKeyedStore<T>(url, token, `payless:${collection}`),
+        shared: true,
+        origin: { source, host },
+      };
     } catch (error) {
       console.error(`[payless] Upstash store for ${collection} could not be created:`, error);
       entry = { store: new MemoryKeyedStore<T>(), shared: false };
@@ -164,16 +174,24 @@ export function isKeyedStoreShared(collection: string): boolean {
  */
 export async function describeKeyedStore(
   collection: string
-): Promise<{ key: string; shared: boolean; kind: string; count: number | string; ids: string[] }> {
+): Promise<{
+  key: string;
+  shared: boolean;
+  kind: string;
+  origin: { source: string; host: string } | null;
+  count: number | string;
+  ids: string[];
+}> {
   const store = keyedStore<unknown>(collection);
   const shared = isKeyedStoreShared(collection);
   const key = store instanceof UpstashKeyedStore ? (store as any).key : `memory:${collection}`;
   const kind = store instanceof UpstashKeyedStore ? 'upstash' : 'memory';
+  const origin = registry().get(collection)?.origin ?? null;
   try {
     const ids = (await store.entries()).map(([id]) => id);
-    return { key, shared, kind, count: ids.length, ids };
+    return { key, shared, kind, origin, count: ids.length, ids };
   } catch (error) {
-    return { key, shared, kind, count: `unreadable: ${(error as Error).message}`, ids: [] };
+    return { key, shared, kind, origin, count: `unreadable: ${(error as Error).message}`, ids: [] };
   }
 }
 
