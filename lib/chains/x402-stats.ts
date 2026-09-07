@@ -186,7 +186,7 @@ function dayOf(timestamp: number): string {
  * lists rather than counts. A count cannot be merged without double-counting
  * whoever appears in both passes.
  */
-async function foldIntoDays(settlements: Settlement[]): Promise<number> {
+async function foldIntoDays(settlements: Settlement[]): Promise<string[]> {
   const touched = new Map<string, Settlement[]>();
   for (const s of settlements) {
     const d = dayOf(s.timestamp);
@@ -221,7 +221,7 @@ async function foldIntoDays(settlements: Settlement[]): Promise<number> {
     });
   }
 
-  return touched.size;
+  return Array.from(touched.keys());
 }
 
 // ---------------------------------------------------------------------------
@@ -255,7 +255,10 @@ export async function backfill(options: { maxChunks?: number } = {}): Promise<Pa
   const high = cursor ? BigInt(cursor.high) : head;
 
   let found = 0;
-  let touched = 0;
+  // Distinct days, not day-touches. Summing each chunk's count reports "3 days"
+  // for three chunks that all landed on the same afternoon, which reads as
+  // three days of history that do not exist.
+  const touchedDays = new Set<string>();
   let chunks = 0;
   let complete = cursor?.complete ?? false;
   const startedAt = low;
@@ -265,11 +268,12 @@ export async function backfill(options: { maxChunks?: number } = {}): Promise<Pa
     const from = to > CHUNK ? to - CHUNK : BigInt(0);
     const settlements = await scanRange(from, to);
     found += settlements.length;
-    touched += await foldIntoDays(settlements);
+    (await foldIntoDays(settlements)).forEach((d) => touchedDays.add(d));
     chunks += 1;
     low = from;
     if (from === BigInt(0)) complete = true;
   }
+  const touched = touchedDays.size;
 
   await cursors().put(CURSOR_ID, {
     low: low.toString(),
@@ -301,7 +305,7 @@ export async function catchUp(): Promise<PassResult> {
   const low = cursor ? BigInt(cursor.low) : from;
 
   let found = 0;
-  let touched = 0;
+  const touchedDays = new Set<string>();
   let chunks = 0;
   let at = from;
 
@@ -309,10 +313,11 @@ export async function catchUp(): Promise<PassResult> {
     const to = at + CHUNK > head ? head : at + CHUNK;
     const settlements = await scanRange(at, to);
     found += settlements.length;
-    touched += await foldIntoDays(settlements);
+    (await foldIntoDays(settlements)).forEach((d) => touchedDays.add(d));
     chunks += 1;
     at = to + BigInt(1);
   }
+  const touched = touchedDays.size;
 
   await cursors().put(CURSOR_ID, {
     low: low.toString(),
