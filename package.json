@@ -10,7 +10,7 @@
     "collect": "tsx scripts/collect.ts",
     "scan": "tsx scripts/scan-x402.ts",
     "collect:execute": "tsx scripts/collect.ts --execute",
-    "test": "tsx tests/security.test.ts && tsx tests/keyed-store.test.ts && tsx tests/catalog.test.ts && tsx tests/sellers.test.ts && tsx tests/x402-stats.test.ts && tsx tests/router.test.ts && tsx tests/seller-registry.test.ts && tsx tests/corporate-actions.test.ts && tsx tests/decisions.test.ts && tsx tests/wallet-proof.test.ts && tsx tests/webhook-target.test.ts && tsx tests/metered.test.ts && tsx tests/collector.test.ts && tsx tests/facilitator.test.ts && tsx tests/permit2.test.ts && tsx tests/status.test.ts",
+    "test": "tsx tests/security.test.ts && tsx tests/keyed-store.test.ts && tsx tests/rate-limit.test.ts && tsx tests/catalog.test.ts && tsx tests/sellers.test.ts && tsx tests/x402-stats.test.ts && tsx tests/router.test.ts && tsx tests/seller-registry.test.ts && tsx tests/corporate-actions.test.ts && tsx tests/decisions.test.ts && tsx tests/wallet-proof.test.ts && tsx tests/webhook-target.test.ts && tsx tests/metered.test.ts && tsx tests/collector.test.ts && tsx tests/facilitator.test.ts && tsx tests/permit2.test.ts && tsx tests/status.test.ts",
     "test:live": "LIVE=1 npm test"
   },
   "dependencies": {

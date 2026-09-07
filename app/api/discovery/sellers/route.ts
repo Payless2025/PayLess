@@ -3,6 +3,7 @@ import { readSellers } from '@/lib/chains/sellers';
 import { joinRegistry, refreshStale } from '@/lib/chains/seller-registry';
 import { describeKeyedStore } from '@/lib/x402/keyed-store';
 import { ROBINHOOD_CHAIN_ID } from '@/lib/chains/config';
+import { consume, callerKey, rateHeaders } from '@/lib/x402/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,20 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const depth = Math.max(1, Math.min(Number(searchParams.get('scan') || 100), 200));
+
+  // The most expensive free endpoint here: every call walks the chain. Without
+  // a ceiling a single loop can spend our whole RPC budget, and the public node
+  // rate-limits us long before it rate-limits them.
+  const verdict = await consume(callerKey(req.headers, 'sellers'), 20, 3600);
+  if (!verdict.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `This endpoint reads the chain on every call, so it is capped at ${verdict.limit} an hour. Try again in ${verdict.resetIn}s.`,
+      },
+      { status: 429, headers: rateHeaders(verdict) }
+    );
+  }
 
   try {
     const index = await readSellers({ chunks: depth, maxReceipts: 30 });
@@ -47,7 +62,7 @@ export async function GET(req: NextRequest) {
       registryRefresh: refreshed,
       registryStore: await describeKeyedStore('seller-registry'),
       register: '/api/discovery/register',
-    });
+    }, { headers: rateHeaders(verdict) });
   } catch (error) {
     console.error('[discovery/sellers]', error);
     return NextResponse.json(

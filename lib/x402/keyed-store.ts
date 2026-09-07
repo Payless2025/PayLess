@@ -172,6 +172,45 @@ export function isKeyedStoreShared(collection: string): boolean {
 }
 
 /**
+ * Run one Redis command, or report that there is no Redis.
+ *
+ * The KeyedStore interface is deliberately Map-shaped and that covers almost
+ * everything, but not counters: a rate limit needs INCR, which is atomic, and
+ * a cache needs EXPIRE. Rebuilding those out of get and put would reintroduce
+ * the read-modify-write race that let five concurrent requests charge one
+ * subscription five times. So the raw command is exposed instead, for the two
+ * callers that genuinely need more than a Map.
+ *
+ * Returns null when no Redis is configured, so callers can degrade knowingly
+ * rather than silently believing they have a shared counter.
+ */
+export async function redisCommand(args: (string | number)[]): Promise<unknown | null> {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+
+  const res = await fetch(url.replace(/\/+$/, ''), {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify(args),
+    // Same reason as the store: a framework cache in front of Redis turns a
+    // counter into a constant.
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`payless: Upstash returned ${res.status} for ${args[0]}`);
+  const body = (await res.json()) as { result?: unknown; error?: string };
+  if (body.error) throw new Error(`payless: Upstash error — ${body.error}`);
+  return body.result ?? null;
+}
+
+export function redisConfigured(): boolean {
+  return Boolean(
+    (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) &&
+      (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN)
+  );
+}
+
+/**
  * What a store actually is, from inside the process asking.
  *
  * Added because two functions in one deployment reported different contents

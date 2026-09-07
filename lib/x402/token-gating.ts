@@ -3,6 +3,7 @@
  * Total Supply: 1,000,000,000 tokens
  */
 
+import { consume } from './rate-limit';
 import { createPublicClient, http, formatUnits, isAddress, getAddress } from 'viem';
 import { ROBINHOOD_RPC_URL, PAYLESS_TOKEN } from '../chains/config';
 
@@ -266,16 +267,14 @@ export async function verifyMinimumTier(
   }
 }
 
-// Rate limiting store (in-memory for now, use Redis in production)
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
-
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
 /**
- * Check rate limit for wallet
+ * Tier rate limits, counted where every instance can see the same number.
+ *
+ * This used to hold its counters in a module-level Map. On serverless that is
+ * not a lenient limit, it is no limit: every instance starts at zero, so the
+ * real ceiling was the stated one times however many instances were warm. It
+ * also read, incremented and wrote back, which is the same race that once let
+ * concurrent requests collect one subscription several times.
  */
 export async function checkRateLimit(walletAddress: string): Promise<{
   allowed: boolean;
@@ -297,46 +296,12 @@ export async function checkRateLimit(walletAddress: string): Promise<{
     };
   }
   
-  const now = Date.now();
-  const hourInMs = 60 * 60 * 1000;
-  
-  const entry = rateLimitStore.get(walletAddress);
-  
-  if (!entry || now > entry.resetAt) {
-    // First request or reset period passed
-    const newEntry: RateLimitEntry = {
-      count: 1,
-      resetAt: now + hourInMs,
-    };
-    rateLimitStore.set(walletAddress, newEntry);
-    
-    return {
-      allowed: true,
-      limit,
-      remaining: limit - 1,
-      resetAt: newEntry.resetAt,
-    };
-  }
-  
-  if (entry.count >= limit) {
-    // Rate limit exceeded
-    return {
-      allowed: false,
-      limit,
-      remaining: 0,
-      resetAt: entry.resetAt,
-    };
-  }
-  
-  // Increment count
-  entry.count++;
-  rateLimitStore.set(walletAddress, entry);
-  
+  const verdict = await consume(`tier:${walletAddress.toLowerCase()}`, limit, 3600);
   return {
-    allowed: true,
-    limit,
-    remaining: limit - entry.count,
-    resetAt: entry.resetAt,
+    allowed: verdict.allowed,
+    limit: verdict.limit,
+    remaining: verdict.remaining,
+    resetAt: Date.now() + verdict.resetIn * 1000,
   };
 }
 
