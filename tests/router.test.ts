@@ -246,6 +246,36 @@ async function run() {
     assert.ok(q.offers[0].why.length > 0, 'a ranking with no explanation is a number to trust');
   });
 
+  await test('one resource with several schemes is one offer, not several', async () => {
+    // Our own manifest advertises every item under three schemes. Flattening
+    // those into three rows told a buyer they had three sellers to choose from
+    // when they had one, which is the opposite of what a router is for.
+    manifests = {
+      'https://a.example/x402': {
+        x402Version: 1,
+        payTo: PROVEN,
+        items: [
+          {
+            resource: 'https://seller.example/aapl',
+            accepts: [
+              { scheme: 'receipt', network: 'eip155:4663', payTo: PROVEN, amount: '20000' },
+              { scheme: 'exact', network: 'eip155:4663', payTo: PROVEN, amount: '20000' },
+              { scheme: 'upto', network: 'eip155:4663', payTo: PROVEN, amount: '15000' },
+            ],
+            metadata: { description: 'AAPL holdings' },
+          },
+        ],
+      },
+    };
+    seed([reg(PROVEN, 'https://a.example/x402', null)], [total(PROVEN, 3)]);
+    const q = await route({ need: 'aapl' });
+    assert.equal(q.offers.length, 1, 'one resource was listed more than once');
+    assert.equal(q.offers[0].accepts.length, 3, 'the ways to pay were lost');
+    // Ranking uses the cheapest way to pay, not whichever came first.
+    assert.equal(q.offers[0].amountBase, '15000');
+    assert.match(q.offers[0].why, /receipt\/exact\/upto/);
+  });
+
   await test('metered items are labelled as ceilings, not prices', async () => {
     manifests = {
       'https://a.example/x402': {

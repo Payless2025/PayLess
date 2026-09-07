@@ -28,15 +28,31 @@ import { allRegistrations, fetchManifest, type RegisteredSeller } from '../chain
 import { readAllSellerTotals, type SellerTotal } from '../chains/x402-stats';
 import { PAYMENT_CONFIG } from './config';
 
+/** One way to pay for a resource. A resource usually offers several. */
+export interface OfferAccept {
+  scheme: string;
+  network: string;
+  /** Base units, as the manifest advertises them. */
+  amountBase: string;
+  amountUSDG: string;
+}
+
 export interface Offer {
   seller: string;
   sellerName: string | null;
   resource: string;
   description: string;
   method: string;
-  scheme: string;
-  network: string;
-  /** Base units, as the manifest advertises them. */
+  /**
+   * Every way this resource can be paid for.
+   *
+   * Kept as a list rather than flattened into one offer per scheme. A resource
+   * that accepts three schemes is one thing for sale with three ways to pay,
+   * and listing it three times would tell a buyer they have three choices of
+   * seller when they have one.
+   */
+  accepts: OfferAccept[];
+  /** The cheapest of those, which is what ranking and caps use. */
   amountBase: string;
   amountUSDG: string;
   /** A metered item advertises a ceiling; the charge is decided after the work. */
@@ -104,6 +120,7 @@ function offersFrom(entry: RegisteredSeller, manifest: unknown, total: SellerTot
 
     const accepts = Array.isArray(raw.accepts) ? raw.accepts : [];
     const meta = (raw.metadata ?? {}) as { description?: unknown; pricing?: unknown };
+    const ways: OfferAccept[] = [];
 
     for (const acceptRaw of accepts) {
       const accept = acceptRaw as Record<string, unknown>;
@@ -115,24 +132,33 @@ function offersFrom(entry: RegisteredSeller, manifest: unknown, total: SellerTot
       const amount = typeof accept.amount === 'string' ? accept.amount : null;
       if (amount === null || !/^\d+$/.test(amount)) continue;
 
-      out.push({
-        seller,
-        sellerName: entry.name,
-        resource,
-        description: typeof meta.description === 'string' ? meta.description : '',
-        method: typeof raw.method === 'string' ? raw.method : 'GET',
+      ways.push({
         scheme: typeof accept.scheme === 'string' ? accept.scheme : 'unknown',
         network: typeof accept.network === 'string' ? accept.network : 'unknown',
         amountBase: amount,
         amountUSDG: formatUnits(BigInt(amount), 6),
-        pricing: meta.pricing === 'metered' ? 'metered' : 'fixed',
-        manifestUrl: entry.manifestUrl,
-        paymentsObserved: total?.payments ?? 0,
-        volumeObservedUSDG: total ? formatUnits(BigInt(total.volumeBase), 6) : '0',
-        operatedByRouter: mine,
-        why: '',
       });
     }
+
+    if (ways.length === 0) continue;
+    const cheapest = ways.reduce((a, b) => (BigInt(b.amountBase) < BigInt(a.amountBase) ? b : a));
+
+    out.push({
+      seller,
+      sellerName: entry.name,
+      resource,
+      description: typeof meta.description === 'string' ? meta.description : '',
+      method: typeof raw.method === 'string' ? raw.method : 'GET',
+      accepts: ways,
+      amountBase: cheapest.amountBase,
+      amountUSDG: cheapest.amountUSDG,
+      pricing: meta.pricing === 'metered' ? 'metered' : 'fixed',
+      manifestUrl: entry.manifestUrl,
+      paymentsObserved: total?.payments ?? 0,
+      volumeObservedUSDG: total ? formatUnits(BigInt(total.volumeBase), 6) : '0',
+      operatedByRouter: mine,
+      why: '',
+    });
   }
 
   return out;
@@ -227,7 +253,8 @@ export async function route(options: RouteOptions = {}): Promise<Quote> {
     why:
       `${score} of ${Math.max(terms.length, 1)} terms matched; ` +
       `${offer.paymentsObserved} settlements observed on chain; ` +
-      `${offer.pricing === 'metered' ? 'ceiling' : 'price'} ${offer.amountUSDG} USDG`,
+      `${offer.pricing === 'metered' ? 'ceiling' : 'price'} ${offer.amountUSDG} USDG ` +
+      `via ${offer.accepts.map((a) => a.scheme).join('/')}`,
   }));
 
   return {
