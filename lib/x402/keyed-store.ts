@@ -60,6 +60,13 @@ class UpstashKeyedStore<T> implements KeyedStore<T> {
       method: 'POST',
       headers: { authorization: `Bearer ${this.token}`, 'content-type': 'application/json' },
       body: JSON.stringify(args),
+      // Never let a framework serve a store read out of an HTTP cache. Next.js
+      // wraps global fetch and caches through it, which quietly turns "what is
+      // in Redis" into "what was in Redis the first time this function asked".
+      // That is how two functions in one deployment reported different contents
+      // for the same key at the same moment: one had cached an empty hash
+      // before anything was written to it, and kept answering from that.
+      cache: 'no-store',
     });
     if (!res.ok) throw new Error(`payless: Upstash returned ${res.status} for ${args[0]}`);
     const body = (await res.json()) as { result?: unknown; error?: string };
