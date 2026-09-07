@@ -87,7 +87,7 @@ export function registryIsShared(): boolean {
  * link-local address is the whole SSRF bug, and `redirect: 'follow'` would take
  * it silently.
  */
-async function fetchManifest(rawUrl: string): Promise<{ ok: true; body: unknown } | { ok: false; reason: string }> {
+export async function fetchManifest(rawUrl: string): Promise<{ ok: true; body: unknown } | { ok: false; reason: string }> {
   let url = rawUrl;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {

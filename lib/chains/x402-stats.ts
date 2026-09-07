@@ -65,6 +65,24 @@ interface Cursor {
 }
 
 const days = () => keyedStore<DayBucket>('x402-days');
+
+/**
+ * Per-seller running totals, kept alongside the day buckets.
+ *
+ * The day buckets can answer "how many sellers" but not "how much has this one
+ * address been paid", and that second question is the one worth answering:
+ * anybody can advertise a price, nobody can fake a settlement count. Folding it
+ * here rather than recomputing it means a reader gets it from Redis instead of
+ * from a scan of the chain.
+ */
+export interface SellerTotal {
+  address: string;
+  payments: number;
+  volumeBase: string;
+  firstSeen: string;
+  lastSeen: string;
+}
+const sellerTotals = () => keyedStore<SellerTotal>('x402-sellers');
 const cursors = () => keyedStore<Cursor>('x402-cursor');
 const CURSOR_ID = 'settlements';
 
@@ -209,6 +227,21 @@ async function foldIntoDays(settlements: Settlement[]): Promise<string[]> {
       sellers.add(s.seller);
       if (s.facilitator) facilitators.add(s.facilitator);
       schemes[s.scheme] = (schemes[s.scheme] ?? 0) + 1;
+    }
+
+    // Per-seller totals ride along with the same fold, so they inherit the
+    // window guard that makes the fold safe to repeat.
+    for (const s of list) {
+      const id = s.seller.toLowerCase();
+      const prev = await sellerTotals().get(id);
+      const iso = new Date(s.timestamp * 1000).toISOString();
+      await sellerTotals().put(id, {
+        address: s.seller,
+        payments: (prev?.payments ?? 0) + 1,
+        volumeBase: (BigInt(prev?.volumeBase ?? '0') + s.value).toString(),
+        firstSeen: prev && prev.firstSeen < iso ? prev.firstSeen : iso,
+        lastSeen: prev && prev.lastSeen > iso ? prev.lastSeen : iso,
+      });
     }
 
     await days().put(date, {
@@ -409,15 +442,34 @@ export async function catchUp(options: { maxWindows?: number } = {}): Promise<Pa
  * window twice there is no way to subtract it, and the only honest repair is
  * to count again from nothing.
  */
-export async function resetStats(): Promise<{ daysCleared: number; windowsCleared: number }> {
-  const [dayIds, windowIds] = await Promise.all([
+export async function resetStats(): Promise<{
+  daysCleared: number;
+  windowsCleared: number;
+  sellersCleared: number;
+}> {
+  const [dayIds, windowIds, sellerIds] = await Promise.all([
     days().entries(),
     windows().entries(),
+    sellerTotals().entries(),
   ]);
   for (const [id] of dayIds) await days().delete(id);
   for (const [id] of windowIds) await windows().delete(id);
+  for (const [id] of sellerIds) await sellerTotals().delete(id);
   await cursors().delete(CURSOR_ID);
-  return { daysCleared: dayIds.length, windowsCleared: windowIds.length };
+  return {
+    daysCleared: dayIds.length,
+    windowsCleared: windowIds.length,
+    sellersCleared: sellerIds.length,
+  };
+}
+
+/** What the chain says about one address, read from folded totals. */
+export async function readSellerTotal(address: string): Promise<SellerTotal | null> {
+  return sellerTotals().get(address.toLowerCase());
+}
+
+export async function readAllSellerTotals(): Promise<SellerTotal[]> {
+  return sellerTotals().all();
 }
 
 // ---------------------------------------------------------------------------
