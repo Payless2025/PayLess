@@ -57,6 +57,13 @@ export interface Offer {
   amountUSDG: string;
   /** A metered item advertises a ceiling; the charge is decided after the work. */
   pricing: 'fixed' | 'metered';
+  /**
+   * What the resource needs before it will answer.
+   *
+   * Carried through from the manifest because a quote without it is unbuyable:
+   * an agent can know the price and still not know how to ask for the thing.
+   */
+  inputs: { required: string[]; optional: string[] };
   manifestUrl: string;
   /** Settlements observed paying this address. Read from the chain. */
   paymentsObserved: number;
@@ -153,6 +160,14 @@ function offersFrom(entry: RegisteredSeller, manifest: unknown, total: SellerTot
       amountBase: cheapest.amountBase,
       amountUSDG: cheapest.amountUSDG,
       pricing: meta.pricing === 'metered' ? 'metered' : 'fixed',
+      inputs: {
+        required: Array.isArray((meta as any).inputs?.required)
+          ? (meta as any).inputs.required.filter((x: unknown) => typeof x === 'string')
+          : [],
+        optional: Array.isArray((meta as any).inputs?.optional)
+          ? (meta as any).inputs.optional.filter((x: unknown) => typeof x === 'string')
+          : [],
+      },
       manifestUrl: entry.manifestUrl,
       paymentsObserved: total?.payments ?? 0,
       volumeObservedUSDG: total ? formatUnits(BigInt(total.volumeBase), 6) : '0',

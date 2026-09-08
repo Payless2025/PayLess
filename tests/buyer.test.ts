@@ -38,6 +38,7 @@ const realFetch = globalThis.fetch;
 let calls: Array<{ url: string; paid: boolean }> = [];
 let quoteAmount = '0.02';
 let payOutcome: 'ok' | 'settlement-failed' | 'error' = 'ok';
+let resourceRefuses = false;
 let manifests: Record<string, unknown> = {};
 
 function challenge(amount: string) {
@@ -65,6 +66,10 @@ function stubFetch() {
 
     if (manifests[url] !== undefined) return new Response(JSON.stringify(manifests[url]), { status: 200 });
 
+    if (resourceRefuses) {
+      return new Response(JSON.stringify({ error: 'Missing "address" parameter — nothing was charged.' }), { status: 400 });
+    }
+
     if (!paid) return new Response(JSON.stringify(challenge(quoteAmount)), { status: 402 });
 
     if (payOutcome === 'error') {
@@ -85,6 +90,8 @@ function stubFetch() {
     });
   }) as typeof fetch;
 }
+
+let requiredInputs: string[] = [];
 
 function seedRouter(sellers: Array<{ address: string; url: string; amount: string; payments: number }>) {
   const reg = new MemoryKeyedStore<RegisteredSeller>();
@@ -111,7 +118,11 @@ function seedRouter(sellers: Array<{ address: string; url: string; amount: strin
         {
           resource: RESOURCE,
           accepts: [{ scheme: 'upto', network: 'eip155:4663', payTo: s.address, amount: s.amount }],
-          metadata: { description: 'AAPL holdings', pricing: 'metered' },
+          metadata: {
+            description: 'AAPL holdings',
+            pricing: 'metered',
+            inputs: { required: requiredInputs, optional: [] },
+          },
         },
       ],
     };
@@ -221,6 +232,51 @@ async function run() {
     assert.equal(r.step, 'refused');
     assert.match(r.detail, /above the limit/);
     assert.equal(calls.filter((c) => c.paid).length, 0);
+  });
+
+  await test('a resource that refuses the request says so, not "no upto scheme"', async () => {
+    // How the first live purchase actually failed. The endpoint answered 400
+    // because it wanted an address, and the buyer reported a payment problem,
+    // which sends whoever is debugging to entirely the wrong file.
+    calls = [];
+    resourceRefuses = true;
+    const r = await purchase(RESOURCE, { maxSpendBase: BigInt(50_000) });
+    resourceRefuses = false;
+    assert.equal(r.ok, false);
+    assert.equal(r.step, 'quote');
+    assert.match(r.detail, /refused the request/);
+    assert.match(r.detail, /Missing "address"/);
+    assert.ok(!/upto scheme/.test(r.detail), 'it blamed the payment scheme for a rejected request');
+  });
+
+  await test('a required input that was not supplied is refused before paying', async () => {
+    // Otherwise the money goes, the endpoint answers 400, and both the payment
+    // and the answer are gone.
+    calls = [];
+    requiredInputs = ['address'];
+    seedRouter([{ address: SELLER, url: 'https://a.example/x402', amount: '20000', payments: 5 }]);
+    const r = await fetchByNeed('aapl holdings', { maxSpendBase: BigInt(50_000) });
+    assert.equal(r.ok, false);
+    assert.equal(r.step, 'refused');
+    assert.match(r.detail, /needs "address"/);
+    assert.equal(calls.filter((c) => c.paid).length, 0, 'it paid for a call it knew would fail');
+    requiredInputs = [];
+  });
+
+  await test('supplied parameters reach the resource', async () => {
+    calls = [];
+    requiredInputs = ['address'];
+    seedRouter([{ address: SELLER, url: 'https://a.example/x402', amount: '20000', payments: 5 }]);
+    const r = await fetchByNeed('aapl holdings', {
+      maxSpendBase: BigInt(50_000),
+      params: { address: '0x426f8846B5011d5aCf659FE5bFBC5fdA6123f759' },
+    });
+    assert.equal(r.ok, true, r.detail);
+    assert.ok(
+      calls.some((c) => c.url.includes('address=0x426f8846')),
+      'the parameter never made it into the request'
+    );
+    requiredInputs = [];
   });
 
   await test('every result discloses that we run the router and sell in it', async () => {

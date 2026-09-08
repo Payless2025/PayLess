@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { need?: string; maxSpendUSDG?: string };
+  let body: { need?: string; maxSpendUSDG?: string; params?: Record<string, string> };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { success: false, error: 'Body must be JSON: {"need":"aapl holdings","maxSpendUSDG":"0.05"}' },
+      { success: false, error: 'Body must be JSON: {"need":"aapl holdings","maxSpendUSDG":"0.05","params":{"address":"0x…"}}' },
       { status: 400, headers: rateHeaders(verdict) }
     );
   }
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const [result, state] = await Promise.all([
-      fetchByNeed(need, { maxSpendBase }),
+      fetchByNeed(need, { maxSpendBase, params: body.params ?? {} }),
       agentState().catch(() => null),
     ]);
 

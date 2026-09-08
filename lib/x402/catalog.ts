@@ -38,6 +38,14 @@ export interface CatalogItem {
     description: string;
     /** Present when the advertised amount is a ceiling rather than a price. */
     pricing?: 'metered' | 'fixed';
+    /**
+     * Query parameters the resource needs, so a buyer can build the call.
+     *
+     * Without this an agent can find a price and still not know how to ask for
+     * the thing, which is what happened the first time the buying loop ran
+     * against a real endpoint.
+     */
+    inputs: { required: string[]; optional: string[] };
   };
   lastUpdated: string;
 }
@@ -71,6 +79,30 @@ const DESCRIPTIONS: Record<string, string> = {
   '/api/data/stock':
     'Market data for a tokenised equity, paired with its on-chain supply.',
   '/api/tools/qrcode': 'Generate a QR code for a payment link or arbitrary payload.',
+};
+
+/**
+ * What each endpoint needs before it can answer.
+ *
+ * Added after the buying loop was closed and immediately failed on its first
+ * real purchase: the router handed an agent a resource URL, the agent called
+ * it, and the endpoint answered 400 because it wanted an address nobody had
+ * told the agent about. A catalogue that lists what is for sale but not what
+ * it takes cannot drive an automated purchase, which makes it a menu for
+ * humans wearing the shape of a machine interface.
+ */
+const INPUTS: Record<string, { required: string[]; optional: string[] }> = {
+  '/api/chain/token': { required: ['token'], optional: [] },
+  '/api/chain/balance': { required: ['address'], optional: ['token'] },
+  '/api/chain/receipt': { required: ['hash'], optional: ['to', 'token', 'amount'] },
+  '/api/rwa/tokens': { required: [], optional: [] },
+  '/api/rwa/token': { required: ['symbol'], optional: ['token'] },
+  '/api/rwa/holdings': { required: ['address'], optional: ['all'] },
+  '/api/rwa/transfers': { required: ['symbol'], optional: ['limit', 'since', 'token'] },
+  '/api/rwa/corporate-actions': { required: [], optional: ['symbol', 'token', 'history'] },
+  '/api/rwa/eligibility': { required: ['address', 'symbol'], optional: ['token'] },
+  '/api/data/stock': { required: ['symbol'], optional: [] },
+  '/api/tools/qrcode': { required: [], optional: [] },
 };
 
 const METHODS: Record<string, string> = {
@@ -134,6 +166,7 @@ export async function buildCatalog(req?: Request): Promise<CatalogItem[]> {
       metadata: {
         mimeType: 'application/json',
         description: DESCRIPTIONS[path] ?? 'A paid endpoint on Payless.',
+        inputs: INPUTS[path] ?? { required: [], optional: [] },
         // Stated, because on a metered resource the advertised amount is a
         // ceiling and an agent budgeting against it would over-reserve.
         pricing: metered ? ('metered' as const) : ('fixed' as const),

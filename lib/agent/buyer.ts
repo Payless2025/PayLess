@@ -98,21 +98,41 @@ export interface Purchase {
  */
 export async function purchase(
   resourceUrl: string,
-  options: { maxSpendBase?: bigint } = {}
+  options: { maxSpendBase?: bigint; params?: Record<string, string> } = {}
 ): Promise<Purchase> {
   const cfg = config();
   if (!cfg) {
     return { ok: false, step: 'refused', detail: 'No policy wallet or session key configured on this server.' };
   }
 
+  const query = new URLSearchParams(options.params ?? {}).toString();
+  const url = query ? `${resourceUrl}${resourceUrl.includes('?') ? '&' : '?'}${query}` : resourceUrl;
+
+  let quoteRes: Response;
   let challenge: any;
   try {
-    challenge = await fetch(resourceUrl).then((r) => r.json());
+    quoteRes = await fetch(url);
+    challenge = await quoteRes.json().catch(() => null);
   } catch (error) {
     return { ok: false, step: 'quote', detail: `Could not read the price: ${(error as Error).message}` };
   }
 
   const accepts: any[] = challenge?.payment?.accepts ?? [];
+
+  // A resource that refuses the request is a different failure from one that
+  // cannot be paid for, and conflating them sends whoever is debugging to the
+  // payment code when the problem is a missing parameter. This is exactly how
+  // the first live purchase failed: a 400 asking for an address was reported
+  // as "no live upto scheme".
+  if (accepts.length === 0 && quoteRes.status !== 402) {
+    const reason = (challenge as any)?.error ?? `HTTP ${quoteRes.status}`;
+    return {
+      ok: false,
+      step: 'quote',
+      detail: `The resource refused the request before quoting a price: ${reason}`,
+      resource: url,
+    };
+  }
   const upto = accepts.find(
     (a) => a.scheme === 'upto' && a.extra?.assetTransferMethod === 'permit2' && a.extra?.settlement === 'live'
   );
@@ -121,7 +141,7 @@ export async function purchase(
       ok: false,
       step: 'quote',
       detail: 'That resource offered no live upto scheme, so this buyer cannot pay for it.',
-      resource: resourceUrl,
+      resource: url,
     };
   }
 
@@ -137,7 +157,7 @@ export async function purchase(
       step: 'refused',
       detail:
         `Quoted ceiling ${formatUnits(ceiling, 6)} USDG is above the ${formatUnits(options.maxSpendBase, 6)} USDG limit set for this purchase. Nothing was signed.`,
-      resource: resourceUrl,
+      resource: url,
     };
   }
 
@@ -187,7 +207,7 @@ export async function purchase(
     signature: blob,
   };
 
-  const res = await fetch(resourceUrl, { headers: { 'X-Payment': JSON.stringify(payload) } });
+  const res = await fetch(url, { headers: { 'X-Payment': JSON.stringify(payload) } });
   const charged = res.headers.get('x-payment-settled-amount');
   const txHash = res.headers.get('x-payment-confirmed');
   const settlementFailed = res.headers.get('x-payment-settlement') === 'failed';
@@ -210,7 +230,7 @@ export async function purchase(
       detail: settlementFailed
         ? 'The resource served but settlement failed, so nothing was charged and nothing should be trusted.'
         : `The seller answered ${res.status}: ${(body as any)?.error ?? 'no reason given'}`,
-      resource: resourceUrl,
+      resource: url,
       receipt,
     };
   }
@@ -218,8 +238,8 @@ export async function purchase(
   return {
     ok: true,
     step: 'done',
-    detail: `Bought ${resourceUrl} for ${charged ?? receipt.ceilingUSDG} USDG.`,
-    resource: resourceUrl,
+    detail: `Bought ${url} for ${charged ?? receipt.ceilingUSDG} USDG.`,
+    resource: url,
     data: await res.json().catch(() => null),
     receipt,
   };
@@ -247,7 +267,7 @@ export interface FetchResult extends Purchase {
  */
 export async function fetchByNeed(
   need: string,
-  options: { maxSpendBase?: bigint } = {}
+  options: { maxSpendBase?: bigint; params?: Record<string, string> } = {}
 ): Promise<FetchResult> {
   const quote = await route({ need, limit: 5 });
 
@@ -277,6 +297,27 @@ export async function fetchByNeed(
   // the top one is the whole point of having ranked them; re-deciding here
   // would make the ranking advisory and hide which rule actually chose.
   const pick = affordable[0];
+
+  // Checked before paying, not after. The alternative is to spend USDG, get a
+  // 400 asking for an address, and have both the money and the answer gone.
+  const supplied = options.params ?? {};
+  const missing = pick.inputs.required.filter((k) => !supplied[k]);
+  if (missing.length > 0) {
+    return {
+      ...base,
+      ok: false,
+      step: 'refused',
+      detail:
+        `${pick.resource} needs ${missing.map((m) => `"${m}"`).join(', ')} before it will answer, and none was supplied. Nothing was signed.`,
+      chosen: {
+        seller: pick.seller,
+        sellerName: pick.sellerName,
+        why: pick.why,
+        operatedByRouter: pick.operatedByRouter,
+      },
+    };
+  }
+
   const result = await purchase(pick.resource, options);
 
   return {
