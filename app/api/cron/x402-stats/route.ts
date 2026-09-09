@@ -48,11 +48,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, reset: cleared });
     }
 
-    // Leave headroom under the function ceiling so the response is written by
-    // us rather than replaced by a gateway timeout. A pass that reports three
-    // folded windows is worth more than a 504 that reports nothing, even when
-    // both did the same work.
-    const deadline = Date.now() + 45_000;
+    // Headroom under the function ceiling, and more of it than looks necessary.
+    // The budget is only checked between settlements, and one settlement is a
+    // receipt plus a block plus however many retries a rate-limited node makes
+    // it take, so the last one started before the deadline can still run well
+    // past it. At 45 seconds the work persisted but the response was still
+    // being replaced by a gateway 504, which cost us the report rather than the
+    // progress. Thirty leaves room for the slowest single settlement.
+    const deadline = Date.now() + 30_000;
     const forward = await catchUp({ maxWindows: 2, deadline });
     const backward = await backfill({ maxWindows: windows, deadline });
     return NextResponse.json({ success: true, passes: [forward, backward] });
