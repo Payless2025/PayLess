@@ -99,25 +99,47 @@ interface Settlement {
   value: bigint;
 }
 
+interface ScanSlice {
+  settlements: Settlement[];
+  /** How many settlements exist in this window in total. */
+  total: number;
+  /** How many have been consumed once this slice is folded. */
+  consumed: number;
+}
+
 /**
- * Every settlement in one block range, with the money it moved.
+ * The settlements of one window, from an offset, for as long as there is time.
  *
- * The seller and the amount come from the USDG transfer inside the settlement
- * transaction rather than from the event, because the event carries no
- * arguments. The block timestamp is fetched per settlement, which is only
- * affordable because settlements are sparse: eight in fifty thousand blocks,
- * measured, so this is eight calls and not fifty thousand.
+ * Reading the Settled logs is two cheap calls. Turning each one into a payment
+ * is not: every settlement needs its receipt for the transfer and its block for
+ * the timestamp, so a busy window is six hundred round trips. Measured against
+ * a real window that was thirty-one seconds of pure network, and the function
+ * ceiling is sixty, which is how every pass came back 504 while still writing
+ * nothing.
+ *
+ * So a window is no longer all-or-nothing. The log order is deterministic, so
+ * an offset into it is a stable place to resume, and a pass folds as many as it
+ * can before its budget runs out. Windows stopped being atomic; progress
+ * started being monotonic. That is the better trade.
  */
-async function scanRange(fromBlock: bigint, toBlock: bigint): Promise<Settlement[]> {
+async function scanRange(
+  fromBlock: bigint,
+  toBlock: bigint,
+  options: { offset?: number; deadline?: number } = {}
+): Promise<ScanSlice> {
+  const offset = options.offset ?? 0;
+  const deadline = options.deadline ?? Number.POSITIVE_INFINITY;
   const rpc = chainClient();
   const usdg = getAddress(USDG_ADDRESS as `0x${string}`);
   const out: Settlement[] = [];
   const blockTimes = new Map<string, number>();
 
+  // Both proxies' logs first, ordered deterministically, so an offset means the
+  // same settlement on every pass.
+  const found: Array<{ scheme: string; hash: `0x${string}` }> = [];
   for (const [scheme, proxy] of Object.entries(X402_PROXIES)) {
-    let logs;
     try {
-      logs = await withRpcRetry(() =>
+      const logs = await withRpcRetry(() =>
         rpc.getLogs({
           address: proxy as `0x${string}`,
           event: SETTLED_EVENT,
@@ -125,65 +147,69 @@ async function scanRange(fromBlock: bigint, toBlock: bigint): Promise<Settlement
           toBlock,
         })
       );
+      for (const log of logs) found.push({ scheme, hash: log.transactionHash as `0x${string}` });
     } catch {
-      // A window the node refuses is skipped rather than failing the pass. The
-      // cursor still moves, so a permanently bad range cannot wedge the scan.
+      // A window the node refuses is skipped rather than failing the pass.
+      continue;
+    }
+  }
+  found.sort((a, b) => (a.hash === b.hash ? a.scheme.localeCompare(b.scheme) : a.hash.localeCompare(b.hash)));
+
+  let consumed = offset;
+  for (let i = offset; i < found.length; i++) {
+    if (Date.now() > deadline) break;
+    const { scheme, hash } = found[i];
+
+    let receipt;
+    try {
+      receipt = await withRpcRetry(() => rpc.getTransactionReceipt({ hash }));
+    } catch {
+      consumed = i + 1;
       continue;
     }
 
-    for (const log of logs) {
-      let receipt;
+    const blockKey = receipt.blockNumber.toString();
+    if (!blockTimes.has(blockKey)) {
       try {
-        receipt = await withRpcRetry(() =>
-          rpc.getTransactionReceipt({ hash: log.transactionHash as `0x${string}` })
-        );
+        const block = await withRpcRetry(() => rpc.getBlock({ blockNumber: receipt.blockNumber }));
+        blockTimes.set(blockKey, Number(block.timestamp));
+      } catch {
+        consumed = i + 1;
+        continue;
+      }
+    }
+    const timestamp = blockTimes.get(blockKey)!;
+    const facilitator = receipt.from ? getAddress(receipt.from) : '';
+
+    for (const entry of receipt.logs) {
+      let token: `0x${string}`;
+      try {
+        token = getAddress(entry.address);
       } catch {
         continue;
       }
+      if (token !== usdg) continue;
 
-      const blockKey = receipt.blockNumber.toString();
-      if (!blockTimes.has(blockKey)) {
-        try {
-          const block = await withRpcRetry(() =>
-            rpc.getBlock({ blockNumber: receipt.blockNumber })
-          );
-          blockTimes.set(blockKey, Number(block.timestamp));
-        } catch {
-          continue;
-        }
+      let decoded;
+      try {
+        decoded = decodeEventLog({ abi: [TRANSFER_EVENT], data: entry.data, topics: entry.topics });
+      } catch {
+        continue;
       }
-      const timestamp = blockTimes.get(blockKey)!;
-      const facilitator = receipt.from ? getAddress(receipt.from) : '';
-
-      for (const entry of receipt.logs) {
-        let token: `0x${string}`;
-        try {
-          token = getAddress(entry.address);
-        } catch {
-          continue;
-        }
-        if (token !== usdg) continue;
-
-        let decoded;
-        try {
-          decoded = decodeEventLog({ abi: [TRANSFER_EVENT], data: entry.data, topics: entry.topics });
-        } catch {
-          continue;
-        }
-        const args = decoded.args as unknown as { to: string; value: bigint };
-        out.push({
-          block: receipt.blockNumber,
-          timestamp,
-          scheme,
-          seller: getAddress(args.to),
-          facilitator,
-          value: args.value,
-        });
-      }
+      const args = decoded.args as unknown as { to: string; value: bigint };
+      out.push({
+        block: receipt.blockNumber,
+        timestamp,
+        scheme,
+        seller: getAddress(args.to),
+        facilitator,
+        value: args.value,
+      });
     }
+    consumed = i + 1;
   }
 
-  return out;
+  return { settlements: out, total: found.length, consumed };
 }
 
 // ---------------------------------------------------------------------------
@@ -300,7 +326,12 @@ export function windowOf(block: bigint): bigint {
 
 interface WindowMark {
   at: string;
+  /** How many of this window's settlements have been folded so far. */
   settlements: number;
+  /** How many it has in total, once known. */
+  total?: number;
+  /** True only when every one of them is in. A window is skipped only then. */
+  done?: boolean;
 }
 
 const windows = () => keyedStore<WindowMark>('x402-windows');
@@ -324,16 +355,33 @@ export interface PassResult {
  * this design still double counts. Marking first would instead lose a window
  * silently, and a gap in a chart is harder to notice than a spike.
  */
-export async function foldWindow(index: bigint): Promise<{ folded: boolean; found: number; days: string[] }> {
+export async function foldWindow(
+  index: bigint,
+  deadline?: number
+): Promise<{ folded: boolean; found: number; days: string[]; done: boolean }> {
   const id = index.toString();
-  if (await windows().get(id)) return { folded: false, found: 0, days: [] };
+  const mark = await windows().get(id);
 
+  // Only a finished window is skipped. The old version marked a window done the
+  // moment it was touched, which was fine while a window always fitted in one
+  // pass and silently lost the rest once it did not.
+  if (mark?.done) return { folded: false, found: 0, days: [], done: true };
+
+  const offset = mark?.settlements ?? 0;
   const from = index * CHUNK;
   const to = from + CHUNK - BigInt(1);
-  const settlements = await scanRange(from, to);
-  const days = await foldIntoDays(settlements);
-  await windows().put(id, { at: new Date().toISOString(), settlements: settlements.length });
-  return { folded: true, found: settlements.length, days };
+  const slice = await scanRange(from, to, { offset, deadline });
+  const days = await foldIntoDays(slice.settlements);
+
+  const done = slice.consumed >= slice.total;
+  await windows().put(id, {
+    at: new Date().toISOString(),
+    settlements: slice.consumed,
+    total: slice.total,
+    done,
+  });
+
+  return { folded: slice.consumed > offset, found: slice.settlements.length, days, done };
 }
 
 async function readCursor(): Promise<Cursor | null> {
@@ -388,14 +436,20 @@ export async function backfill(
   for (let i = 0; i < maxWindows && low > BigInt(0); i++) {
     if (Date.now() > deadline) break;
     const next = low - BigInt(1);
-    const result = await foldWindow(next);
+    const result = await foldWindow(next, deadline);
     if (result.folded) {
       scanned += 1;
       found += result.found;
       result.days.forEach((d) => touched.add(d));
-    } else {
+    } else if (result.done) {
       skipped += 1;
     }
+
+    // The cursor moves past a window only when that window is finished. A
+    // half-folded window that the cursor had already walked past would be a
+    // permanent hole in the history, and nothing would ever come back for it.
+    if (!result.done) break;
+
     low = next;
     if (low === BigInt(0)) complete = true;
     await writeCursor(low, high, complete);
@@ -442,14 +496,15 @@ export async function catchUp(
   // was scanned while still filling is not silently frozen half done.
   for (let i = 0; i < maxWindows && high <= headWindow; i++) {
     if (Date.now() > deadline) break;
-    const result = await foldWindow(high);
+    const result = await foldWindow(high, deadline);
     if (result.folded) {
       scanned += 1;
       found += result.found;
       result.days.forEach((d) => touched.add(d));
-    } else {
+    } else if (result.done) {
       skipped += 1;
     }
+    if (!result.done) break;
     if (high === headWindow) break;
     high += BigInt(1);
     await writeCursor(low, high, complete);

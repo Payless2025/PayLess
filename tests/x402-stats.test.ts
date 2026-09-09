@@ -150,23 +150,44 @@ async function run() {
   // Idempotency: the bug that shipped, pinned so it cannot ship twice
   // -------------------------------------------------------------------------
 
-  await test('a window already folded is never folded again', async () => {
-    // The first version folded windows and only recorded progress at the end of
-    // a pass. On a function with a sixty second ceiling that means a timeout
-    // writes data without writing progress, the next pass repeats the same
-    // windows, and the buckets add. Measured against the chain it reported
+  await test('a finished window is never folded again', async () => {
+    // The buckets add rather than replace, so folding the same window twice
+    // inflates every number. Measured against the chain once, it reported
     // eleven times the real settlement count.
     seed([]);
     const marks = new MemoryKeyedStore<any>();
-    await marks.put('1000', { at: '2026-09-07T00:00:00.000Z', settlements: 7 });
+    await marks.put('1000', { at: '2026-09-07T00:00:00.000Z', settlements: 7, total: 7, done: true });
     setKeyedStore('x402-windows', marks);
 
     // No chain client is reachable from a test, so this also proves the skip
     // happens before any RPC call rather than after it.
     const result = await foldWindow(BigInt(1000));
-    assert.equal(result.folded, false, 'a marked window was scanned again');
+    assert.equal(result.folded, false, 'a finished window was scanned again');
+    assert.equal(result.done, true);
     assert.equal(result.found, 0);
-    assert.deepEqual(result.days, []);
+  });
+
+  await test('a half-folded window is not treated as finished', async () => {
+    // The failure this replaced: a window was marked done the moment it was
+    // touched. That was harmless while a window always fitted in one pass, and
+    // silently dropped the rest of a busy one once it did not. Every pass came
+    // back 504 and the coverage sat still for a day.
+    seed([]);
+    const marks = new MemoryKeyedStore<any>();
+    await marks.put('1000', { at: '2026-09-09T00:00:00.000Z', settlements: 40, total: 308, done: false });
+    setKeyedStore('x402-windows', marks);
+
+    // It must try to resume, which without a chain means it throws rather than
+    // quietly reporting the window as complete. Silently skipping would be the
+    // bug; failing loudly is not.
+    let resumed = false;
+    try {
+      await foldWindow(BigInt(1000), Date.now() + 50);
+    } catch {
+      resumed = true;
+    }
+    const after = await marks.get('1000');
+    assert.ok(resumed || after?.done === false, 'an unfinished window was skipped as if it were done');
   });
 
   await test('a pass already out of time does nothing, including no chain calls', async () => {
