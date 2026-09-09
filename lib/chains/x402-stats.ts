@@ -138,14 +138,18 @@ async function scanRange(
   // same settlement on every pass.
   const found: Array<{ scheme: string; hash: `0x${string}` }> = [];
   for (const [scheme, proxy] of Object.entries(X402_PROXIES)) {
+    if (Date.now() > deadline) break;
     try {
-      const logs = await withRpcRetry(() =>
-        rpc.getLogs({
-          address: proxy as `0x${string}`,
-          event: SETTLED_EVENT,
-          fromBlock,
-          toBlock,
-        })
+      const logs = await withRpcRetry(
+        () =>
+          rpc.getLogs({
+            address: proxy as `0x${string}`,
+            event: SETTLED_EVENT,
+            fromBlock,
+            toBlock,
+          }),
+        4,
+        deadline
       );
       for (const log of logs) found.push({ scheme, hash: log.transactionHash as `0x${string}` });
     } catch {
@@ -162,7 +166,7 @@ async function scanRange(
 
     let receipt;
     try {
-      receipt = await withRpcRetry(() => rpc.getTransactionReceipt({ hash }));
+      receipt = await withRpcRetry(() => rpc.getTransactionReceipt({ hash }), 4, deadline);
     } catch {
       consumed = i + 1;
       continue;
@@ -171,7 +175,7 @@ async function scanRange(
     const blockKey = receipt.blockNumber.toString();
     if (!blockTimes.has(blockKey)) {
       try {
-        const block = await withRpcRetry(() => rpc.getBlock({ blockNumber: receipt.blockNumber }));
+        const block = await withRpcRetry(() => rpc.getBlock({ blockNumber: receipt.blockNumber }), 4, deadline);
         blockTimes.set(blockKey, Number(block.timestamp));
       } catch {
         consumed = i + 1;

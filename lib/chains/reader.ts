@@ -29,12 +29,34 @@ export const ERC20_READ_ABI = [
 let client: ReturnType<typeof createPublicClient> | undefined;
 
 export function chainClient() {
-  if (!client) client = createPublicClient({ transport: http(ROBINHOOD_RPC_URL) });
+  if (!client) {
+    client = createPublicClient({
+      // An explicit timeout, and viem's own retries turned off.
+      //
+      // The defaults are a 10 second timeout with three internal retries, and
+      // withRpcRetry then wraps four more around that. One logical call could
+      // therefore occupy two minutes, which is how a scan pass with a thirty
+      // second budget kept being killed at sixty: the budget is checked between
+      // calls, and a single call outlived it. Retrying is one job and it now
+      // belongs to exactly one place.
+      transport: http(ROBINHOOD_RPC_URL, { timeout: 8_000, retryCount: 0 }),
+    });
+  }
   return client;
 }
 
-/** Retry only on rate limiting; surface every other failure immediately. */
-export async function withRpcRetry<T>(fn: () => Promise<T>, tries = 4): Promise<T> {
+/**
+ * Retry only on rate limiting; surface every other failure immediately.
+ *
+ * `deadline` stops it retrying into a budget that has already gone. Without
+ * that, a caller who reserved thirty seconds for a whole pass could spend all
+ * of it inside one call's backoff and never reach its own check.
+ */
+export async function withRpcRetry<T>(
+  fn: () => Promise<T>,
+  tries = 4,
+  deadline?: number
+): Promise<T> {
   let lastError: unknown;
   for (let i = 0; i < tries; i++) {
     try {
@@ -44,6 +66,7 @@ export async function withRpcRetry<T>(fn: () => Promise<T>, tries = 4): Promise<
       const status = (error as { status?: number })?.status;
       const rateLimited = status === 429 || /429|rate limit/i.test(String((error as Error)?.message));
       if (!rateLimited) throw error;
+      if (deadline !== undefined && Date.now() > deadline) break;
       await new Promise((r) => setTimeout(r, 400 * (i + 1)));
     }
   }
