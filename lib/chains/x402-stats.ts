@@ -365,7 +365,15 @@ export async function foldWindow(
   // Only a finished window is skipped. The old version marked a window done the
   // moment it was touched, which was fine while a window always fitted in one
   // pass and silently lost the rest once it did not.
-  if (mark?.done) return { folded: false, found: 0, days: [], done: true };
+  //
+  // A mark with no `total` predates this change. The version that wrote it only
+  // ever wrote after folding a whole window, so it is complete by construction
+  // and must be read that way. Treating those thousand marks as unfinished
+  // would re-fold every one of them into buckets that add, which is precisely
+  // the arithmetic that once reported eleven times the real settlement count.
+  if (mark && (mark.done || mark.total === undefined)) {
+    return { folded: false, found: 0, days: [], done: true };
+  }
 
   const offset = mark?.settlements ?? 0;
   const from = index * CHUNK;

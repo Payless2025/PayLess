@@ -190,6 +190,22 @@ async function run() {
     assert.ok(resumed || after?.done === false, 'an unfinished window was skipped as if it were done');
   });
 
+  await test('a legacy mark with no total counts as finished', async () => {
+    // Marks written before windows became resumable have no `total`, and the
+    // version that wrote them only ever wrote after folding a whole window. Read
+    // as unfinished, a thousand of them would be re-folded into buckets that
+    // add, which is the same arithmetic that once reported eleven times the
+    // real settlement count.
+    seed([]);
+    const marks = new MemoryKeyedStore<any>();
+    await marks.put('900', { at: '2026-09-08T00:00:00.000Z', settlements: 12 });
+    setKeyedStore('x402-windows', marks);
+
+    const result = await foldWindow(BigInt(900));
+    assert.equal(result.done, true, 'a completed legacy window was queued for re-folding');
+    assert.equal(result.folded, false);
+  });
+
   await test('a pass already out of time does nothing, including no chain calls', async () => {
     // Window cost is wildly uneven: a quiet window is two RPC calls, a busy one
     // is several hundred. Without a budget the pass was killed mid-window by
