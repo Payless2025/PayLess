@@ -280,10 +280,20 @@ async function run() {
     setKeyedStore('x402-windows', new MemoryKeyedStore<any>());
     setKeyedStore('x402-sellers', new MemoryKeyedStore<any>());
 
-    // A budget that is already gone, so nothing but the cursor gets cleared.
-    const out = await resetStats({ deadline: Date.now() - 1 });
-    assert.equal(out.complete, false, 'an interrupted reset claimed to be complete');
-    assert.equal(await cursorStore.get('settlements'), null, 'the cursor survived an interrupted reset');
+    // The real failure is the function being killed partway, not returning
+    // early, so this makes deletion throw. If the cursor is cleared last it is
+    // still there when the process dies, and the scanner wakes up believing an
+    // empty index is a finished one.
+    dayStore.delete = async () => {
+      throw new Error('killed mid-delete');
+    };
+
+    await assert.rejects(() => resetStats(), /killed mid-delete/);
+    assert.equal(
+      await cursorStore.get('settlements'),
+      null,
+      'the cursor survived a reset that died partway, so an empty index still claims to be complete'
+    );
 
     const after = await readStats();
     assert.equal(after.coverage.reachedGenesis, false, 'an empty index still claimed a complete history');
