@@ -44,8 +44,12 @@ export async function GET(req: NextRequest) {
   try {
     // Destructive, so it is never the default and never implicit.
     if (params.get('reset') === '1') {
-      const cleared = await resetStats();
-      return NextResponse.json({ success: true, reset: cleared });
+      const cleared = await resetStats({ deadline: Date.now() + 45_000 });
+      return NextResponse.json({
+        success: true,
+        reset: cleared,
+        ...(cleared.complete ? {} : { note: 'Not finished. Call reset again until it reports complete.' }),
+      });
     }
 
     // Headroom under the function ceiling, and more of it than looks necessary.

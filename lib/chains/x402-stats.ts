@@ -581,25 +581,51 @@ export async function catchUp(
  * window twice there is no way to subtract it, and the only honest repair is
  * to count again from nothing.
  */
-export async function resetStats(): Promise<{
+export async function resetStats(options: { deadline?: number } = {}): Promise<{
   daysCleared: number;
   windowsCleared: number;
   sellersCleared: number;
+  remaining: number;
+  complete: boolean;
 }> {
-  const [dayIds, windowIds, sellerIds] = await Promise.all([
-    days().entries(),
-    windows().entries(),
-    sellerTotals().entries(),
-  ]);
-  for (const [id] of dayIds) await days().delete(id);
-  for (const [id] of windowIds) await windows().delete(id);
-  for (const [id] of sellerIds) await sellerTotals().delete(id);
+  const deadline = options.deadline ?? Number.POSITIVE_INFINITY;
+
+  // The cursor goes first, and that ordering is the whole correctness of this
+  // function. Clearing it last means an interrupted reset leaves a cursor that
+  // still says "history complete" over data that is no longer there, and the
+  // scanner then does nothing forever because it believes it has finished. An
+  // interrupted reset has to leave the scan restartable, never falsely done.
   await cursors().delete(CURSOR_ID);
-  return {
-    daysCleared: dayIds.length,
-    windowsCleared: windowIds.length,
-    sellersCleared: sellerIds.length,
-  };
+
+  let daysCleared = 0;
+  let windowsCleared = 0;
+  let sellersCleared = 0;
+
+  // Deleting is one round trip each and there can be thousands, which is more
+  // than a single invocation gets. So this is resumable: call it until it
+  // reports complete.
+  for (const [id] of await days().entries()) {
+    if (Date.now() > deadline) break;
+    await days().delete(id);
+    daysCleared += 1;
+  }
+  for (const [id] of await sellerTotals().entries()) {
+    if (Date.now() > deadline) break;
+    await sellerTotals().delete(id);
+    sellersCleared += 1;
+  }
+  for (const [id] of await windows().entries()) {
+    if (Date.now() > deadline) break;
+    await windows().delete(id);
+    windowsCleared += 1;
+  }
+
+  const remaining =
+    (await days().entries()).length +
+    (await sellerTotals().entries()).length +
+    (await windows().entries()).length;
+
+  return { daysCleared, windowsCleared, sellersCleared, remaining, complete: remaining === 0 };
 }
 
 /** What the chain says about one address, read from folded totals. */

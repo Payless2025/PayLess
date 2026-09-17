@@ -13,7 +13,7 @@
 
 import assert from 'node:assert/strict';
 import { setKeyedStore, MemoryKeyedStore } from '../lib/x402/keyed-store';
-import { readStats, foldWindow, windowOf, backfill, catchUp, type DayBucket } from '../lib/chains/x402-stats';
+import { readStats, foldWindow, windowOf, backfill, catchUp, resetStats, type DayBucket } from '../lib/chains/x402-stats';
 
 let passed = 0;
 async function test(name: string, fn: () => Promise<void>) {
@@ -263,6 +263,31 @@ async function run() {
     const s = await readStats();
     assert.equal(typeof s.coverage.settlementsGivenUpOn, 'number');
     assert.equal(s.coverage.settlementsGivenUpOn, 0);
+  });
+
+  await test('an interrupted reset leaves the scan restartable, never falsely done', async () => {
+    // The failure this replaced: the cursor was cleared last, so a reset that
+    // ran out of time wiped the data and left a cursor still claiming history
+    // was complete. The scanner then sat still forever, reporting an empty
+    // index as a finished one.
+    const dayStore = new MemoryKeyedStore<DayBucket>();
+    for (let i = 0; i < 40; i++) await dayStore.put(`2026-08-${i}`, day(`2026-08-${i}`));
+    setKeyedStore('x402-days', dayStore);
+
+    const cursorStore = new MemoryKeyedStore<any>();
+    await cursorStore.put('settlements', { low: '0', high: '1308', complete: true, updatedAt: 'x' });
+    setKeyedStore('x402-cursor', cursorStore);
+    setKeyedStore('x402-windows', new MemoryKeyedStore<any>());
+    setKeyedStore('x402-sellers', new MemoryKeyedStore<any>());
+
+    // A budget that is already gone, so nothing but the cursor gets cleared.
+    const out = await resetStats({ deadline: Date.now() - 1 });
+    assert.equal(out.complete, false, 'an interrupted reset claimed to be complete');
+    assert.equal(await cursorStore.get('settlements'), null, 'the cursor survived an interrupted reset');
+
+    const after = await readStats();
+    assert.equal(after.coverage.reachedGenesis, false, 'an empty index still claimed a complete history');
+    assert.equal(after.coverage.lowestBlockScanned, null);
   });
 
   await test('windows are aligned to fixed boundaries, not to where a pass stopped', async () => {
