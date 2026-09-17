@@ -367,6 +367,15 @@ const windows = () => keyedStore<WindowMark>('x402-windows');
 
 export interface PassResult {
   direction: 'backfill' | 'catch-up';
+  /**
+   * The chain head this pass actually saw.
+   *
+   * Reported because catch-up stopped advancing and inferring why from block
+   * ranges kept producing arithmetic that did not fit. What a pass believes the
+   * head to be decides where it stops, so it is worth saying rather than
+   * deducing.
+   */
+  headBlock?: string;
   windowsScanned: number;
   windowsSkipped: number;
   settlementsFound: number;
@@ -507,6 +516,7 @@ export async function backfill(
 
   return {
     direction: 'backfill',
+    headBlock: head.toString(),
     windowsScanned: scanned,
     windowsSkipped: skipped,
     settlementsFound: found,
@@ -564,6 +574,7 @@ export async function catchUp(
 
   return {
     direction: 'catch-up',
+    headBlock: head.toString(),
     windowsScanned: scanned,
     windowsSkipped: skipped,
     settlementsFound: found,
