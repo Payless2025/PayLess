@@ -61,6 +61,16 @@ interface Cursor {
   high: string;
   /** True once a backfill pass found nothing older, so history is complete. */
   complete: boolean;
+  /**
+   * The chain head the last pass saw.
+   *
+   * Stored because the node answering this deployment is not necessarily the
+   * node answering anyone else. Measured once at nearly six million blocks
+   * behind a public query to the same URL, which is about two weeks of chain,
+   * and nothing in the index said so. Reporting the head the scanner actually
+   * used makes that gap checkable against any explorer instead of invisible.
+   */
+  headAtLastPass?: string;
   updatedAt: string;
 }
 
@@ -447,11 +457,13 @@ async function readCursor(): Promise<Cursor | null> {
   return cursors().get(CURSOR_ID);
 }
 
-async function writeCursor(low: bigint, high: bigint, complete: boolean) {
+async function writeCursor(low: bigint, high: bigint, complete: boolean, head?: bigint) {
+  const existing = await cursors().get(CURSOR_ID);
   await cursors().put(CURSOR_ID, {
     low: low.toString(),
     high: high.toString(),
     complete,
+    headAtLastPass: head !== undefined ? head.toString() : existing?.headAtLastPass,
     updatedAt: new Date().toISOString(),
   });
 }
@@ -511,7 +523,7 @@ export async function backfill(
 
     low = next;
     if (low === BigInt(0)) complete = true;
-    await writeCursor(low, high, complete);
+    await writeCursor(low, high, complete, head);
   }
 
   return {
@@ -567,10 +579,10 @@ export async function catchUp(
     if (!result.done) break;
     if (high === headWindow) break;
     high += BigInt(1);
-    await writeCursor(low, high, complete);
+    await writeCursor(low, high, complete, head);
   }
 
-  await writeCursor(low, high, complete);
+  await writeCursor(low, high, complete, head);
 
   return {
     direction: 'catch-up',
@@ -684,6 +696,13 @@ export interface X402Stats {
      * without a word, and nobody suspects a number that is too small.
      */
     settlementsGivenUpOn: number;
+    /**
+     * The chain head the scanner last saw, which is not necessarily the chain
+     * head. Compare it with any explorer: a large gap means the node answering
+     * this deployment is behind, and everything recent is missing rather than
+     * absent.
+     */
+    headAtLastPass: string | null;
     /** Said plainly, because a partial chart and a short history look alike. */
     note: string;
   };
@@ -749,6 +768,7 @@ export async function readStats(): Promise<X402Stats> {
        * without a word, and nobody would have suspected a number too small.
        */
       settlementsGivenUpOn: await skippedCount().catch(() => 0),
+      headAtLastPass: cursor?.headAtLastPass ?? null,
       note: cursor?.complete
         ? 'History has been scanned back to the first block, so this is every x402 settlement on this chain.'
         : 'History is still being walked backwards. This covers the scanned range only, and earlier activity is not missing from the chain, only from this index.',

@@ -14,6 +14,7 @@
 ## Chain Integration
 
 * [Robinhood Chain](ROBINHOOD_CHAIN.md)
+* [Robinhood Chain x402 profile](X402-PROFILE.md)
 
 ## Guides
 
