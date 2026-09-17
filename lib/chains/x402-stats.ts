@@ -105,6 +105,16 @@ interface ScanSlice {
   total: number;
   /** How many have been consumed once this slice is folded. */
   consumed: number;
+  /**
+   * True when the slice stopped because a settlement could not be read, rather
+   * than because it ran out of time.
+   *
+   * The distinction decides whether progress may advance. Running out of time
+   * means everything up to here is folded and the rest is still waiting.
+   * Failing to read means the settlement at `consumed` is still waiting too,
+   * and stepping over it would lose it for good.
+   */
+  stalled: boolean;
 }
 
 /**
@@ -125,7 +135,7 @@ interface ScanSlice {
 async function scanRange(
   fromBlock: bigint,
   toBlock: bigint,
-  options: { offset?: number; deadline?: number } = {}
+  options: { offset?: number; deadline?: number; skipFirst?: boolean } = {}
 ): Promise<ScanSlice> {
   const offset = options.offset ?? 0;
   const deadline = options.deadline ?? Number.POSITIVE_INFINITY;
@@ -160,16 +170,26 @@ async function scanRange(
   found.sort((a, b) => (a.hash === b.hash ? a.scheme.localeCompare(b.scheme) : a.hash.localeCompare(b.hash)));
 
   let consumed = offset;
+  let stalled = false;
   for (let i = offset; i < found.length; i++) {
     if (Date.now() > deadline) break;
     const { scheme, hash } = found[i];
+
+    // The caller has given up on this one after repeated failures, so it is
+    // stepped over exactly once and counted as skipped rather than retried
+    // forever. Everything after it is read normally.
+    const givingUp = options.skipFirst === true && i === offset;
 
     let receipt;
     try {
       receipt = await withRpcRetry(() => rpc.getTransactionReceipt({ hash }), 4, deadline);
     } catch {
-      consumed = i + 1;
-      continue;
+      // Progress does not advance past something that was never read. Skipping
+      // it here is how the index silently lost eleven thousand settlements:
+      // the window still finished, so nothing ever came back for them.
+      if (givingUp) { consumed = i + 1; continue; }
+      stalled = true;
+      break;
     }
 
     const blockKey = receipt.blockNumber.toString();
@@ -178,8 +198,9 @@ async function scanRange(
         const block = await withRpcRetry(() => rpc.getBlock({ blockNumber: receipt.blockNumber }), 4, deadline);
         blockTimes.set(blockKey, Number(block.timestamp));
       } catch {
-        consumed = i + 1;
-        continue;
+        if (givingUp) { consumed = i + 1; continue; }
+        stalled = true;
+        break;
       }
     }
     const timestamp = blockTimes.get(blockKey)!;
@@ -213,7 +234,7 @@ async function scanRange(
     consumed = i + 1;
   }
 
-  return { settlements: out, total: found.length, consumed };
+  return { settlements: out, total: found.length, consumed, stalled };
 }
 
 // ---------------------------------------------------------------------------
@@ -336,6 +357,10 @@ interface WindowMark {
   total?: number;
   /** True only when every one of them is in. A window is skipped only then. */
   done?: boolean;
+  /** Consecutive passes that made no progress at the current offset. */
+  attempts?: number;
+  /** Settlements finally given up on. Counted so they are visible, not lost. */
+  skipped?: number;
 }
 
 const windows = () => keyedStore<WindowMark>('x402-windows');
@@ -366,34 +391,47 @@ export async function foldWindow(
   const id = index.toString();
   const mark = await windows().get(id);
 
-  // Only a finished window is skipped. The old version marked a window done the
-  // moment it was touched, which was fine while a window always fitted in one
-  // pass and silently lost the rest once it did not.
-  //
-  // A mark with no `total` predates this change. The version that wrote it only
-  // ever wrote after folding a whole window, so it is complete by construction
-  // and must be read that way. Treating those thousand marks as unfinished
-  // would re-fold every one of them into buckets that add, which is precisely
-  // the arithmetic that once reported eleven times the real settlement count.
-  if (mark && (mark.done || mark.total === undefined)) {
-    return { folded: false, found: 0, days: [], done: true };
-  }
+  // Only a finished window is skipped. Marking a window done the moment it was
+  // touched was fine while one always fitted in a pass, and silently dropped
+  // the rest of a busy one once it did not.
+  if (mark?.done) return { folded: false, found: 0, days: [], done: true };
 
   const offset = mark?.settlements ?? 0;
+  const attempts = mark?.attempts ?? 0;
+
+  // After enough passes have failed on the same settlement, step over it once
+  // rather than retrying it forever. A window that can never finish would hold
+  // the whole backfill still, and a counted skip is recoverable in a way that
+  // a stalled scan is not.
+  const GIVE_UP_AFTER = 5;
+  const skipFirst = attempts >= GIVE_UP_AFTER;
+
   const from = index * CHUNK;
   const to = from + CHUNK - BigInt(1);
-  const slice = await scanRange(from, to, { offset, deadline });
+  const slice = await scanRange(from, to, { offset, deadline, skipFirst });
   const days = await foldIntoDays(slice.settlements);
 
+  const movedOn = slice.consumed > offset;
   const done = slice.consumed >= slice.total;
+
   await windows().put(id, {
     at: new Date().toISOString(),
     settlements: slice.consumed,
     total: slice.total,
     done,
+    // Reset the moment anything is read, so a single bad minute does not
+    // accumulate towards giving up on a settlement that is perfectly fine.
+    attempts: slice.stalled && !movedOn ? attempts + 1 : 0,
+    skipped: (mark?.skipped ?? 0) + (skipFirst && movedOn ? 1 : 0),
   });
 
-  return { folded: slice.consumed > offset, found: slice.settlements.length, days, done };
+  return { folded: movedOn, found: slice.settlements.length, days, done };
+}
+
+/** How many settlements the scan gave up on, across every window. */
+export async function skippedCount(): Promise<number> {
+  const marks = await windows().all();
+  return marks.reduce((n, m) => n + (m.skipped ?? 0), 0);
 }
 
 async function readCursor(): Promise<Cursor | null> {
@@ -601,6 +639,14 @@ export interface X402Stats {
     highestBlockScanned: string | null;
     reachedGenesis: boolean;
     lastPassAt: string | null;
+    /**
+     * Settlements the scan could not read and finally stepped over.
+     *
+     * Reported because a total that is quietly short is worse than one that
+     * says where it is short. The index once lost eleven thousand of these
+     * without a word, and nobody suspects a number that is too small.
+     */
+    settlementsGivenUpOn: number;
     /** Said plainly, because a partial chart and a short history look alike. */
     note: string;
   };
@@ -658,6 +704,14 @@ export async function readStats(): Promise<X402Stats> {
         : null,
       reachedGenesis: cursor?.complete ?? false,
       lastPassAt: cursor?.updatedAt ?? null,
+      /**
+       * Settlements the scan could not read and finally stepped over.
+       *
+       * Reported because a total that is quietly short is worse than one that
+       * says where it is short. The index once lost eleven thousand of these
+       * without a word, and nobody would have suspected a number too small.
+       */
+      settlementsGivenUpOn: await skippedCount().catch(() => 0),
       note: cursor?.complete
         ? 'History has been scanned back to the first block, so this is every x402 settlement on this chain.'
         : 'History is still being walked backwards. This covers the scanned range only, and earlier activity is not missing from the chain, only from this index.',

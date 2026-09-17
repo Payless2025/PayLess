@@ -223,6 +223,48 @@ async function run() {
     }
   });
 
+  await test('a settlement that could not be read never advances progress', async () => {
+    // How the index lost 11,114 settlements without a word. A failed receipt
+    // fetch advanced the offset past it, the window still finished, and nothing
+    // ever came back. Measured against the chain the index held 7,577 of 18,691.
+    //
+    // Read from source because the failure is a network one and the guarantee
+    // is about what happens in the catch, which no stub can make load-bearing.
+    const fs = await import('node:fs/promises');
+    const src = await fs.readFile('lib/chains/x402-stats.ts', 'utf8');
+
+    // Comments stripped first, so the assertion is about the code rather than
+    // about how much prose happens to sit next to it.
+    const code = src.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
+    // Only the catch blocks matter. The loop's own success path advances the
+    // offset too, and that one is supposed to.
+    const catchBodies = code.split('catch').slice(1).map((c) => c.slice(0, 200));
+    const stepping = catchBodies.filter((c) => /consumed = i \+ 1/.test(c));
+    assert.ok(stepping.length >= 2, 'the per-settlement failure paths vanished');
+    for (const body of stepping) {
+      const upTo = body.slice(0, body.indexOf('consumed = i + 1'));
+      assert.match(upTo, /givingUp/, 'a failed read steps past a settlement it never gave up on');
+    }
+
+    // And a failure that has not given up has to stop the slice, so the next
+    // pass comes back for it.
+    assert.ok(
+      (code.match(/stalled = true/g) ?? []).length >= 2,
+      'a failed read does not stall the slice'
+    );
+  });
+
+  await test('giving up on a settlement is counted rather than hidden', async () => {
+    // A total that is quietly short is worse than one that says where it is
+    // short, because nobody audits a number that looks small.
+    seed([]);
+    setKeyedStore('x402-windows', new MemoryKeyedStore<any>());
+    const s = await readStats();
+    assert.equal(typeof s.coverage.settlementsGivenUpOn, 'number');
+    assert.equal(s.coverage.settlementsGivenUpOn, 0);
+  });
+
   await test('windows are aligned to fixed boundaries, not to where a pass stopped', async () => {
     // Alignment is what makes "have I done this one" answerable at all. Windows
     // that start wherever the last pass happened to stop can never be compared.
