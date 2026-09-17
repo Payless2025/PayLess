@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const quote = await route({
+      origin: new URL(req.url).origin,
       need: params.get('need'),
       limit: Number(params.get('limit') || 10),
       maxAmountBase: params.get('max'),

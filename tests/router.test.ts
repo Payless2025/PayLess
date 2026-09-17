@@ -61,7 +61,11 @@ function manifest(payTo: string, items: Array<{ path: string; amount: string; de
   };
 }
 
-function seed(registrations: RegisteredSeller[], totals: SellerTotal[]) {
+function seed(registrations: RegisteredSeller[], totals: SellerTotal[], listings: any[] = []) {
+  const ls = new MemoryKeyedStore<any>();
+  for (const l of listings) ls.put(l.id, l);
+  setKeyedStore('listings', ls);
+
   const reg = new MemoryKeyedStore<RegisteredSeller>();
   for (const r of registrations) reg.put(r.address.toLowerCase(), r);
   setKeyedStore('seller-registry', reg);
@@ -274,6 +278,73 @@ async function run() {
     // Ranking uses the cheapest way to pay, not whichever came first.
     assert.equal(q.offers[0].amountBase, '15000');
     assert.match(q.offers[0].why, /receipt\/exact\/upto/);
+  });
+
+  await test('a listing is an offer without needing a manifest', async () => {
+    // The half of the revenue proxy that was promised and missing: a seller who
+    // lists here should be findable by an agent without publishing anything or
+    // registering separately. Their origin already served a token, which is
+    // stronger evidence than a manifest ever has to give.
+    manifests = {};
+    seed([], [total(PROVEN, 4)], [
+      {
+        id: 'abc123',
+        owner: PROVEN,
+        originUrl: 'https://seller.example/api/quotes',
+        payTo: PROVEN,
+        priceBase: '20000',
+        name: 'Quotes',
+        description: 'AAPL holdings and quotes',
+        createdAt: '2026-09-17T00:00:00.000Z',
+        verifyToken: 'secret',
+        verification: { at: '2026-09-17T00:00:00.000Z', ok: true, reason: 'ok' },
+        active: true,
+      },
+    ]);
+    const q = await route({ need: 'aapl holdings', origin: 'https://www.payless.network' });
+    assert.equal(q.offers.length, 1, 'an active listing did not become an offer');
+    assert.equal(q.offers[0].via, 'listing');
+    assert.equal(q.offers[0].resource, 'https://www.payless.network/s/abc123');
+    assert.equal(q.offers[0].paymentsObserved, 4, 'chain evidence must follow the payout address');
+  });
+
+  await test('an inactive listing is not offered to anyone', async () => {
+    // It has proved nothing. Offering it would let an unverified origin take
+    // money through us.
+    manifests = {};
+    seed([], [], [
+      {
+        id: 'inert1',
+        owner: PROVEN,
+        originUrl: 'https://seller.example/api/quotes',
+        payTo: PROVEN,
+        priceBase: '20000',
+        name: 'Quotes',
+        description: 'AAPL holdings',
+        createdAt: '2026-09-17T00:00:00.000Z',
+        verifyToken: 'secret',
+        verification: null,
+        active: false,
+      },
+    ]);
+    const q = await route({ need: 'aapl', origin: 'https://www.payless.network' });
+    assert.equal(q.offers.length, 0, 'an unverified listing was offered');
+  });
+
+  await test('a listing never exposes the seller own origin', async () => {
+    manifests = {};
+    seed([], [], [
+      {
+        id: 'abc123', owner: PROVEN, originUrl: 'https://secret-internal.example/api', payTo: PROVEN,
+        priceBase: '20000', name: 'Quotes', description: 'AAPL holdings',
+        createdAt: '2026-09-17T00:00:00.000Z', verifyToken: 'secret',
+        verification: { at: '2026-09-17T00:00:00.000Z', ok: true, reason: 'ok' }, active: true,
+      },
+    ]);
+    const q = await route({ need: 'aapl', origin: 'https://www.payless.network' });
+    const blob = JSON.stringify(q);
+    assert.ok(!blob.includes('secret-internal'), 'the router leaked a seller origin');
+    assert.ok(!blob.includes('secret'), 'the router leaked a verification token');
   });
 
   await test('metered items are labelled as ceilings, not prices', async () => {

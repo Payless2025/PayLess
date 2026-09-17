@@ -26,6 +26,7 @@
 import { formatUnits, getAddress } from 'viem';
 import { allRegistrations, fetchManifest, type RegisteredSeller } from '../chains/seller-registry';
 import { readAllSellerTotals, type SellerTotal } from '../chains/x402-stats';
+import { activeListings, type Listing } from './listings';
 import { PAYMENT_CONFIG } from './config';
 
 /** One way to pay for a resource. A resource usually offers several. */
@@ -70,6 +71,14 @@ export interface Offer {
   volumeObservedUSDG: string;
   /** True when the offer belongs to whoever operates this router. */
   operatedByRouter: boolean;
+  /**
+   * How this offer got here.
+   *
+   * A manifest is something a seller publishes and we read. A listing is one
+   * they created here, and it carries a stronger proof: the origin itself
+   * served a token we generated, which a manifest never has to do.
+   */
+  via: 'manifest' | 'listing';
   /** Why this offer ranked where it did, in one line. */
   why: string;
 }
@@ -172,6 +181,7 @@ function offersFrom(entry: RegisteredSeller, manifest: unknown, total: SellerTot
       paymentsObserved: total?.payments ?? 0,
       volumeObservedUSDG: total ? formatUnits(BigInt(total.volumeBase), 6) : '0',
       operatedByRouter: mine,
+      via: 'manifest',
       why: '',
     });
   }
@@ -179,9 +189,55 @@ function offersFrom(entry: RegisteredSeller, manifest: unknown, total: SellerTot
   return out;
 }
 
+/**
+ * A listing, as an offer.
+ *
+ * Listings skip the manifest entirely. A registered seller publishes a document
+ * and signs for the address in it; a listing goes further, because the origin
+ * itself served a token before the listing was allowed to go live. There is no
+ * document to fetch and nothing to re-verify at read time, so this is both the
+ * cheaper path and the better evidenced one.
+ */
+function offerFromListing(listing: Listing, total: SellerTotal | null, origin: string): Offer {
+  const mine = ourAddress() !== '' && listing.payTo.toLowerCase() === ourAddress().toLowerCase();
+  const amountUSDG = formatUnits(BigInt(listing.priceBase), 6);
+  return {
+    seller: listing.payTo,
+    sellerName: listing.name,
+    resource: `${origin}/s/${listing.id}`,
+    description: listing.description,
+    method: 'GET',
+    accepts: [
+      { scheme: 'upto', network: 'eip155:4663', amountBase: listing.priceBase, amountUSDG },
+      { scheme: 'exact', network: 'eip155:4663', amountBase: listing.priceBase, amountUSDG },
+    ],
+    amountBase: listing.priceBase,
+    amountUSDG,
+    pricing: 'fixed',
+    inputs: { required: [], optional: [] },
+    // The listing's own URL, not the seller's origin. Their origin is theirs to
+    // publish, and nothing here is a reason to expose it.
+    manifestUrl: `${origin}/s/${listing.id}`,
+    paymentsObserved: total?.payments ?? 0,
+    volumeObservedUSDG: total ? formatUnits(BigInt(total.volumeBase), 6) : '0',
+    operatedByRouter: mine,
+    via: 'listing',
+    why: '',
+  };
+}
+
 /** Every offer currently on the table, from every registered seller. */
-export async function collectOffers(): Promise<{ offers: Offer[]; sellers: number }> {
-  const [registrations, totals] = await Promise.all([allRegistrations(), readAllSellerTotals()]);
+export async function collectOffers(
+  options: { origin?: string } = {}
+): Promise<{ offers: Offer[]; sellers: number }> {
+  const origin = (options.origin ?? 'https://www.payless.network').replace(/\/+$/, '');
+  const [registrations, totals, listed] = await Promise.all([
+    allRegistrations(),
+    readAllSellerTotals(),
+    // A listings store that cannot be read costs listings, not the whole
+    // answer. Registered sellers are a separate source and stay available.
+    activeListings().catch(() => [] as Listing[]),
+  ]);
   const byAddress = new Map(totals.map((t) => [t.address.toLowerCase(), t]));
 
   const all: Offer[] = [];
@@ -194,7 +250,15 @@ export async function collectOffers(): Promise<{ offers: Offer[]; sellers: numbe
     all.push(...offersFrom(entry, fetched.body, byAddress.get(entry.address.toLowerCase()) ?? null));
   }
 
-  return { offers: all, sellers: registrations.length };
+  for (const listing of listed) {
+    all.push(offerFromListing(listing, byAddress.get(listing.payTo.toLowerCase()) ?? null, origin));
+  }
+
+  const sellerAddresses = new Set([
+    ...registrations.map((r) => r.address.toLowerCase()),
+    ...listed.map((l) => l.payTo.toLowerCase()),
+  ]);
+  return { offers: all, sellers: sellerAddresses.size };
 }
 
 // ---------------------------------------------------------------------------
@@ -225,6 +289,7 @@ function relevance(offer: Offer, terms: string[]): number {
 }
 
 export interface RouteOptions {
+  origin?: string;
   need?: string | null;
   limit?: number;
   /** Drop offers above this price in base units. Metered items are ceilings. */
@@ -241,7 +306,7 @@ export interface RouteOptions {
  * those ordered accordingly.
  */
 export async function route(options: RouteOptions = {}): Promise<Quote> {
-  const { offers, sellers } = await collectOffers();
+  const { offers, sellers } = await collectOffers({ origin: options.origin });
   const terms = tokenise(options.need ?? '');
   const limit = Math.max(1, Math.min(options.limit ?? 10, 50));
   const cap = options.maxAmountBase && /^\d+$/.test(options.maxAmountBase)
